@@ -1,0 +1,23 @@
+{
+  "name": "socialgraph-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Social Graph & Feed Engineering Platform inspired by Meta TAO",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "npm run test --workspaces",
+    "test:foundation": "npm run test:foundation --workspace=packages/backend",
+    "docker:up": "docker compose -f docker-compose.yml up -d",
+    "docker:down": "docker compose -f docker-compose.yml down",
+    "docker:status": "docker compose -f docker-compose.yml ps",
+    "dev:backend": "npm run dev --workspace=packages/backend",
+    "dev:frontend": "npm run dev --workspace=packages/frontend"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}
