@@ -13,15 +13,15 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'bg-[#2563EB] text-white hover:bg-[#1D4ED8] active:bg-[#1E40AF] shadow-sm border border-transparent',
+    'bg-primary text-white hover:opacity-90 active:opacity-100 shadow-sm border border-transparent',
   secondary:
-    'bg-[#0F172A] text-white hover:bg-[#1E293B] active:bg-[#334155] shadow-sm border border-transparent',
+    'bg-[#0F172A] dark:bg-white text-white dark:text-[#0F172A] hover:bg-[#1E293B] dark:hover:bg-slate-100 active:bg-[#334155] shadow-sm border border-transparent',
   outline:
-    'bg-white text-[#0F172A] border border-[#E2E8F0] hover:bg-[#F4F4F5] hover:border-[#CBD5E1] active:bg-[#E4E4E7]',
+    'bg-white dark:bg-[#181B22] text-[#0F172A] dark:text-[#F8FAFC] border border-[#E2E8F0] dark:border-[#2E3544] hover:bg-[#F4F4F5] dark:hover:bg-[#262B36] hover:border-[#CBD5E1] dark:hover:border-[#3E475A]',
   ghost:
-    'bg-transparent text-[#475569] hover:text-[#0F172A] hover:bg-[#F4F4F5] active:bg-[#E4E4E7] border border-transparent',
+    'bg-transparent text-[#475569] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F4F4F5] dark:hover:bg-[#262B36] border border-transparent',
   pill:
-    'bg-[#0F172A] text-white hover:bg-[#1E293B] active:bg-[#334155] rounded-full shadow-sm border border-transparent',
+    'bg-[#0F172A] dark:bg-white text-white dark:text-[#0F172A] hover:bg-[#1E293B] dark:hover:bg-slate-100 rounded-full shadow-sm border border-transparent',
   danger:
     'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-sm border border-transparent',
 };
@@ -53,7 +53,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const baseClasses =
       'inline-flex items-center justify-center font-medium transition-all select-none cursor-pointer ' +
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2 ' +
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#181B22] ' +
       'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none active:scale-[0.98]';
 
     return (

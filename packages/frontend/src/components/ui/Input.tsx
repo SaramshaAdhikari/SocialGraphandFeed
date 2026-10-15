@@ -46,11 +46,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             disabled={disabled}
-            className={`w-full h-10 text-sm bg-white text-[#0F172A] placeholder-[#94A3B8] border rounded-md transition-all ` +
-              `focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent ` +
-              `disabled:bg-[#F4F4F5] disabled:text-[#94A3B8] disabled:cursor-not-allowed ` +
+            className={`w-full h-10 text-sm bg-white dark:bg-[#181B22] text-[#0F172A] dark:text-[#F8FAFC] placeholder-[#94A3B8] border rounded-md transition-all ` +
+              `focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ` +
+              `disabled:bg-[#F4F4F5] dark:disabled:bg-[#12141A] disabled:text-[#94A3B8] disabled:cursor-not-allowed ` +
               `${leftIcon ? 'pl-9' : 'pl-3.5'} ${rightIcon ? 'pr-9' : 'pr-3.5'} ` +
-              `${error ? 'border-red-500 focus:ring-red-500' : 'border-[#E2E8F0] hover:border-[#CBD5E1]'} ` +
+              `${error ? 'border-red-500 focus:ring-red-500' : 'border-[#E2E8F0] dark:border-[#2E3544] hover:border-[#CBD5E1] dark:hover:border-[#3E475A]'} ` +
               `${className}`}
             {...rest}
           />
@@ -60,8 +60,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             </span>
           )}
         </div>
-        {error && <p className="mt-1 text-xs text-red-600 font-medium">{error}</p>}
-        {!error && helperText && <p className="mt-1 text-xs text-[#64748B]">{helperText}</p>}
+        {error && <p className="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">{error}</p>}
+        {!error && helperText && <p className="mt-1 text-xs text-[#64748B] dark:text-[#94A3B8]">{helperText}</p>}
       </div>
     );
   }
@@ -107,14 +107,14 @@ export function SearchBar({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         aria-label={ariaLabel}
-        className="w-full h-10 pl-10 pr-9 text-sm bg-[#F4F4F5] text-[#0F172A] placeholder-[#94A3B8] rounded-full border border-transparent transition-all "
+        className="w-full h-10 pl-10 pr-9 text-sm bg-[#F4F4F5] dark:bg-[#262B36] text-[#0F172A] dark:text-[#F8FAFC] placeholder-[#94A3B8] rounded-full border border-transparent focus:outline-none focus:ring-2 focus:ring-primary transition-all"
       />
       {value && (
         <button
           type="button"
           onClick={() => onChange('')}
           aria-label="Clear search query"
-          className="absolute right-2.5 p-1 rounded-full text-[#94A3B8] hover:text-[#0F172A] hover:bg-[#E4E4E7] transition-colors"
+          className="absolute right-2.5 p-1 rounded-full text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white hover:bg-[#E4E4E7] dark:hover:bg-[#323846] transition-colors"
         >
           <X size={14} />
         </button>

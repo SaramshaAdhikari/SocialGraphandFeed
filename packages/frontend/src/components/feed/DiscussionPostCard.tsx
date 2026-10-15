@@ -47,7 +47,7 @@ export function DiscussionPostCard({
   return (
     <article
       data-testid={`post-discussion-${post.id}`}
-      className={`bg-white rounded-xl border border-[#E2E8F0] p-4 shadow-sm hover:border-[#CBD5E1] transition-all duration-150 ${className}`}
+      className={`bg-white dark:bg-[#181B22] rounded-xl border border-[#E2E8F0] dark:border-[#2E3544] p-4 shadow-sm hover:border-[#CBD5E1] dark:hover:border-[#3E475A] transition-all duration-150 ${className}`}
     >
       <div className="flex items-start gap-3">
         {/* Desktop Vertical Vote Rail (Reddit design pattern) */}
@@ -63,16 +63,16 @@ export function DiscussionPostCard({
         {/* Main Content Area */}
         <div className="flex-1 min-w-0">
           {/* Metadata Header */}
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2 text-xs text-[#64748B]">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2 text-xs text-[#64748B] dark:text-[#94A3B8]">
             {post.community_slug ? (
               <>
                 <Link
                   to={`/c/${post.community_slug}`}
-                  className="font-bold text-[#0F172A] hover:text-[#2563EB] hover:underline"
+                  className="font-bold text-[#0F172A] dark:text-[#F8FAFC] hover:text-primary hover:underline"
                 >
                   c/{post.community_slug}
                 </Link>
-                <span className="text-[#CBD5E1]" aria-hidden="true">•</span>
+                <span className="text-[#CBD5E1] dark:text-[#475569]" aria-hidden="true">•</span>
               </>
             ) : null}
 
@@ -85,13 +85,13 @@ export function DiscussionPostCard({
               <span>Posted by</span>
               <Link
                 to={`/u/${post.author.username}`}
-                className="font-medium text-[#475569] hover:text-[#2563EB] hover:underline"
+                className="font-medium text-[#475569] dark:text-[#CBD5E1] hover:text-primary hover:underline"
               >
                 u/{post.author.username}
               </Link>
             </div>
 
-            <span className="text-[#CBD5E1]" aria-hidden="true">•</span>
+            <span className="text-[#CBD5E1] dark:text-[#475569]" aria-hidden="true">•</span>
             <time dateTime={post.created_at} className="text-[#94A3B8]">
               {formatRelativeTime(post.created_at)}
             </time>
@@ -105,19 +105,19 @@ export function DiscussionPostCard({
 
           {/* Post Title */}
           <Link to={`/post/${post.id}`} className="block group">
-            <h2 className="text-base sm:text-lg font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors leading-snug mb-2">
+            <h2 className="text-base sm:text-lg font-bold text-[#0F172A] dark:text-[#F8FAFC] group-hover:text-primary transition-colors leading-snug mb-2">
               {post.title}
             </h2>
           </Link>
 
           {/* Discussion Markdown Body Excerpt */}
-          <p className="text-sm text-[#334155] leading-relaxed line-clamp-3 mb-3">
+          <p className="text-sm text-[#334155] dark:text-[#CBD5E1] leading-relaxed line-clamp-3 mb-3">
             {post.content}
           </p>
 
           {/* Optional Media Attachments */}
           {post.media && post.media.length > 0 && (
-            <div className="mb-3 rounded-lg overflow-hidden border border-[#E2E8F0] max-h-96 bg-slate-50 flex items-center justify-center">
+            <div className="mb-3 rounded-lg overflow-hidden border border-[#E2E8F0] dark:border-[#2E3544] max-h-96 bg-slate-50 dark:bg-[#12141A] flex items-center justify-center">
               <img
                 src={post.media[0].url}
                 alt={post.media[0].alt_text || post.title}
@@ -128,7 +128,7 @@ export function DiscussionPostCard({
           )}
 
           {/* Action Row & Mobile Vote Control */}
-          <div className="flex items-center justify-between pt-2 border-t border-[#F1F5F9] text-xs text-[#64748B]">
+          <div className="flex items-center justify-between pt-2 border-t border-[#F1F5F9] dark:border-[#262B36] text-xs text-[#64748B] dark:text-[#94A3B8]">
             <div className="flex items-center gap-1.5 sm:gap-2">
               {/* Mobile Horizontal Vote Control */}
               <div className="sm:hidden">
@@ -146,7 +146,7 @@ export function DiscussionPostCard({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 text-xs text-[#64748B] hover:text-[#0F172A]"
+                  className="h-8 px-2 text-xs text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white"
                   leftIcon={<MessageSquare size={15} />}
                 >
                   <span>{post.comments_count} Comments</span>
@@ -158,7 +158,7 @@ export function DiscussionPostCard({
                 variant="ghost"
                 size="sm"
                 onClick={handleShare}
-                className="h-8 px-2 text-xs text-[#64748B] hover:text-[#0F172A]"
+                className="h-8 px-2 text-xs text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white"
                 leftIcon={copied ? <Check size={15} className="text-emerald-600" /> : <Share2 size={15} />}
               >
                 <span>{copied ? 'Copied' : 'Share'}</span>
@@ -171,12 +171,14 @@ export function DiscussionPostCard({
               size="sm"
               onClick={handleSave}
               className={`h-8 px-2.5 text-xs transition-colors ${
-                post.is_saved ? 'text-[#2563EB] bg-[#EFF6FF] font-semibold' : 'text-[#64748B] hover:text-[#0F172A]'
+                post.is_saved
+                  ? 'text-primary bg-primary/10 font-semibold'
+                  : 'text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white'
               }`}
               leftIcon={
                 <Bookmark
                   size={15}
-                  className={post.is_saved ? 'fill-current text-[#2563EB]' : ''}
+                  className={post.is_saved ? 'fill-current text-primary' : ''}
                 />
               }
             >

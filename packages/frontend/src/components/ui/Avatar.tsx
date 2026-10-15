@@ -23,7 +23,8 @@ export function Avatar({ src, alt, size = 'md', className = '' }: AvatarProps) {
   const [hasError, setHasError] = useState(false);
   const { dimension, text, icon } = sizeMap[size];
 
-  const getInitials = (name: string) => {
+  const getInitials = (name?: string) => {
+    if (!name) return '';
     const parts = name.trim().split(/\s+/);
     if (parts.length === 0 || !parts[0]) return '';
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();

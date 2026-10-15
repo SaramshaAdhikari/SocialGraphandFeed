@@ -11,7 +11,7 @@ export interface AppLayoutProps {
 
 export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
   return (
-    <div className="min-h-screen bg-[#FAFAF9] text-[#0F172A] flex flex-col w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-canvas dark:bg-[#0F1117] text-[#0F172A] dark:text-[#F8FAFC] flex flex-col w-full max-w-full overflow-x-hidden transition-colors">
       <div className="flex flex-1 w-full max-w-full">
         {/* Left Navigation Rail (Desktop & Tablet) */}
         <SidebarNav />

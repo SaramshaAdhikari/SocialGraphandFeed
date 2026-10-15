@@ -80,14 +80,14 @@ export function FeedList({
     return (
       <div
         role="alert"
-        className={`bg-white rounded-xl border border-red-200 p-6 sm:p-8 text-center shadow-sm space-y-4 ${className}`}
+        className={`bg-white dark:bg-[#181B22] rounded-xl border border-red-200 dark:border-red-900/40 p-6 sm:p-8 text-center shadow-sm space-y-4 transition-colors ${className}`}
       >
-        <div className="w-12 h-12 mx-auto rounded-full bg-red-50 flex items-center justify-center text-red-600">
+        <div className="w-12 h-12 mx-auto rounded-full bg-red-50 dark:bg-red-950/40 flex items-center justify-center text-red-600 dark:text-red-400">
           <AlertCircle size={24} />
         </div>
         <div>
-          <h2 className="text-base font-bold text-[#0F172A] mb-1">Failed to load feed</h2>
-          <p className="text-sm text-[#64748B] max-w-md mx-auto">
+          <h2 className="text-base font-bold text-[#0F172A] dark:text-[#F8FAFC] mb-1">Failed to load feed</h2>
+          <p className="text-sm text-[#64748B] dark:text-[#94A3B8] max-w-md mx-auto">
             {error.message || 'An unexpected error occurred while communicating with the feed service.'}
           </p>
         </div>
@@ -107,9 +107,9 @@ export function FeedList({
   if (!loading && posts.length === 0) {
     return (
       <div
-        className={`bg-white rounded-xl border border-[#E2E8F0] p-8 sm:p-12 text-center shadow-sm space-y-4 ${className}`}
+        className={`bg-white dark:bg-[#181B22] rounded-xl border border-[#E2E8F0] dark:border-[#2E3544] p-8 sm:p-12 text-center shadow-sm space-y-4 transition-colors ${className}`}
       >
-        <div className="w-14 h-14 mx-auto rounded-full bg-[#F1F5F9] flex items-center justify-center text-[#64748B]">
+        <div className="w-14 h-14 mx-auto rounded-full bg-[#F1F5F9] dark:bg-[#262B36] flex items-center justify-center text-[#64748B] dark:text-[#94A3B8]">
           {scope === 'following' ? (
             <Users size={28} />
           ) : (
@@ -118,14 +118,14 @@ export function FeedList({
         </div>
 
         <div className="max-w-md mx-auto">
-          <h2 className="text-base sm:text-lg font-bold text-[#0F172A] mb-1">
+          <h2 className="text-base sm:text-lg font-bold text-[#0F172A] dark:text-[#F8FAFC] mb-1">
             {scope === 'following'
               ? 'No posts from creators you follow'
               : scope === 'communities'
               ? 'No community posts in this feed'
               : 'No posts in this feed yet'}
           </h2>
-          <p className="text-sm text-[#64748B]">
+          <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">
             {scope === 'following'
               ? 'Follow creators and engineers in the Discover feed to see their latest work here.'
               : scope === 'communities'
@@ -213,12 +213,12 @@ export function FeedList({
       {!hasMore && posts.length > 0 && (
         <div
           role="status"
-          className="py-8 px-4 text-center border-t border-[#E2E8F0] text-[#64748B] space-y-1"
+          className="py-8 px-4 text-center border-t border-[#E2E8F0] dark:border-[#2E3544] text-[#64748B] dark:text-[#94A3B8] space-y-1 transition-colors"
         >
-          <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 mb-1">
+          <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 mb-1">
             <CheckCircle2 size={18} />
           </div>
-          <p className="text-sm font-semibold text-[#0F172A]">You're all caught up!</p>
+          <p className="text-sm font-semibold text-[#0F172A] dark:text-[#F8FAFC]">You're all caught up!</p>
           <p className="text-xs text-[#94A3B8]">
             You've viewed all posts currently available in this feed.
           </p>

@@ -2,41 +2,33 @@ import { RouterProvider, Routes, Route } from './router/Router';
 import { AppLayout } from './components/layout/AppLayout';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { HomePage } from './pages/HomePage';
+import { DiscoverPage } from './pages/DiscoverPage';
 import { DiagnosticsView } from './components/common/DiagnosticsView';
 import { PlaceholderPage } from './components/common/PlaceholderPage';
+import { ThemeProvider } from './theme';
 
 export function App() {
   return (
     <ErrorBoundary>
-      <RouterProvider>
-        <AppLayout>
-          <Routes
-            fallback={
-              <PlaceholderPage
-                title="Page Not Found (404)"
-                personality="Utility & Management"
-                milestone="Error Boundary"
-                reference="RFC 7807 Standard"
-                description="The requested route does not match any registered application paths."
-              />
-            }
-          >
-            {/* Screen 1: Home Feed */}
-            <Route path="/" element={<HomePage />} />
-
-            {/* Screen 2: Discover */}
-            <Route
-              path="/explore"
-              element={
+      <ThemeProvider>
+        <RouterProvider>
+          <AppLayout>
+            <Routes
+              fallback={
                 <PlaceholderPage
-                  title="Discover (Visual Masonry)"
-                  personality="Visual Discovery (90% Imagery, High Density)"
-                  milestone="Checkpoint 2.4 — Screen 2"
-                  reference="pinterest_DESIGN.md"
-                  description="Multi-column greedy shortest-column masonry gallery preserving natural aspect ratios without layout shift."
+                  title="Page Not Found (404)"
+                  personality="Utility & Management"
+                  milestone="Error Boundary"
+                  reference="RFC 7807 Standard"
+                  description="The requested route does not match any registered application paths."
                 />
               }
-            />
+            >
+              {/* Screen 1: Home Feed */}
+              <Route path="/" element={<HomePage />} />
+
+              {/* Screen 2: Discover */}
+              <Route path="/explore" element={<DiscoverPage />} />
 
             {/* Screen 3: Post Detail & Threaded Comments */}
             <Route
@@ -127,8 +119,9 @@ export function App() {
           </Routes>
         </AppLayout>
       </RouterProvider>
-    </ErrorBoundary>
-  );
+    </ThemeProvider>
+  </ErrorBoundary>
+);
 }
 
 export default App;

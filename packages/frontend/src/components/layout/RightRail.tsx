@@ -21,10 +21,10 @@ export function RightRail() {
       aria-label="Contextual Sidebar"
     >
       {/* Suggested Communities */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-4 shadow-sm">
-        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#F1F5F9]">
-          <Users size={16} className="text-[#2563EB]" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[#0F172A]">
+      <div className="bg-white dark:bg-[#181B22] rounded-xl border border-[#E2E8F0] dark:border-[#2E3544] p-4 shadow-sm transition-colors">
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#F1F5F9] dark:border-[#262B36]">
+          <Users size={16} className="text-primary" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[#0F172A] dark:text-[#F8FAFC]">
             Recommended Hubs
           </h2>
         </div>
@@ -34,7 +34,7 @@ export function RightRail() {
               <div>
                 <Link
                   to={`/c/${c.name}`}
-                  className="text-xs font-semibold text-[#0F172A] hover:text-[#2563EB] transition-colors block"
+                  className="text-xs font-semibold text-[#0F172A] dark:text-[#F8FAFC] hover:text-primary transition-colors block"
                 >
                   c/{c.name}
                 </Link>
@@ -49,10 +49,10 @@ export function RightRail() {
       </div>
 
       {/* Trending Topics */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-4 shadow-sm">
-        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#F1F5F9]">
+      <div className="bg-white dark:bg-[#181B22] rounded-xl border border-[#E2E8F0] dark:border-[#2E3544] p-4 shadow-sm transition-colors">
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#F1F5F9] dark:border-[#262B36]">
           <TrendingUp size={16} className="text-[#F97316]" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[#0F172A]">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[#0F172A] dark:text-[#F8FAFC]">
             Trending Discussions
           </h2>
         </div>
@@ -61,9 +61,9 @@ export function RightRail() {
             <Link
               key={t.tag}
               to={`/search?q=${encodeURIComponent(t.tag)}`}
-              className="block group p-1 -mx-1 rounded-md hover:bg-[#F4F4F5] transition-colors"
+              className="block group p-1 -mx-1 rounded-md hover:bg-[#F4F4F5] dark:hover:bg-[#262B36] transition-colors"
             >
-              <p className="text-xs font-semibold text-[#0F172A] group-hover:text-[#2563EB]">
+              <p className="text-xs font-semibold text-[#0F172A] dark:text-[#F8FAFC] group-hover:text-primary">
                 {t.tag}
               </p>
               <p className="text-[11px] text-[#94A3B8]">{t.posts}</p>
@@ -73,19 +73,19 @@ export function RightRail() {
       </div>
 
       {/* Diagnostics Quick Access */}
-      <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs">
+      <div className="p-3.5 rounded-xl bg-[#F8FAFC] dark:bg-[#12141A] border border-[#E2E8F0] dark:border-[#2E3544] text-xs transition-colors">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="font-semibold text-[#475569] flex items-center gap-1.5">
-            <Activity size={14} className="text-[#2563EB]" /> Foundation Health
+          <span className="font-semibold text-[#475569] dark:text-[#94A3B8] flex items-center gap-1.5">
+            <Activity size={14} className="text-primary" /> Foundation Health
           </span>
           <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
         </div>
-        <p className="text-[#64748B] text-[11px] mb-2">
+        <p className="text-[#64748B] dark:text-[#94A3B8] text-[11px] mb-2">
           Fastify 5, MongoDB 7, and Redis 7 connection status.
         </p>
         <Link
           to="/diagnostics"
-          className="text-xs font-semibold text-[#2563EB] hover:underline inline-flex items-center gap-1"
+          className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
         >
           Open Diagnostics View →
         </Link>

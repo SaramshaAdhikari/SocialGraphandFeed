@@ -56,7 +56,7 @@ describe('Checkpoint 2.1 — Router & Path Matching', () => {
 describe('Checkpoint 2.1 — Shared UI Primitives', () => {
   it('Button renders variants and handles disabled/loading states', () => {
     const primaryHtml = renderToString(<Button variant="primary">Click Me</Button>);
-    expect(primaryHtml).toContain('bg-[#2563EB]');
+    expect(primaryHtml).toContain('bg-primary');
     expect(primaryHtml).toContain('Click Me');
 
     const disabledHtml = renderToString(<Button disabled>Disabled</Button>);
@@ -91,7 +91,7 @@ describe('Checkpoint 2.1 — Shared UI Primitives', () => {
   it('Badge and Pill support active selection and aria-pressed', () => {
     const badgeHtml = renderToString(<Badge variant="brand">Hot</Badge>);
     expect(badgeHtml).toContain('bg-[#EFF6FF]');
-    expect(badgeHtml).toContain('text-[#2563EB]');
+    expect(badgeHtml).toContain('text-primary');
 
     const pillHtml = renderToString(
       <Pill selected={true} size="md">
@@ -99,7 +99,7 @@ describe('Checkpoint 2.1 — Shared UI Primitives', () => {
       </Pill>
     );
     expect(pillHtml).toContain('aria-pressed="true"');
-    expect(pillHtml).toContain('bg-[#0F172A]');
+    expect(pillHtml).toContain('bg-primary');
     expect(pillHtml).toContain('text-white');
   });
 

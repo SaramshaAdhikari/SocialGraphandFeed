@@ -34,7 +34,7 @@ export function FeedSortBar({
 
   return (
     <div
-      className={`bg-white rounded-xl border border-[#E2E8F0] shadow-sm divide-y divide-[#F1F5F9] ${className}`}
+      className={`bg-white dark:bg-[#181B22] rounded-xl border border-[#E2E8F0] dark:border-[#2E3544] shadow-sm divide-y divide-[#F1F5F9] dark:divide-[#262B36] transition-colors ${className}`}
     >
       {/* Feed Scope Navigation (Segmented Tabs) */}
       <div
@@ -53,13 +53,13 @@ export function FeedSortBar({
               aria-controls="feed-content"
               disabled={disabled}
               onClick={() => onScopeChange(s.id)}
-              className={`flex items-center gap-2 px-3 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
+              className={`flex items-center gap-2 px-3 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 isActive
-                  ? 'border-[#2563EB] text-[#2563EB]'
-                  : 'border-transparent text-[#64748B] hover:text-[#0F172A] hover:border-[#CBD5E1]'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white hover:border-[#CBD5E1] dark:hover:border-[#3E475A]'
               } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <Icon size={16} className={isActive ? 'text-[#2563EB]' : 'text-[#94A3B8]'} />
+              <Icon size={16} className={isActive ? 'text-primary' : 'text-[#94A3B8]'} />
               <span>{s.label}</span>
             </button>
           );
@@ -70,7 +70,7 @@ export function FeedSortBar({
       <div
         role="toolbar"
         aria-label="Sort Options"
-        className="flex items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-[#FAFAFA] rounded-b-xl"
+        className="flex items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-[#FAFAFA] dark:bg-[#12141A] rounded-b-xl transition-colors"
       >
         <div className="flex items-center gap-1.5 sm:gap-2">
           <span className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8] mr-1 hidden sm:inline-block">
@@ -99,7 +99,7 @@ export function FeedSortBar({
         </div>
 
         <span className="text-[11px] text-[#94A3B8] hidden md:inline-block">
-          Active: <strong className="text-[#475569] capitalize">{scope}</strong> • <strong className="text-[#475569] capitalize">{sort}</strong>
+          Active: <strong className="text-[#475569] dark:text-[#CBD5E1] capitalize">{scope}</strong> • <strong className="text-[#475569] dark:text-[#CBD5E1] capitalize">{sort}</strong>
         </span>
       </div>
     </div>

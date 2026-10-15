@@ -14,7 +14,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-14 bg-white/95 backdrop-blur-md border-t border-[#E2E8F0] px-2 flex items-center justify-around select-none"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-14 bg-white/95 dark:bg-[#181B22]/95 backdrop-blur-md border-t border-[#E2E8F0] dark:border-[#2E3544] px-2 flex items-center justify-around select-none transition-colors"
       aria-label="Mobile Navigation"
     >
       {items.map((item) => {
@@ -31,8 +31,8 @@ export function MobileBottomNav() {
             to={item.to}
             exact={item.exact}
             aria-label={item.label}
-            className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
-              isActive ? 'text-[#2563EB]' : 'text-[#64748B] hover:text-[#0F172A]'
+            className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              isActive ? 'text-primary' : 'text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white'
             }`}
           >
             <Icon size={22} className={isActive ? 'stroke-[2.5px]' : 'stroke-2'} />

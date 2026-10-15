@@ -49,10 +49,10 @@ export function VisualPinCard({
   return (
     <article
       data-testid={`post-visual-${post.id}`}
-      className={`bg-white rounded-xl border border-[#E2E8F0] shadow-sm hover:border-[#CBD5E1] transition-all duration-150 overflow-hidden ${className}`}
+      className={`bg-white dark:bg-[#181B22] rounded-xl border border-[#E2E8F0] dark:border-[#2E3544] shadow-sm hover:border-[#CBD5E1] dark:hover:border-[#3E475A] transition-all duration-150 overflow-hidden ${className}`}
     >
       {/* Author & Context Header */}
-      <div className="p-3 sm:p-4 flex items-center justify-between gap-3 border-b border-[#F8FAFC]">
+      <div className="p-3 sm:p-4 flex items-center justify-between gap-3 border-b border-[#F8FAFC] dark:border-[#262B36]">
         <div className="flex items-center gap-2.5 min-w-0">
           <Avatar
             src={post.author.avatar_url}
@@ -63,14 +63,14 @@ export function VisualPinCard({
             <div className="flex items-center gap-1.5">
               <Link
                 to={`/u/${post.author.username}`}
-                className="font-semibold text-xs sm:text-sm text-[#0F172A] hover:text-[#2563EB] truncate"
+                className="font-semibold text-xs sm:text-sm text-[#0F172A] dark:text-[#F8FAFC] hover:text-primary truncate"
               >
                 {post.author.display_name}
               </Link>
               {post.author.is_verified && (
                 <span
                   title="Verified Creator"
-                  className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-[#2563EB] text-white text-[9px] font-bold"
+                  className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-primary text-white text-[9px] font-bold"
                 >
                   ✓
                 </span>
@@ -89,7 +89,7 @@ export function VisualPinCard({
         {post.community_slug && (
           <Link
             to={`/c/${post.community_slug}`}
-            className="text-xs font-semibold text-[#475569] hover:text-[#2563EB] bg-[#F1F5F9] hover:bg-[#E2E8F0] px-2 py-0.5 rounded-full transition-colors shrink-0"
+            className="text-xs font-semibold text-[#475569] dark:text-[#CBD5E1] hover:text-primary bg-[#F1F5F9] dark:bg-[#262B36] hover:bg-[#E2E8F0] dark:hover:bg-[#323846] px-2 py-0.5 rounded-full transition-colors shrink-0"
           >
             c/{post.community_slug}
           </Link>
@@ -98,7 +98,7 @@ export function VisualPinCard({
 
       {/* Media Box with CLS Aspect Ratio Reservation */}
       <div
-        className="relative group bg-slate-100 overflow-hidden"
+        className="relative group bg-slate-100 dark:bg-[#12141A] overflow-hidden"
         style={{
           aspectRatio: post.media.aspect_ratio || 1.33,
           backgroundColor: post.dominant_color || '#F1F5F9',
@@ -123,7 +123,7 @@ export function VisualPinCard({
           aria-label={post.is_saved ? 'Unsave pin' : 'Save pin'}
           className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-bold shadow-md transition-transform duration-150 cursor-pointer ${
             post.is_saved
-              ? 'bg-[#0F172A] text-white hover:bg-black'
+              ? 'bg-[#0F172A] dark:bg-white text-white dark:text-[#0F172A] hover:bg-black'
               : 'bg-[#E60023] text-white hover:bg-[#ad081b] opacity-0 group-hover:opacity-100 focus:opacity-100'
           }`}
         >
@@ -135,20 +135,20 @@ export function VisualPinCard({
       <div className="p-3 sm:p-4">
         {post.title && (
           <Link to={`/post/${post.id}`}>
-            <h2 className="text-sm sm:text-base font-bold text-[#0F172A] hover:text-[#2563EB] transition-colors mb-1 leading-snug">
+            <h2 className="text-sm sm:text-base font-bold text-[#0F172A] dark:text-[#F8FAFC] hover:text-primary transition-colors mb-1 leading-snug">
               {post.title}
             </h2>
           </Link>
         )}
 
         {post.caption && (
-          <p className="text-xs sm:text-sm text-[#475569] line-clamp-2 leading-relaxed mb-3">
+          <p className="text-xs sm:text-sm text-[#475569] dark:text-[#CBD5E1] line-clamp-2 leading-relaxed mb-3">
             {post.caption}
           </p>
         )}
 
         {/* Action Row */}
-        <div className="flex items-center justify-between pt-2 border-t border-[#F8FAFC] text-xs text-[#64748B]">
+        <div className="flex items-center justify-between pt-2 border-t border-[#F8FAFC] dark:border-[#262B36] text-xs text-[#64748B] dark:text-[#94A3B8]">
           <div className="flex items-center gap-1 sm:gap-2">
             {/* Heart / Like Button */}
             <button
@@ -158,8 +158,8 @@ export function VisualPinCard({
               aria-pressed={post.user_vote === 1}
               className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors cursor-pointer ${
                 post.user_vote === 1
-                  ? 'text-[#E11D48] bg-[#FFE4E6] font-semibold'
-                  : 'hover:text-[#E11D48] hover:bg-[#F8FAFC]'
+                  ? 'text-[#E11D48] bg-[#FFE4E6] dark:bg-rose-950/40 font-semibold'
+                  : 'hover:text-[#E11D48] hover:bg-[#F8FAFC] dark:hover:bg-[#262B36]'
               }`}
             >
               <Heart
@@ -172,7 +172,7 @@ export function VisualPinCard({
             {/* Comments */}
             <Link
               to={`/post/${post.id}`}
-              className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:text-[#0F172A] hover:bg-[#F8FAFC] transition-colors"
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F8FAFC] dark:hover:bg-[#262B36] transition-colors"
             >
               <MessageSquare size={16} />
               <span className="tabular-nums">{post.comments_count}</span>
@@ -183,7 +183,7 @@ export function VisualPinCard({
               type="button"
               onClick={handleShare}
               aria-label="Share pin"
-              className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:text-[#0F172A] hover:bg-[#F8FAFC] transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F8FAFC] dark:hover:bg-[#262B36] transition-colors cursor-pointer"
             >
               {copied ? (
                 <Check size={16} className="text-emerald-600" />
@@ -202,13 +202,13 @@ export function VisualPinCard({
             aria-pressed={post.is_saved}
             className={`p-1.5 rounded-md transition-colors cursor-pointer ${
               post.is_saved
-                ? 'text-[#2563EB] bg-[#EFF6FF]'
-                : 'hover:text-[#0F172A] hover:bg-[#F8FAFC]'
+                ? 'text-primary bg-primary/10'
+                : 'hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F8FAFC] dark:hover:bg-[#262B36]'
             }`}
           >
             <Bookmark
               size={16}
-              className={post.is_saved ? 'fill-current' : ''}
+              className={post.is_saved ? 'fill-current text-primary' : ''}
             />
           </button>
         </div>
