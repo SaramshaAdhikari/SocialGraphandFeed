@@ -1,7 +1,7 @@
 import { RouterProvider, Routes, Route } from './router/Router';
 import { AppLayout } from './components/layout/AppLayout';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
-import { HomeFeedFoundation } from './components/common/HomeFeedFoundation';
+import { HomePage } from './pages/HomePage';
 import { DiagnosticsView } from './components/common/DiagnosticsView';
 import { PlaceholderPage } from './components/common/PlaceholderPage';
 
@@ -22,7 +22,7 @@ export function App() {
             }
           >
             {/* Screen 1: Home Feed */}
-            <Route path="/" element={<HomeFeedFoundation />} />
+            <Route path="/" element={<HomePage />} />
 
             {/* Screen 2: Discover */}
             <Route

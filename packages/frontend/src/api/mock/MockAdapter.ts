@@ -101,9 +101,16 @@ export class MockAdapter implements ISocialGraphApi {
 
   public async getFeed(query: FeedQuery = {}): Promise<FeedResponse> {
     await this.delay('/api/v1/feed');
-    const { sort = 'hot', limit = 10, cursor } = query;
+    const { sort = 'hot', limit = 10, cursor, scope = 'all' } = query;
 
     let items = [...this.posts];
+
+    // Scope filtering
+    if (scope === 'following') {
+      items = items.filter((p) => this.users[p.author.id]?.is_following === true);
+    } else if (scope === 'communities') {
+      items = items.filter((p) => Boolean(p.community_id));
+    }
 
     // Sorting implementation
     if (sort === 'hot') {
@@ -217,7 +224,7 @@ export class MockAdapter implements ISocialGraphApi {
     if (post.user_vote === 1) scoreDelta -= 1;
     if (post.user_vote === -1) scoreDelta += 1;
     if (direction === 1) scoreDelta += 1;
-    if (direction === -1) scoreDelta += 1;
+    if (direction === -1) scoreDelta -= 1;
 
     post.score += scoreDelta;
     post.user_vote = direction;
@@ -226,6 +233,27 @@ export class MockAdapter implements ISocialGraphApi {
       post_id: postId,
       new_score: post.score,
       user_vote: post.user_vote,
+    };
+  }
+
+  public async toggleSavePost(postId: string): Promise<{ post_id: string; is_saved: boolean }> {
+    await this.delay(`/api/v1/posts/${postId}/save`);
+    const post = this.posts.find((p) => p.id === postId);
+    if (!post) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/not-found',
+        title: 'Post Not Found',
+        status: 404,
+        detail: `Cannot save nonexistent post ${postId}`,
+        code: 'POST_NOT_FOUND',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    post.is_saved = !post.is_saved;
+    return {
+      post_id: postId,
+      is_saved: post.is_saved,
     };
   }
 

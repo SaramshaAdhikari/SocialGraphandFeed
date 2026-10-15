@@ -99,6 +99,12 @@ export class LiveClient implements ISocialGraphApi {
     });
   }
 
+  public async toggleSavePost(postId: string): Promise<{ post_id: string; is_saved: boolean }> {
+    return this.request<{ post_id: string; is_saved: boolean }>(`/api/v1/posts/${postId}/save`, {
+      method: 'POST',
+    });
+  }
+
   public async createComment(postId: string, input: CreateCommentInput): Promise<CommentNode> {
     return this.request<CommentNode>(`/api/v1/posts/${postId}/comments`, {
       method: 'POST',

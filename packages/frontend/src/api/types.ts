@@ -35,6 +35,7 @@ export interface ISocialGraphApi {
   getPost(postId: string): Promise<PostCard>;
   getComments(postId: string): Promise<CommentNode[]>;
   votePost(postId: string, direction: 1 | -1 | 0): Promise<VoteResult>;
+  toggleSavePost(postId: string): Promise<{ post_id: string; is_saved: boolean }>;
   createComment(postId: string, input: CreateCommentInput): Promise<CommentNode>;
 
   // Social Graph (Users & Communities)
