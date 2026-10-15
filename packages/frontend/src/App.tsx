@@ -1,129 +1,133 @@
-import { useEffect, useState } from 'react';
-import { api, ApiClientError } from './api/client';
-import type { HealthStatus } from '@socialgraph/shared';
-import { Activity, Database, Server, Zap, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
+import { RouterProvider, Routes, Route } from './router/Router';
+import { AppLayout } from './components/layout/AppLayout';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { HomeFeedFoundation } from './components/common/HomeFeedFoundation';
+import { DiagnosticsView } from './components/common/DiagnosticsView';
+import { PlaceholderPage } from './components/common/PlaceholderPage';
 
 export function App() {
-  const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchHealth = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await api.getHealth();
-      setHealth(data);
-    } catch (err: any) {
-      if (err instanceof ApiClientError) {
-        setError(`${err.problem.code}: ${err.problem.detail}`);
-      } else {
-        setError(err?.message || 'Failed to connect to backend.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchHealth();
-  }, []);
-
   return (
-    <div className="max-w-4xl mx-auto px-6 py-12">
-      <header className="mb-10 text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold mb-4 tracking-wide uppercase border border-blue-200">
-          Milestone 1 — Foundation & Type Contract Baseline
-        </div>
-        <h1 className="text-3xl font-bold tracking-tight text-[#0F172A] sm:text-4xl">
-          Social Graph & Feed Engineering Platform
-        </h1>
-        <p className="mt-2 text-sm text-[#64748B] max-w-xl mx-auto">
-          Meta TAO-inspired distributed architecture with strict type contracts, MongoDB durability, and Redis acceleration.
-        </p>
-      </header>
-
-      <section className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm p-6 mb-8">
-        <div className="flex items-center justify-between pb-4 border-b border-[#F1F5F9] mb-6">
-          <div className="flex items-center gap-3">
-            <Activity className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-[#0F172A]">Core Foundation Health</h2>
-          </div>
-          <button
-            onClick={fetchHealth}
-            disabled={loading}
-            className="px-4 py-2 text-xs font-medium rounded-full bg-[#0F172A] text-white hover:bg-[#1E293B] transition-colors disabled:opacity-50"
+    <ErrorBoundary>
+      <RouterProvider>
+        <AppLayout>
+          <Routes
+            fallback={
+              <PlaceholderPage
+                title="Page Not Found (404)"
+                personality="Utility & Management"
+                milestone="Error Boundary"
+                reference="RFC 7807 Standard"
+                description="The requested route does not match any registered application paths."
+              />
+            }
           >
-            {loading ? 'Pinging Services...' : 'Refresh Status'}
-          </button>
-        </div>
+            {/* Screen 1: Home Feed */}
+            <Route path="/" element={<HomeFeedFoundation />} />
 
-        {error && (
-          <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-2 mb-6">
-            <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+            {/* Screen 2: Discover */}
+            <Route
+              path="/explore"
+              element={
+                <PlaceholderPage
+                  title="Discover (Visual Masonry)"
+                  personality="Visual Discovery (90% Imagery, High Density)"
+                  milestone="Checkpoint 2.4 — Screen 2"
+                  reference="pinterest_DESIGN.md"
+                  description="Multi-column greedy shortest-column masonry gallery preserving natural aspect ratios without layout shift."
+                />
+              }
+            />
 
-        {health && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Fastify Backend */}
-            <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-[#64748B] uppercase tracking-wider flex items-center gap-1.5">
-                  <Server className="w-4 h-4 text-slate-700" /> Fastify Backend
-                </span>
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              </div>
-              <p className="text-xl font-bold text-[#0F172A]">v{health.version}</p>
-              <p className="text-xs text-[#64748B] mt-1">Uptime: {health.uptime_seconds}s</p>
-            </div>
+            {/* Screen 3: Post Detail & Threaded Comments */}
+            <Route
+              path="/post/:postId"
+              element={
+                <PlaceholderPage
+                  title="Post Detail & Discussion"
+                  personality="Discussion & Community"
+                  milestone="Checkpoint 2.5 — Screen 3"
+                  reference="reddit_DESIGN.md & instagram_DESIGN.md"
+                  description="Focused reading canvas with full media viewer and collapsible nested comment tree with branch guide lines."
+                />
+              }
+            />
 
-            {/* MongoDB */}
-            <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-[#64748B] uppercase tracking-wider flex items-center gap-1.5">
-                  <Database className="w-4 h-4 text-emerald-700" /> MongoDB Store
-                </span>
-                {health.services.mongodb.status === 'connected' ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                ) : (
-                  <XCircle className="w-4 h-4 text-red-600" />
-                )}
-              </div>
-              <p className="text-xl font-bold capitalize text-[#0F172A]">{health.services.mongodb.status}</p>
-              <p className="text-xs text-[#64748B] mt-1">
-                Latency: {health.services.mongodb.latency_ms ?? 'N/A'} ms
-              </p>
-            </div>
+            {/* Screen 4: User Profile */}
+            <Route
+              path="/u/:username"
+              element={
+                <PlaceholderPage
+                  title="User Profile & Content Tabs"
+                  personality="Profiles & Creator Media (70% Media, Structured)"
+                  milestone="Checkpoint 2.6 — Screen 4"
+                  reference="instagram_DESIGN.md"
+                  description="Identity hub with 120px avatar, follower counts, optimistic follow toggle, and content tabs."
+                />
+              }
+            />
 
-            {/* Redis */}
-            <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-[#64748B] uppercase tracking-wider flex items-center gap-1.5">
-                  <Zap className="w-4 h-4 text-amber-600" /> Redis Accelerator
-                </span>
-                {health.services.redis.status === 'connected' ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                ) : (
-                  <AlertTriangle className="w-4 h-4 text-amber-500" />
-                )}
-              </div>
-              <p className="text-xl font-bold capitalize text-[#0F172A]">{health.services.redis.status}</p>
-              <p className="text-xs text-[#64748B] mt-1">
-                {health.services.redis.status === 'connected'
-                  ? `Latency: ${health.services.redis.latency_ms ?? 'N/A'} ms`
-                  : 'Degraded Fallback Active'}
-              </p>
-            </div>
-          </div>
-        )}
-      </section>
+            {/* Screen 5: Community Hub */}
+            <Route
+              path="/c/:communityId"
+              element={
+                <PlaceholderPage
+                  title="Community Hub"
+                  personality="Discussion & Community"
+                  milestone="Checkpoint 2.7 — Screen 5"
+                  reference="reddit_DESIGN.md"
+                  description="Dedicated topical space with community header banner, member count, scoped feed, and rules sidebar."
+                />
+              }
+            />
 
-      <footer className="text-center text-xs text-[#94A3B8]">
-        Fastify 5 + TypeBox 0.34 + React 19 + Tailwind CSS + MongoDB + Redis
-      </footer>
-    </div>
+            {/* Screen 6: Universal Search */}
+            <Route
+              path="/search"
+              element={
+                <PlaceholderPage
+                  title="Universal Search"
+                  personality="Utility & Management"
+                  milestone="Checkpoint 2.8 — Screen 6"
+                  reference="meta_DESIGN.md"
+                  description="Multi-entity search with debounced querying and tabbed filters across posts, communities, and people."
+                />
+              }
+            />
+
+            {/* Supporting Surface: Saved Collections */}
+            <Route
+              path="/saved"
+              element={
+                <PlaceholderPage
+                  title="Saved & Collections"
+                  personality="Visual Discovery & Personal Library"
+                  milestone="Supporting Surface (Milestone 4)"
+                  reference="pinterest_DESIGN.md"
+                  description="Personal curation library for saved visual pins and bookmarked discussions."
+                />
+              }
+            />
+
+            {/* Supporting Surface: Community Directory */}
+            <Route
+              path="/communities"
+              element={
+                <PlaceholderPage
+                  title="Community Directory"
+                  personality="Utility & Management"
+                  milestone="Supporting Surface (Milestone 4)"
+                  reference="reddit_DESIGN.md"
+                  description="Curated catalog of topical communities across systems, algorithms, hardware, and design."
+                />
+              }
+            />
+
+            {/* Repurposed Milestone 1 Diagnostics */}
+            <Route path="/diagnostics" element={<DiagnosticsView />} />
+          </Routes>
+        </AppLayout>
+      </RouterProvider>
+    </ErrorBoundary>
   );
 }
 

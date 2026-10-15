@@ -43,3 +43,5 @@ Thumbs.db
 
 # TypeScript build info cache
 *.tsbuildinfo
+packages/frontend/vite.config.js
+packages/frontend/vite.config.d.ts
