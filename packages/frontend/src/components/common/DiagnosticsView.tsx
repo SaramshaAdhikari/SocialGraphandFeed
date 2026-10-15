@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, ApiClientError } from '../../api/client';
+import { api, ApiClientError } from '../../api';
 import type { HealthStatus } from '@socialgraph/shared';
 import { Activity, Database, Server, Zap, CheckCircle2, AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
 import { Button } from '../ui/Button';
@@ -37,7 +37,18 @@ export function DiagnosticsView() {
           <Activity className="w-5 h-5 text-[#2563EB]" />
           <div>
             <h1 className="text-lg font-semibold text-[#0F172A]">Core Foundation Diagnostics</h1>
-            <p className="text-xs text-[#64748B]">Real-time connectivity to Fastify, MongoDB, and Redis</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-xs text-[#64748B]">Real-time connectivity to Fastify, MongoDB, and Redis</p>
+              <span
+                className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                  api.dataSource === 'mock'
+                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                    : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                }`}
+              >
+                Data Source: {api.dataSource.toUpperCase()}
+              </span>
+            </div>
           </div>
         </div>
         <Button
