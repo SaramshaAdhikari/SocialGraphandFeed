@@ -1,26 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="100%" height="100%">
   <defs>
-    <linearGradient id="bgSara" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#701A75" />
-      <stop offset="100%" stop-color="#4A044E" />
-    </linearGradient>
-    <linearGradient id="accentSara" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#E879F9" />
-      <stop offset="100%" stop-color="#C026D3" />
+    <clipPath id="circleClipSara">
+      <circle cx="80" cy="80" r="76" />
+    </clipPath>
+    <linearGradient id="saraBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDF4FF" />
+      <stop offset="100%" stop-color="#F5D0FE" />
     </linearGradient>
   </defs>
-  <rect width="128" height="128" rx="64" fill="url(#bgSara)" />
-  <!-- Shoulders -->
-  <path d="M24 116 C24 94, 42 86, 64 86 C86 86, 104 94, 104 116 Z" fill="url(#accentSara)" opacity="0.9" />
-  <!-- Neck -->
-  <rect x="56" y="70" width="16" height="20" rx="4" fill="#FDF4FF" opacity="0.9" />
-  <!-- Head -->
-  <ellipse cx="64" cy="54" rx="21" ry="23" fill="#FDF4FF" />
-  <!-- Sleek Bob Hair -->
-  <path d="M38 52 C38 28, 50 22, 64 22 C78 22, 90 28, 90 52 C90 70, 88 74, 82 72 C84 62, 84 46, 80 36 C76 28, 68 28, 64 28 C58 28, 52 30, 48 38 C44 46, 44 62, 46 72 C40 74, 38 70, 38 52 Z" fill="#A21CAF" />
-  <!-- Creative Geometry Badge -->
-  <g transform="translate(86, 20)">
-    <circle cx="12" cy="12" r="12" fill="#D946EF" opacity="0.3" />
-    <rect x="7" y="7" width="10" height="10" rx="2" fill="none" stroke="#F0ABFC" stroke-width="1.8" transform="rotate(45 12 12)" />
+  <circle cx="80" cy="80" r="76" fill="url(#saraBg)" />
+  <g clip-path="url(#circleClipSara)">
+    <!-- Lavender Knit Top -->
+    <path d="M22 160 C26 128, 48 116, 80 116 C112 116, 134 128, 138 160 Z" fill="#9333EA" />
+    <!-- Rounded Neckline -->
+    <path d="M64 116 C64 126, 96 126, 96 116 Z" fill="#7E22CE" />
+    <!-- Neck -->
+    <rect x="71" y="92" width="18" height="26" fill="#F8CEAB" />
+    <!-- Head / Chin -->
+    <path d="M55 62 C55 86, 65 102, 80 102 C95 102, 105 86, 105 62 C105 44, 95 38, 80 38 C65 38, 55 44, 55 62 Z" fill="#FDE2C8" />
+    <!-- Ears & Little Gold Hoops -->
+    <ellipse cx="53" cy="70" rx="4" ry="7" fill="#F8CEAB" />
+    <ellipse cx="107" cy="70" rx="4" ry="7" fill="#F8CEAB" />
+    <circle cx="53" cy="75" r="2.5" fill="none" stroke="#F59E0B" stroke-width="1.5" />
+    <circle cx="107" cy="75" r="2.5" fill="none" stroke="#F59E0B" stroke-width="1.5" />
+    <!-- Sparkly Expressive Eyes -->
+    <ellipse cx="69" cy="67" rx="3.5" ry="3.8" fill="#18181B" />
+    <ellipse cx="91" cy="67" rx="3.5" ry="3.8" fill="#18181B" />
+    <circle cx="68" cy="65.5" r="1.3" fill="#FFFFFF" />
+    <circle cx="90" cy="65.5" r="1.3" fill="#FFFFFF" />
+    <!-- Natural Eyebrows -->
+    <path d="M63 59 C67 57, 72 58, 75 60" stroke="#27272A" stroke-width="2" stroke-linecap="round" fill="none" />
+    <path d="M85 60 C88 58, 93 57, 97 59" stroke="#27272A" stroke-width="2" stroke-linecap="round" fill="none" />
+    <!-- Nose -->
+    <path d="M80 67 L80 75 L83 77" stroke="#DCA272" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <!-- Bright Cheerful Smile -->
+    <path d="M72 85 C76 92, 84 92, 88 85" stroke="#BE185D" stroke-width="2.5" stroke-linecap="round" fill="none" />
+    <!-- Dark Glossy Hair with Soft Wave -->
+    <path d="M46 56 C40 36, 52 22, 80 22 C108 22, 120 36, 114 56 C114 74, 110 88, 106 92 C104 74, 106 60, 104 48 C100 34, 90 30, 80 30 C70 30, 60 34, 56 48 C54 60, 56 74, 54 92 C50 88, 46 74, 46 56 Z" fill="#18181B" />
+    <path d="M58 40 C66 32, 78 30, 92 34 C82 36, 72 40, 64 46 Z" fill="#3F3F46" />
   </g>
 </svg>
