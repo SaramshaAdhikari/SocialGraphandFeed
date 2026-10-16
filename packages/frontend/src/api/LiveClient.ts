@@ -116,6 +116,16 @@ export class LiveClient implements ISocialGraphApi {
     return this.request<UserProfile>(`/api/v1/users/${username}`);
   }
 
+  public async getUserPosts(username: string, query: FeedQuery = {}): Promise<FeedResponse> {
+    const params = new URLSearchParams();
+    if (query.cursor) params.set('cursor', query.cursor);
+    if (query.limit) params.set('limit', String(query.limit));
+    if (query.sort) params.set('sort', query.sort);
+
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return this.request<FeedResponse>(`/api/v1/users/${username}/posts${qs}`);
+  }
+
   public async toggleFollow(targetUserId: string): Promise<FollowToggleResponse> {
     return this.request<FollowToggleResponse>(`/api/v1/users/${targetUserId}/follow`, {
       method: 'POST',

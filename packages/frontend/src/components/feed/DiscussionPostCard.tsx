@@ -77,17 +77,17 @@ export function DiscussionPostCard({
             ) : null}
 
             <div className="flex items-center gap-1.5">
-              <Avatar
-                src={post.author.avatar_url}
-                alt={post.author.display_name}
-                size="xs"
-              />
-              <span>Posted by</span>
               <Link
                 to={`/u/${post.author.username}`}
-                className="font-medium text-[#475569] dark:text-[#CBD5E1] hover:text-primary hover:underline"
+                className="flex items-center gap-1.5 font-medium text-[#475569] dark:text-[#CBD5E1] hover:text-primary group/author focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-md"
               >
-                u/{post.author.username}
+                <Avatar
+                  src={post.author.avatar_url}
+                  alt={post.author.display_name}
+                  size="xs"
+                />
+                <span className="text-[#64748B] dark:text-[#94A3B8] font-normal">Posted by</span>
+                <span className="group-hover/author:underline">u/{post.author.username}</span>
               </Link>
             </div>
 

@@ -40,6 +40,7 @@ export interface ISocialGraphApi {
 
   // Social Graph (Users & Communities)
   getUserProfile(username: string): Promise<UserProfile>;
+  getUserPosts(username: string, query?: FeedQuery): Promise<FeedResponse>;
   toggleFollow(targetUserId: string): Promise<FollowToggleResponse>;
   getCommunity(communitySlug: string): Promise<Community>;
   getCommunityFeed(communitySlug: string, query?: FeedQuery): Promise<FeedResponse>;

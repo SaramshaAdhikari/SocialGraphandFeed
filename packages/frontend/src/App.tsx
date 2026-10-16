@@ -3,6 +3,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { HomePage } from './pages/HomePage';
 import { DiscoverPage } from './pages/DiscoverPage';
+import { UserProfilePage } from './pages/UserProfilePage';
 import { SettingsAppearancePage } from './pages/SettingsAppearancePage';
 import { DiagnosticsView } from './components/common/DiagnosticsView';
 import { PlaceholderPage } from './components/common/PlaceholderPage';
@@ -46,18 +47,7 @@ export function App() {
             />
 
             {/* Screen 4: User Profile */}
-            <Route
-              path="/u/:username"
-              element={
-                <PlaceholderPage
-                  title="User Profile & Content Tabs"
-                  personality="Profiles & Creator Media (70% Media, Structured)"
-                  milestone="Checkpoint 2.6 — Screen 4"
-                  reference="instagram_DESIGN.md"
-                  description="Identity hub with 120px avatar, follower counts, optimistic follow toggle, and content tabs."
-                />
-              }
-            />
+            <Route path="/u/:username" element={<UserProfilePage />} />
 
             {/* Screen 5: Community Hub */}
             <Route

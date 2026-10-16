@@ -334,6 +334,54 @@ export class MockAdapter implements ISocialGraphApi {
     return user;
   }
 
+  public async getUserPosts(username: string, query: FeedQuery = {}): Promise<FeedResponse> {
+    await this.delay(`/api/v1/users/${username}/posts`);
+    const user = Object.values(this.users).find((u) => u.username === username);
+    if (!user) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/not-found',
+        title: 'User Not Found',
+        status: 404,
+        detail: `User with username ${username} not found`,
+        code: 'USER_NOT_FOUND',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const { limit = 10, cursor } = query;
+    let items = this.posts.filter(
+      (p) => p.author.username === username || p.author.id === user.id
+    );
+
+    // Profile posts: newest first
+    items.sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    let startIndex = 0;
+    if (cursor) {
+      const foundIdx = items.findIndex((p) => p.id === cursor);
+      if (foundIdx >= 0) {
+        startIndex = foundIdx + 1;
+      }
+    }
+
+    const page = items.slice(startIndex, startIndex + limit);
+    const hasMore = startIndex + limit < items.length;
+    const nextCursor = hasMore && page.length > 0 ? page[page.length - 1].id : null;
+
+    return {
+      success: true,
+      data: page,
+      next_cursor: nextCursor,
+      has_more: hasMore,
+      meta: {
+        count: page.length,
+        server_execution_time_ms: 2.4,
+      },
+    };
+  }
+
   public async toggleFollow(targetUserId: string): Promise<FollowToggleResponse> {
     await this.delay(`/api/v1/users/${targetUserId}/follow`);
     const user = this.users[targetUserId];

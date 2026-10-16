@@ -54,36 +54,38 @@ export function VisualPinCard({
       {/* Author & Context Header */}
       <div className="p-3 sm:p-4 flex items-center justify-between gap-3 border-b border-[#F8FAFC] dark:border-[#262B36]">
         <div className="flex items-center gap-2.5 min-w-0">
-          <Avatar
-            src={post.author.avatar_url}
-            alt={post.author.display_name}
-            size="sm"
-          />
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <Link
-                to={`/u/${post.author.username}`}
-                className="font-semibold text-xs sm:text-sm text-[#0F172A] dark:text-[#F8FAFC] hover:text-primary truncate"
-              >
-                {post.author.display_name}
-              </Link>
-              {post.author.is_verified && (
-                <span
-                  title="Verified Creator"
-                  className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-primary text-white text-[9px] font-bold"
-                >
-                  ✓
+          <Link
+            to={`/u/${post.author.username}`}
+            className="flex items-center gap-2.5 min-w-0 group/author focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded-lg p-0.5 -m-0.5"
+          >
+            <Avatar
+              src={post.author.avatar_url}
+              alt={post.author.display_name}
+              size="sm"
+            />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-xs sm:text-sm text-[#0F172A] dark:text-[#F8FAFC] group-hover/author:text-primary truncate">
+                  {post.author.display_name}
                 </span>
-              )}
+                {post.author.is_verified && (
+                  <span
+                    title="Verified Creator"
+                    className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-primary text-white text-[9px] font-bold"
+                  >
+                    ✓
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 text-[11px] text-[#94A3B8]">
+                <span>@{post.author.username}</span>
+                <span>•</span>
+                <time dateTime={post.created_at}>
+                  {formatRelativeTime(post.created_at)}
+                </time>
+              </div>
             </div>
-            <div className="flex items-center gap-1 text-[11px] text-[#94A3B8]">
-              <span>@{post.author.username}</span>
-              <span>•</span>
-              <time dateTime={post.created_at}>
-                {formatRelativeTime(post.created_at)}
-              </time>
-            </div>
-          </div>
+          </Link>
         </div>
 
         {post.community_slug && (
