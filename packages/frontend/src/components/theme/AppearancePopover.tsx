@@ -131,7 +131,7 @@ export function AppearancePopover({ isOpen, onClose }: AppearancePopoverProps) {
           <div
             role="radiogroup"
             aria-label="Color Palette"
-            className="grid grid-cols-4 gap-2.5 sm:gap-3"
+            className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-2.5 max-h-72 overflow-y-auto pr-1"
           >
             {allPalettes.map((p) => {
               const isSelected = paletteId === p.id;

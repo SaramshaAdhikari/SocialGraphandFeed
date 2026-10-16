@@ -3,6 +3,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { HomePage } from './pages/HomePage';
 import { DiscoverPage } from './pages/DiscoverPage';
+import { SettingsAppearancePage } from './pages/SettingsAppearancePage';
 import { DiagnosticsView } from './components/common/DiagnosticsView';
 import { PlaceholderPage } from './components/common/PlaceholderPage';
 import { ThemeProvider } from './theme';
@@ -113,6 +114,10 @@ export function App() {
                 />
               }
             />
+
+            {/* Settings & Appearance Personalization */}
+            <Route path="/settings" element={<SettingsAppearancePage />} />
+            <Route path="/settings/appearance" element={<SettingsAppearancePage />} />
 
             {/* Repurposed Milestone 1 Diagnostics */}
             <Route path="/diagnostics" element={<DiagnosticsView />} />

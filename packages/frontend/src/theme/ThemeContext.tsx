@@ -31,7 +31,7 @@ function getStoredMode(): AppearanceMode {
 
 function getStoredPalette(): PaletteId {
   if (typeof window === 'undefined' || !window.localStorage) {
-    return 'sovereign-blue';
+    return 'royal-blue';
   }
   try {
     const stored = window.localStorage.getItem(THEME_PALETTE_STORAGE_KEY) as PaletteId | null;
@@ -41,7 +41,7 @@ function getStoredPalette(): PaletteId {
   } catch {
     // Ignore storage errors
   }
-  return 'sovereign-blue';
+  return 'royal-blue';
 }
 
 export interface ThemeProviderProps {
@@ -80,7 +80,7 @@ export function ThemeProvider({
   }, [mode, systemPreference]);
 
   const palette = useMemo(() => {
-    return PALETTES[paletteId] || PALETTES['sovereign-blue'];
+    return PALETTES[paletteId] || PALETTES['royal-blue'];
   }, [paletteId]);
 
   // Apply CSS variables and DOM data-attributes
@@ -150,8 +150,8 @@ export function ThemeProvider({
 const DEFAULT_THEME_VALUE: ThemeContextValue = {
   mode: 'light',
   resolvedTheme: 'light',
-  paletteId: 'sovereign-blue',
-  palette: PALETTES['sovereign-blue'],
+  paletteId: 'royal-blue',
+  palette: PALETTES['royal-blue'],
   allPalettes: PALETTE_LIST,
   setMode: () => {},
   setPaletteId: () => {},

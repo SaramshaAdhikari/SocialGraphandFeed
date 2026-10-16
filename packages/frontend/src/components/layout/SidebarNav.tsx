@@ -1,4 +1,4 @@
-import { Home, Compass, Users, Search, Bookmark, User, Activity } from 'lucide-react';
+import { Home, Compass, Users, Search, Bookmark, User, Activity, Palette } from 'lucide-react';
 import { Link, useRouter } from '../../router/Router';
 
 interface NavItem {
@@ -15,6 +15,7 @@ const navItems: NavItem[] = [
   { label: 'Search', to: '/search', icon: Search },
   { label: 'Saved', to: '/saved', icon: Bookmark },
   { label: 'Profile', to: '/u/alex_dev', icon: User },
+  { label: 'Appearance', to: '/settings/appearance', icon: Palette },
   { label: 'Diagnostics', to: '/diagnostics', icon: Activity },
 ];
 

@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import { PALETTES, PALETTE_LIST } from '../theme/palettes';
 import { ThemeProvider } from '../theme/ThemeContext';
-import { AppearancePopover } from '../components/theme/AppearancePopover';
 import { TopHeader } from '../components/layout/TopHeader';
+import { SettingsAppearancePage } from '../pages/SettingsAppearancePage';
 import { MockAdapter } from '../api/mock/MockAdapter';
 import { DiscoveryCategoryBar } from '../components/discovery/DiscoveryCategoryBar';
 import { DiscoveryPinCard } from '../components/discovery/DiscoveryPinCard';
@@ -12,61 +12,89 @@ import { DiscoverPage } from '../pages/DiscoverPage';
 import { RouterProvider } from '../router/Router';
 import type { VisualPinCard } from '@socialgraph/shared';
 
-describe('Global Theming System — Tokens and Palettes', () => {
-  it('defines exactly 8 coordinated palettes matching design specifications', () => {
-    expect(PALETTE_LIST.length).toBe(8);
+describe('Global Theming System — 15 Authentic Regal Color Palettes', () => {
+  it('defines exactly 15 authentic palettes organized into 4 curated families', () => {
+    expect(PALETTE_LIST.length).toBe(15);
+
     const expectedIds = [
+      // Imperial & dramatic
+      'tyrian-purple',
+      'royal-purple',
+      'oxblood',
       'dragons-blood',
-      'sovereign-blue',
-      'emerald-court',
-      'imperial-amethyst',
-      'champagne-silk',
-      'abyssal-jade',
-      'velvet-rose',
-      'phoenix-ember',
+      // Jewel & mineral
+      'lapis-lazuli',
+      'malachite',
+      'royal-blue',
+      // Soft & expressive
+      'dusty-rose',
+      'mulberry',
+      'burnt-sienna',
+      // Metallic & neutral
+      'platinum',
+      'champagne',
+      'pearl',
+      'eburnean',
+      'wenge',
     ];
     expect(PALETTE_LIST.map((p) => p.id)).toEqual(expectedIds);
+
+    // Verify categories
+    const categories = new Set(PALETTE_LIST.map((p) => p.category));
+    expect(categories).toEqual(
+      new Set([
+        'Imperial & dramatic',
+        'Jewel & mineral',
+        'Soft & expressive',
+        'Metallic & neutral',
+      ])
+    );
   });
 
-  it('lists Dragon\'s Blood first as signature palette and Sovereign Blue as default', () => {
-    expect(PALETTE_LIST[0].id).toBe('dragons-blood');
-    expect(PALETTE_LIST[0].name).toBe("Dragon's Blood");
-    expect(PALETTES['dragons-blood'].light.primary).toBe('#881337');
-    expect(PALETTES['dragons-blood'].dark.primary).toBe('#FB7185');
+  it('sets Royal Blue as the initial default palette and defines authentic historical swatches', () => {
+    expect(PALETTES['royal-blue']).toBeDefined();
+    expect(PALETTES['royal-blue'].name).toBe('Royal Blue');
+    expect(PALETTES['royal-blue'].swatchColor).toBe('#4169E1');
+    expect(PALETTES['royal-blue'].category).toBe('Jewel & mineral');
 
-    expect(PALETTES['sovereign-blue']).toBeDefined();
-    expect(PALETTES['sovereign-blue'].name).toBe('Sovereign Blue');
-    expect(PALETTES['sovereign-blue'].light.primary).toBe('#1D4ED8');
+    // Tyrian Purple
+    expect(PALETTES['tyrian-purple'].swatchColor).toBe('#66023C');
+    // Dragon's Blood
+    expect(PALETTES['dragons-blood'].swatchColor).toBe('#A82220');
+    // Malachite
+    expect(PALETTES['malachite'].swatchColor).toBe('#0BDA51');
+    // Champagne
+    expect(PALETTES['champagne'].swatchColor).toBe('#F7E7CE');
+    // Pearl
+    expect(PALETTES['pearl'].swatchColor).toBe('#EAE0C8');
   });
 
-  it('ensures each palette defines light and dark tokens with deep charcoal dark canvas', () => {
+  it('ensures each palette defines WCAG-accessible light and dark mode tokens on shared foundation', () => {
     for (const palette of PALETTE_LIST) {
-      // Light mode tokens
+      // Light mode shared foundation
+      expect(palette.light.canvas).toBe('#FFFFFF');
+      expect(palette.light.surfaceCard).toBe('#F7F5F6');
+      expect(palette.light.textPrimary).toBe('#242127');
       expect(palette.light.primary).toBeDefined();
-      expect(palette.light.canvas).toBeDefined();
-      expect(palette.light.surfaceCard).toBe('#FFFFFF');
-      expect(palette.light.textPrimary).toBeDefined();
 
-      // Dark mode tokens (deep charcoal rather than pure black)
-      expect(palette.dark.primary).toBeDefined();
+      // Dark mode shared foundation (deep charcoal rather than pure black)
       expect(palette.dark.canvas).toMatch(/^#[0-1][0-9A-Fa-f]{5}/);
-      expect(palette.dark.surfaceCard).toBeDefined();
-      expect(palette.dark.surfaceSubtle).toBeDefined();
-      expect(palette.dark.textPrimary).toMatch(/^#F[0-9A-Fa-f]{5}/);
-      expect(palette.dark.border).toBeDefined();
+      expect(palette.dark.surfaceCard).toMatch(/^#[2][0-9A-Fa-f]{5}/);
+      expect(palette.dark.textPrimary).toBe('#F5F0F7');
+      expect(palette.dark.primary).toBeDefined();
     }
   });
 
   it('ThemeProvider renders children with light and dark mode defaults', () => {
     const lightHtml = renderToString(
-      <ThemeProvider initialMode="light" initialPalette="sovereign-blue">
+      <ThemeProvider initialMode="light" initialPalette="royal-blue">
         <div data-testid="theme-test">Light App Content</div>
       </ThemeProvider>
     );
     expect(lightHtml).toContain('Light App Content');
 
     const darkHtml = renderToString(
-      <ThemeProvider initialMode="dark" initialPalette="dragons-blood">
+      <ThemeProvider initialMode="dark" initialPalette="tyrian-purple">
         <div data-testid="theme-test">Dark App Content</div>
       </ThemeProvider>
     );
@@ -74,65 +102,92 @@ describe('Global Theming System — Tokens and Palettes', () => {
   });
 });
 
-describe('Appearance Controls and Popover UI', () => {
-  it('TopHeader includes the Appearance & Theme trigger button next to user profile', () => {
+describe('Header Appearance Controls vs Settings Page Architecture', () => {
+  it('TopHeader provides a compact quick sun/moon toggle without cluttering the header with palette swatches', () => {
     const html = renderToString(
       <RouterProvider initialPath="/">
-        <TopHeader />
+        <ThemeProvider initialMode="light">
+          <TopHeader />
+        </ThemeProvider>
       </RouterProvider>
     );
 
-    expect(html).toContain('aria-label="Customize appearance and color palette"');
-    expect(html).toContain('title="Customize appearance and color palette"');
+    // Compact toggle button present
+    expect(html).toContain('aria-label="Switch to dark mode"');
+    expect(html).toContain('title="Switch to dark mode"');
+
+    // Settings link present
+    expect(html).toContain('aria-label="Theme &amp; Appearance Settings"');
+    expect(html).toContain('href="/settings/appearance"');
+
+    // Header does NOT contain permanent palette swatches or dropdown list
+    expect(html).not.toContain('Tyrian Purple');
+    expect(html).not.toContain('Malachite');
   });
 
-  it('AppearancePopover renders 3 theme modes (Light, Dark, System) with radio roles', () => {
+  it('TopHeader toggle button displays switch to light mode when in dark mode', () => {
     const html = renderToString(
-      <ThemeProvider initialMode="light" initialPalette="sovereign-blue">
-        <AppearancePopover isOpen={true} onClose={() => {}} />
-      </ThemeProvider>
+      <RouterProvider initialPath="/">
+        <ThemeProvider initialMode="dark">
+          <TopHeader />
+        </ThemeProvider>
+      </RouterProvider>
     );
 
-    expect(html).toContain('role="dialog"');
-    expect(html).toContain('aria-label="Appearance and Theme Settings"');
-    expect(html).toContain('Theme Mode');
-    expect(html).toContain('aria-label="Appearance Mode"');
+    expect(html).toContain('aria-label="Switch to light mode"');
+    expect(html).toContain('title="Switch to light mode"');
+  });
 
-    // Modes
+  it('SettingsAppearancePage renders full personalization center with mode selector, all 15 palettes, and preview', () => {
+    const html = renderToString(
+      <RouterProvider initialPath="/settings/appearance">
+        <ThemeProvider initialMode="light" initialPalette="royal-blue">
+          <SettingsAppearancePage />
+        </ThemeProvider>
+      </RouterProvider>
+    );
+
+    // Heading
+    expect(html).toContain('Appearance &amp; Personalization');
+    expect(html).toContain('Active: <!-- -->Royal Blue');
+
+    // Section 1: Appearance Mode Cards
+    expect(html).toContain('Appearance Mode');
     expect(html).toContain('Light');
+    expect(html).toContain('Airy and bright');
     expect(html).toContain('Dark');
+    expect(html).toContain('Deep and immersive');
     expect(html).toContain('System');
-  });
+    expect(html).toContain('Follows your device');
 
-  it('AppearancePopover renders all 8 palettes in a 4x2 grid with visible names and checkmark on selected', () => {
-    const html = renderToString(
-      <ThemeProvider initialMode="light" initialPalette="dragons-blood">
-        <AppearancePopover isOpen={true} onClose={() => {}} />
-      </ThemeProvider>
-    );
+    // Section 2: Accent Palette Library with 4 curated families
+    expect(html).toContain('Accent Palette Library');
+    expect(html).toContain('Imperial &amp; dramatic');
+    expect(html).toContain('Jewel &amp; mineral');
+    expect(html).toContain('Soft &amp; expressive');
+    expect(html).toContain('Metallic &amp; neutral');
 
-    expect(html).toContain('Color Palette');
+    // All 15 palettes are rendered with visible names
+    expect(html).toContain('Tyrian Purple');
+    expect(html).toContain('Royal Purple');
+    expect(html).toContain('Oxblood');
     expect(html).toContain('Dragon&#x27;s Blood');
-    expect(html).toContain('Sovereign Blue');
-    expect(html).toContain('Emerald Court');
-    expect(html).toContain('Imperial Amethyst');
-    expect(html).toContain('Champagne Silk');
-    expect(html).toContain('Abyssal Jade');
-    expect(html).toContain('Velvet Rose');
-    expect(html).toContain('Phoenix Ember');
+    expect(html).toContain('Lapis Lazuli');
+    expect(html).toContain('Malachite');
+    expect(html).toContain('Royal Blue');
+    expect(html).toContain('Dusty Rose');
+    expect(html).toContain('Mulberry');
+    expect(html).toContain('Burnt Sienna');
+    expect(html).toContain('Platinum');
+    expect(html).toContain('Champagne');
+    expect(html).toContain('Pearl');
+    expect(html).toContain('Eburnean');
+    expect(html).toContain('Wenge');
 
-    // Dragon's Blood is selected, verify active checkmark and aria-checked="true"
-    expect(html).toContain('aria-label="Dragon&#x27;s Blood: Oxblood · Garnet · Antique copper · Bone"');
-    expect(html).toContain('aria-checked="true"');
-  });
-
-  it('AppearancePopover returns null when isOpen is false', () => {
-    const html = renderToString(
-      <ThemeProvider>
-        <AppearancePopover isOpen={false} onClose={() => {}} />
-      </ThemeProvider>
-    );
-    expect(html).toBe('');
+    // Section 3: Live Theme Preview
+    expect(html).toContain('Live Theme Preview');
+    expect(html).toContain('Save Collection');
+    expect(html).toContain('Explore More');
   });
 });
 

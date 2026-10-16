@@ -1,15 +1,28 @@
 export type AppearanceMode = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
 
+export type PaletteCategory =
+  | 'Imperial & dramatic'
+  | 'Jewel & mineral'
+  | 'Soft & expressive'
+  | 'Metallic & neutral';
+
 export type PaletteId =
+  | 'tyrian-purple'
+  | 'royal-purple'
+  | 'oxblood'
   | 'dragons-blood'
-  | 'sovereign-blue'
-  | 'emerald-court'
-  | 'imperial-amethyst'
-  | 'champagne-silk'
-  | 'abyssal-jade'
-  | 'velvet-rose'
-  | 'phoenix-ember';
+  | 'lapis-lazuli'
+  | 'malachite'
+  | 'royal-blue'
+  | 'dusty-rose'
+  | 'mulberry'
+  | 'burnt-sienna'
+  | 'platinum'
+  | 'champagne'
+  | 'pearl'
+  | 'eburnean'
+  | 'wenge';
 
 export interface PaletteModeTokens {
   // Primary accent & interaction tokens
@@ -37,9 +50,10 @@ export interface PaletteModeTokens {
 export interface PaletteDefinition {
   id: PaletteId;
   name: string;
+  category: PaletteCategory;
   subtitle: string;
   description: string;
-  swatchColor: string; // The representative color shown on the swatch button
+  swatchColor: string; // The authentic anchor color representing the pigment/mineral
   light: PaletteModeTokens;
   dark: PaletteModeTokens;
 }
