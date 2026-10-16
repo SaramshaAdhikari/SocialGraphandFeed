@@ -3,6 +3,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { HomePage } from './pages/HomePage';
 import { DiscoverPage } from './pages/DiscoverPage';
+import { PostDetailPage } from './pages/PostDetailPage';
 import { UserProfilePage } from './pages/UserProfilePage';
 import { SettingsAppearancePage } from './pages/SettingsAppearancePage';
 import { DiagnosticsView } from './components/common/DiagnosticsView';
@@ -32,19 +33,8 @@ export function App() {
               {/* Screen 2: Discover */}
               <Route path="/explore" element={<DiscoverPage />} />
 
-            {/* Screen 3: Post Detail & Threaded Comments */}
-            <Route
-              path="/post/:postId"
-              element={
-                <PlaceholderPage
-                  title="Post Detail & Discussion"
-                  personality="Discussion & Community"
-                  milestone="Checkpoint 2.5 — Screen 3"
-                  reference="reddit_DESIGN.md & instagram_DESIGN.md"
-                  description="Focused reading canvas with full media viewer and collapsible nested comment tree with branch guide lines."
-                />
-              }
-            />
+              {/* Screen 3: Post Detail & Threaded Comments */}
+              <Route path="/post/:postId" element={<PostDetailPage />} />
 
             {/* Screen 4: User Profile */}
             <Route path="/u/:username" element={<UserProfilePage />} />
