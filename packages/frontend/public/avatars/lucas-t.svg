@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgLucas" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#312E81" />
+      <stop offset="100%" stop-color="#1E1B4B" />
+    </linearGradient>
+    <linearGradient id="accentLucas" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818CF8" />
+      <stop offset="100%" stop-color="#6366F1" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="64" fill="url(#bgLucas)" />
+  <!-- Shoulders -->
+  <path d="M24 116 C24 94, 42 86, 64 86 C86 86, 104 94, 104 116 Z" fill="url(#accentLucas)" opacity="0.9" />
+  <!-- Neck -->
+  <rect x="56" y="70" width="16" height="20" rx="4" fill="#F1F5F9" opacity="0.85" />
+  <!-- Head -->
+  <ellipse cx="64" cy="54" rx="22" ry="24" fill="#F1F5F9" />
+  <!-- Short Dark Hair -->
+  <path d="M42 48 C42 32, 52 26, 64 26 C76 26, 86 32, 86 48 C80 34, 72 32, 64 32 C56 32, 48 34, 42 48 Z" fill="#4338CA" />
+  <!-- Eyes -->
+  <circle cx="53" cy="53" r="3" fill="#1E1B4B" />
+  <circle cx="75" cy="53" r="3" fill="#1E1B4B" />
+  <!-- Distributed Graph Badge -->
+  <g transform="translate(86, 20)">
+    <circle cx="12" cy="12" r="12" fill="#4F46E5" opacity="0.4" />
+    <circle cx="8" cy="8" r="2.5" fill="#C7D2FE" />
+    <circle cx="16" cy="10" r="2" fill="#A5B4FC" />
+    <circle cx="11" cy="16" r="2" fill="#A5B4FC" />
+    <line x1="8" y1="8" x2="16" y2="10" stroke="#C7D2FE" stroke-width="1.2" />
+    <line x1="8" y1="8" x2="11" y2="16" stroke="#C7D2FE" stroke-width="1.2" />
+    <line x1="16" y1="10" x2="11" y2="16" stroke="#C7D2FE" stroke-width="1.2" />
+  </g>
+</svg>

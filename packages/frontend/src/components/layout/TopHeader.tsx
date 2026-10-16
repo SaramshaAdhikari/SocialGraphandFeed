@@ -95,12 +95,12 @@ export function TopHeader() {
           <button
             type="button"
             onClick={() => setProfileMenuOpen((prev) => !prev)}
-            aria-label="User account menu for Alex Dev"
+            aria-label="User account menu for Alex Rivera"
             aria-haspopup="menu"
             aria-expanded={profileMenuOpen}
             className="flex items-center gap-2 p-1 sm:p-1.5 rounded-full hover:bg-[#F4F4F5] dark:hover:bg-[#262B36] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            <Avatar alt="Alex Dev" size="sm" />
+            <Avatar src="/avatars/alex-dev.svg" alt="Alex Rivera" size="sm" />
             <span className="hidden xl:inline-block text-xs font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
               u/alex_dev
             </span>
@@ -121,7 +121,7 @@ export function TopHeader() {
             >
               {/* User Identity Header */}
               <div className="px-3 py-2.5 border-b border-[#F1F5F9] dark:border-[#262B36] mb-1">
-                <p className="text-xs font-bold text-[#0F172A] dark:text-[#F8FAFC]">Alex Dev</p>
+                <p className="text-xs font-bold text-[#0F172A] dark:text-[#F8FAFC]">Alex Rivera</p>
                 <p className="text-[11px] text-[#94A3B8]">u/alex_dev</p>
               </div>
 

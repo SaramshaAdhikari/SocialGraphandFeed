@@ -81,9 +81,9 @@ describe('Checkpoint 2.1 — Shared UI Primitives', () => {
   });
 
   it('Avatar renders circular initials fallback and accessible role', () => {
-    const html = renderToString(<Avatar alt="Linus Torvalds" size="md" />);
+    const html = renderToString(<Avatar alt="Lucas Thorne" size="md" />);
     expect(html).toContain('role="img"');
-    expect(html).toContain('aria-label="Linus Torvalds"');
+    expect(html).toContain('aria-label="Lucas Thorne"');
     expect(html).toContain('LT');
     expect(html).toContain('rounded-full');
   });

@@ -57,7 +57,9 @@ export function ProfileHeader({
   }, [profile.created_at]);
 
   // Clean website URL display
-  const cleanWebsiteUrl = profile.website?.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const cleanWebsiteUrl = profile.website?.startsWith('/')
+    ? profile.website.replace(/^\//, '').replace(/\/$/, '')
+    : profile.website?.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
   return (
     <div

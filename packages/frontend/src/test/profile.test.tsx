@@ -21,16 +21,20 @@ describe('Screen 4 — User Profile: Mock Data & API Contract', () => {
     adapter = new MockAdapter({ simulatedLatencyMs: 0 });
   });
 
-  it('retrieves user profile for alex_dev (current user) and linus_t', async () => {
+  it('retrieves user profile for alex_dev (current user) and lucas_t', async () => {
     const alexProfile = await adapter.getUserProfile('alex_dev');
     expect(alexProfile.username).toBe('alex_dev');
-    expect(alexProfile.display_name).toBe('Alex Dev');
+    expect(alexProfile.display_name).toBe('Alex Rivera');
     expect(alexProfile.is_verified).toBe(true);
     expect(alexProfile.followers_count).toBeGreaterThan(0);
+    expect(alexProfile.website).toBe('/sites/alex-dev/');
+    expect(alexProfile.avatar_url).toBe('/avatars/alex-dev.svg');
 
-    const linusProfile = await adapter.getUserProfile('linus_t');
-    expect(linusProfile.username).toBe('linus_t');
-    expect(linusProfile.display_name).toBe('Linus Torvalds');
+    const lucasProfile = await adapter.getUserProfile('lucas_t');
+    expect(lucasProfile.username).toBe('lucas_t');
+    expect(lucasProfile.display_name).toBe('Lucas Thorne');
+    expect(lucasProfile.avatar_url).toBe('/avatars/lucas-t.svg');
+    expect(lucasProfile.website).toBeUndefined();
   });
 
   it('throws 404 ApiClientError when querying a nonexistent user profile', async () => {
@@ -45,12 +49,12 @@ describe('Screen 4 — User Profile: Mock Data & API Contract', () => {
   });
 
   it('retrieves user-specific posts via getUserPosts filtered by author', async () => {
-    const response = await adapter.getUserPosts('linus_t');
+    const response = await adapter.getUserPosts('lucas_t');
     expect(response.success).toBe(true);
     expect(response.data.length).toBeGreaterThan(0);
 
     for (const post of response.data) {
-      expect(post.author.username).toBe('linus_t');
+      expect(post.author.username).toBe('lucas_t');
     }
   });
 
@@ -59,15 +63,29 @@ describe('Screen 4 — User Profile: Mock Data & API Contract', () => {
   });
 
   it('toggles follow state and updates followers count', async () => {
-    const linus = await adapter.getUserProfile('linus_t');
-    const initialFollowers = linus.followers_count;
-    const initialFollowState = linus.is_following;
+    const lucas = await adapter.getUserProfile('lucas_t');
+    const initialFollowers = lucas.followers_count;
+    const initialFollowState = lucas.is_following;
 
-    const res = await adapter.toggleFollow(linus.id);
+    const res = await adapter.toggleFollow(lucas.id);
     expect(res.is_following).toBe(!initialFollowState);
     expect(res.followers_count).toBe(
       initialFollowState ? initialFollowers - 1 : initialFollowers + 1
     );
+  });
+
+  it('ensures all seeded users use safe, local vector avatars and internal demo sites', () => {
+    for (const user of Object.values(mockUsers)) {
+      // Must use local vector avatar
+      expect(user.avatar_url).toMatch(/^\/avatars\/[a-z0-9_-]+\.svg$/);
+      // If website present, must be internal demo site or example.com
+      if (user.website) {
+        expect(user.website.startsWith('/sites/') || user.website.includes('example.com')).toBe(true);
+        expect(user.website).not.toContain('kernel.org');
+        expect(user.website).not.toContain('alexdev.io');
+        expect(user.website).not.toContain('elenadesign.io');
+      }
+    }
   });
 });
 
@@ -84,14 +102,13 @@ describe('Screen 4 — User Profile: Header & Tabs UI Components', () => {
       </RouterProvider>
     );
 
-    expect(html).toContain('Linus Torvalds');
-    expect(html).toContain('linus_t');
-    expect(html).toContain('Distributed systems &amp; kernel hacker');
-    expect(html).toContain('kernel.org');
+    expect(html).toContain('Lucas Thorne');
+    expect(html).toContain('lucas_t');
+    expect(html).toContain('Distributed systems researcher');
     expect(html).toContain('Followers');
     expect(html).toContain('Following');
     expect(html).toContain('Posts');
-    expect(html).toContain('Following'); // Linus is_following: true in mock fixtures
+    expect(html).toContain('Following'); // Lucas is_following: true in mock fixtures
   });
 
   it('renders "Edit Profile" button when viewing own profile (isSelf = true)', () => {

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgSara" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#701A75" />
+      <stop offset="100%" stop-color="#4A044E" />
+    </linearGradient>
+    <linearGradient id="accentSara" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E879F9" />
+      <stop offset="100%" stop-color="#C026D3" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="64" fill="url(#bgSara)" />
+  <!-- Shoulders -->
+  <path d="M24 116 C24 94, 42 86, 64 86 C86 86, 104 94, 104 116 Z" fill="url(#accentSara)" opacity="0.9" />
+  <!-- Neck -->
+  <rect x="56" y="70" width="16" height="20" rx="4" fill="#FDF4FF" opacity="0.9" />
+  <!-- Head -->
+  <ellipse cx="64" cy="54" rx="21" ry="23" fill="#FDF4FF" />
+  <!-- Sleek Bob Hair -->
+  <path d="M38 52 C38 28, 50 22, 64 22 C78 22, 90 28, 90 52 C90 70, 88 74, 82 72 C84 62, 84 46, 80 36 C76 28, 68 28, 64 28 C58 28, 52 30, 48 38 C44 46, 44 62, 46 72 C40 74, 38 70, 38 52 Z" fill="#A21CAF" />
+  <!-- Creative Geometry Badge -->
+  <g transform="translate(86, 20)">
+    <circle cx="12" cy="12" r="12" fill="#D946EF" opacity="0.3" />
+    <rect x="7" y="7" width="10" height="10" rx="2" fill="none" stroke="#F0ABFC" stroke-width="1.8" transform="rotate(45 12 12)" />
+  </g>
+</svg>

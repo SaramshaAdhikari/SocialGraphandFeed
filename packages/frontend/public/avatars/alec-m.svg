@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgAlec" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064E3B" />
+      <stop offset="100%" stop-color="#022C22" />
+    </linearGradient>
+    <linearGradient id="accentAlec" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="64" fill="url(#bgAlec)" />
+  <!-- Shoulders -->
+  <path d="M24 116 C24 94, 42 86, 64 86 C86 86, 104 94, 104 116 Z" fill="url(#accentAlec)" opacity="0.85" />
+  <!-- Neck -->
+  <rect x="56" y="70" width="16" height="20" rx="4" fill="#F8FAFC" opacity="0.9" />
+  <!-- Head -->
+  <ellipse cx="64" cy="54" rx="22" ry="24" fill="#F8FAFC" />
+  <!-- Textured Short Hair -->
+  <path d="M42 46 C42 30, 52 24, 64 24 C76 24, 86 30, 86 46 C80 32, 70 30, 64 30 C58 30, 48 32, 42 46 Z" fill="#047857" />
+  <!-- Beard / Stubble Outline -->
+  <path d="M48 58 C48 74, 54 80, 64 80 C74 80, 80 74, 80 58 C76 66, 72 70, 64 70 C56 70, 52 66, 48 58 Z" fill="#065F46" opacity="0.6" />
+  <!-- Telemetry Pulse Badge -->
+  <g transform="translate(86, 20)">
+    <circle cx="12" cy="12" r="12" fill="#10B981" opacity="0.25" />
+    <path d="M4 12 L8 12 L10 8 L13 16 L16 10 L18 12 L20 12" fill="none" stroke="#6EE7B7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

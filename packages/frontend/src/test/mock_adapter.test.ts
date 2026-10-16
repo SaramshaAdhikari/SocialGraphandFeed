@@ -64,9 +64,9 @@ describe('Checkpoint 2.2 — Typed Mock Adapter & Schema Conformance', () => {
   });
 
   it('returns user profile conforming to UserProfileSchema', async () => {
-    const profile = await mock.getUserProfile('linus_t');
+    const profile = await mock.getUserProfile('lucas_t');
     expect(Value.Check(UserProfileSchema as any, profile)).toBe(true);
-    expect(profile.username).toBe('linus_t');
+    expect(profile.username).toBe('lucas_t');
     expect(profile.followers_count).toBeGreaterThan(0);
   });
 

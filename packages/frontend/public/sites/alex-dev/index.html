@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alex Rivera — Distributed Systems & Feed Architecture</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --surface: #111827;
+      --surface-border: #1f2937;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    header {
+      border-bottom: 1px solid var(--surface-border);
+      padding-bottom: 2rem;
+      margin-bottom: 2.5rem;
+    }
+    .badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--accent);
+      background: var(--accent-glow);
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      margin-bottom: 0.75rem;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.5rem;
+    }
+    .lead {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      max-width: 600px;
+    }
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1.25rem;
+    }
+    .btn-sg {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #2563eb;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.875rem;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      transition: background 0.15s;
+    }
+    .btn-sg:hover { background: #1d4ed8; }
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: 1px solid var(--surface-border);
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      transition: all 0.15s;
+    }
+    .btn-outline:hover { color: var(--text-main); border-color: var(--text-muted); }
+    section {
+      margin-bottom: 3rem;
+    }
+    h2 {
+      font-size: 1.25rem;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    h2::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--surface-border);
+    }
+    .project-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    @media (min-width: 640px) {
+      .project-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      transition: border-color 0.15s;
+    }
+    .card:hover { border-color: var(--accent); }
+    .card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.5rem;
+    }
+    .card p {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+    .card .tags {
+      margin-top: 0.75rem;
+      display: flex;
+      gap: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--accent);
+    }
+    .note-list {
+      list-style: none;
+    }
+    .note-item {
+      padding: 0.85rem 0;
+      border-bottom: 1px solid var(--surface-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+    }
+    .note-title {
+      font-weight: 500;
+      color: var(--text-main);
+      text-decoration: none;
+    }
+    .note-title:hover { color: var(--accent); }
+    .note-date {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      shrink-0: 0;
+    }
+    footer {
+      border-top: 1px solid var(--surface-border);
+      padding-top: 2rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="badge">Systems Engineer &amp; Architect</span>
+      <h1>Alex Rivera</h1>
+      <p class="lead">
+        Building high-throughput feed graphs, regional cache invalidation meshes, and resilient client-side mutation boundaries.
+      </p>
+      <div class="nav-links">
+        <a href="/u/alex_dev" class="btn-sg">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a5 5 0 1 0 5 5 5 5 0 0 0-5-5zm0 12c-5.33 0-8 2.67-8 4v2h16v-2c0-1.33-2.67-4-8-4z"/></svg>
+          View Profile on SocialGraph (@alex_dev)
+        </a>
+        <a href="#projects" class="btn-outline">Projects</a>
+        <a href="#writing" class="btn-outline">Architecture Notes</a>
+      </div>
+    </header>
+
+    <section id="projects">
+      <h2>01 // Core Projects</h2>
+      <div class="project-grid">
+        <div class="card">
+          <h3>TAO-Lite Feed Cache</h3>
+          <p>Asynchronous write invalidation across regional follower replicas with sub-millisecond P99 read latency.</p>
+          <div class="tags"><span>#DistributedSystems</span> <span>#Redis</span></div>
+        </div>
+        <div class="card">
+          <h3>Micro-Rollback Boundary</h3>
+          <p>Deterministic optimistic mutation state handling for real-time web streams with guaranteed state recovery.</p>
+          <div class="tags"><span>#TypeScript</span> <span>#React</span></div>
+        </div>
+        <div class="card">
+          <h3>CLOS Leaf-Spine Blueprint</h3>
+          <p>Architectural schematics for low-latency datacenter top-of-rack switches and 400G optical interconnects.</p>
+          <div class="tags"><span>#Hardware</span> <span>#Networking</span></div>
+        </div>
+        <div class="card">
+          <h3>Dual-Write Sharding Proxy</h3>
+          <p>Fastify pre-serialization pipeline safely backfilling compound graph indexes without locking shard partitions.</p>
+          <div class="tags"><span>#MongoDB</span> <span>#Sharding</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="writing">
+      <h2>02 // Engineering Notes</h2>
+      <ul class="note-list">
+        <li class="note-item">
+          <a href="/u/alex_dev" class="note-title">Optimistic State Updates and Micro-Rollback Boundaries in Real-Time Web Apps</a>
+          <span class="note-date">Oct 15, 2026</span>
+        </li>
+        <li class="note-item">
+          <a href="/u/alex_dev" class="note-title">Why TAO Separates Cache Consistency from Write Invalidation at Scale</a>
+          <span class="note-date">Oct 14, 2026</span>
+        </li>
+        <li class="note-item">
+          <a href="/u/alex_dev" class="note-title">Benchmarking Atomic Pipelines vs. Standalone Operations in High-Load Clusters</a>
+          <span class="note-date">Oct 13, 2026</span>
+        </li>
+      </ul>
+    </section>
+
+    <footer>
+      <p>
+        <strong>Fictional Demo Portfolio</strong> — Created for the SocialGraph &amp; Feed Engineering platform demo.
+      </p>
+      <p>All personas, benchmarks, and external links in this demo environment are strictly fictional.</p>
+    </footer>
+  </div>
+</body>
+</html>

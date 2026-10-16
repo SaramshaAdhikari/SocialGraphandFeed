@@ -36,7 +36,7 @@ describe('Screen 1 — Home Feed: Data Contract & Scope/Sort Logic', () => {
     expect(response.success).toBe(true);
     expect(response.data.length).toBeGreaterThan(0);
 
-    // In mock fixtures, usr_1 (Linus) and usr_3 (Alec) have is_following: true
+    // In mock fixtures, usr_1 (Lucas) and usr_3 (Alec) have is_following: true
     const allowedAuthors = new Set(['usr_1', 'usr_3']);
     for (const post of response.data) {
       expect(allowedAuthors.has(post.author.id)).toBe(true);

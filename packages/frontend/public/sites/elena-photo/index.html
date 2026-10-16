@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elena Rostova — Architectural & Hardware Photography</title>
+  <style>
+    :root {
+      --bg: #141416;
+      --card-bg: #1c1c1f;
+      --border: #2a2a2e;
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --rose: #f43f5e;
+      --font-serif: "Playfair Display", Georgia, serif;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      padding: 3rem 1.5rem;
+    }
+    .wrapper {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    header {
+      margin-bottom: 4rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 2.5rem;
+    }
+    .meta-tag {
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--rose);
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: 2.75rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      margin-bottom: 1rem;
+      line-height: 1.15;
+    }
+    .bio {
+      color: var(--muted);
+      font-size: 1.125rem;
+      max-width: 680px;
+      margin-bottom: 2rem;
+      font-weight: 300;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--text);
+      color: var(--bg);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.875rem;
+      padding: 0.65rem 1.25rem;
+      border-radius: 9999px;
+      transition: opacity 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      padding: 0.65rem 1.25rem;
+      border-radius: 9999px;
+      transition: all 0.15s;
+    }
+    .btn-ghost:hover { border-color: var(--text); color: var(--text); }
+    .section-title {
+      font-family: var(--font-serif);
+      font-size: 1.75rem;
+      margin-bottom: 2rem;
+      font-weight: 400;
+    }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      margin-bottom: 5rem;
+    }
+    @media (min-width: 640px) {
+      .gallery-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .gallery-item {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .gallery-item:hover {
+      transform: translateY(-2px);
+      border-color: #3f3f46;
+    }
+    .item-media {
+      width: 100%;
+      height: 280px;
+      object-fit: cover;
+      display: block;
+      background: #27272a;
+    }
+    .item-info {
+      padding: 1.25rem;
+    }
+    .item-series {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--rose);
+      margin-bottom: 0.25rem;
+      font-weight: 600;
+    }
+    .item-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .item-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 2.5rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <header>
+      <div class="meta-tag">Exhibition Portfolio</div>
+      <h1>Elena Rostova</h1>
+      <p class="bio">
+        Documenting the monolithic physical geometry of computation. Exploring direct-to-chip immersion chambers, silicon photonic dies, and brutalist server halls.
+      </p>
+      <div class="actions">
+        <a href="/u/elena_arch" class="btn-primary">
+          <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a5 5 0 1 0 5 5 5 5 0 0 0-5-5zm0 12c-5.33 0-8 2.67-8 4v2h16v-2c0-1.33-2.67-4-8-4z"/></svg>
+          Follow on SocialGraph (@elena_arch)
+        </a>
+        <a href="#series" class="btn-ghost">View Curated Series</a>
+      </div>
+    </header>
+
+    <main id="series">
+      <h2 class="section-title">Selected Photographic Works</h2>
+      <div class="gallery-grid">
+        <div class="gallery-item">
+          <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800" alt="Liquid Immersion Chamber" class="item-media" loading="lazy" />
+          <div class="item-info">
+            <div class="item-series">Series 01 // Thermodynamics</div>
+            <h3 class="item-title">Liquid Immersion Chamber for GPU Clusters</h3>
+            <p class="item-desc">Fluorochemical liquid immersion cooling achieving 1.03 PUE in high-density accelerator racks.</p>
+          </div>
+        </div>
+
+        <div class="gallery-item">
+          <img src="https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800" alt="Brutalist Concrete Pavilion" class="item-media" loading="lazy" />
+          <div class="item-info">
+            <div class="item-series">Series 02 // Structural Forms</div>
+            <h3 class="item-title">Monolithic Concrete Pavilion at Sunset</h3>
+            <p class="item-desc">Angular cantilevered concrete framing natural light across high-density architectural volumes.</p>
+          </div>
+        </div>
+
+        <div class="gallery-item">
+          <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?w=800" alt="Wafer-Scale Microarchitecture" class="item-media" loading="lazy" />
+          <div class="item-info">
+            <div class="item-series">Series 03 // Silicon Macro</div>
+            <h3 class="item-title">Wafer-Scale Engine Interconnect Density</h3>
+            <p class="item-desc">Silicon photonic routing links connecting 850,000 compute cores across a monolithic die.</p>
+          </div>
+        </div>
+
+        <div class="gallery-item">
+          <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800" alt="Fiber Optic Patch Matrix" class="item-media" loading="lazy" />
+          <div class="item-info">
+            <div class="item-series">Series 04 // Optical Infrastructure</div>
+            <h3 class="item-title">Fiber Optic Patch Matrix in Core Switch</h3>
+            <p class="item-desc">High-density 400G optical interconnect routing across redundant spine switches.</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <p>
+        <strong>Fictional Demo Portfolio</strong> — Created for the SocialGraph &amp; Feed Engineering platform demo.
+      </p>
+      <p>All personas, photographic series, and external links in this demo environment are strictly fictional.</p>
+    </footer>
+  </div>
+</body>
+</html>

@@ -5,16 +5,17 @@ if (!FormatRegistry.Has('date-time')) {
   FormatRegistry.Set('date-time', (value: string) => !isNaN(Date.parse(value)));
 }
 
-if (!FormatRegistry.Has('uri')) {
-  FormatRegistry.Set('uri', (value: string) => {
-    try {
-      new URL(value);
-      return true;
-    } catch {
-      return false;
-    }
-  });
-}
+// Register URI format supporting absolute URLs and root-relative paths
+FormatRegistry.Set('uri', (value: string) => {
+  if (typeof value !== 'string') return false;
+  if (value.startsWith('/') || value.startsWith('./')) return true;
+  try {
+    const u = new URL(value);
+    return Boolean(u.protocol);
+  } catch {
+    return false;
+  }
+});
 
 /**
  * Standard RFC 7807 problem details error response schema.

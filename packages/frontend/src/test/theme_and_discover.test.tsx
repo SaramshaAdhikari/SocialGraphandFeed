@@ -118,7 +118,7 @@ describe('Header Appearance Controls vs Settings Page Architecture', () => {
     expect(html).toContain('title="Switch to dark mode"');
 
     // Profile menu trigger present
-    expect(html).toContain('aria-label="User account menu for Alex Dev"');
+    expect(html).toContain('aria-label="User account menu for Alex Rivera"');
     expect(html).toContain('aria-haspopup="menu"');
 
     // Standalone settings gear is removed from top-level header
