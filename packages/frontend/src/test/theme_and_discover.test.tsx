@@ -3,6 +3,7 @@ import { renderToString } from 'react-dom/server';
 import { PALETTES, PALETTE_LIST } from '../theme/palettes';
 import { ThemeProvider } from '../theme/ThemeContext';
 import { TopHeader } from '../components/layout/TopHeader';
+import { AppLayout } from '../components/layout/AppLayout';
 import { SettingsAppearancePage } from '../pages/SettingsAppearancePage';
 import { MockAdapter } from '../api/mock/MockAdapter';
 import { DiscoveryCategoryBar } from '../components/discovery/DiscoveryCategoryBar';
@@ -103,7 +104,7 @@ describe('Global Theming System — 15 Authentic Regal Color Palettes', () => {
 });
 
 describe('Header Appearance Controls vs Settings Page Architecture', () => {
-  it('TopHeader provides a compact quick sun/moon toggle without cluttering the header with palette swatches', () => {
+  it('TopHeader provides a compact quick sun/moon toggle and profile menu without header clutter', () => {
     const html = renderToString(
       <RouterProvider initialPath="/">
         <ThemeProvider initialMode="light">
@@ -116,9 +117,12 @@ describe('Header Appearance Controls vs Settings Page Architecture', () => {
     expect(html).toContain('aria-label="Switch to dark mode"');
     expect(html).toContain('title="Switch to dark mode"');
 
-    // Settings link present
-    expect(html).toContain('aria-label="Theme &amp; Appearance Settings"');
-    expect(html).toContain('href="/settings/appearance"');
+    // Profile menu trigger present
+    expect(html).toContain('aria-label="User account menu for Alex Dev"');
+    expect(html).toContain('aria-haspopup="menu"');
+
+    // Standalone settings gear is removed from top-level header
+    expect(html).not.toContain('title="Theme &amp; Appearance Settings"');
 
     // Header does NOT contain permanent palette swatches or dropdown list
     expect(html).not.toContain('Tyrian Purple');
@@ -188,6 +192,38 @@ describe('Header Appearance Controls vs Settings Page Architecture', () => {
     expect(html).toContain('Live Theme Preview');
     expect(html).toContain('Save Collection');
     expect(html).toContain('Explore More');
+  });
+});
+
+describe('Screen 2 — Discover: Desktop Responsiveness & Layout Architecture', () => {
+  it('AppLayout provides full-width canvas for Discover without max-w-2xl bottleneck', () => {
+    const discoverHtml = renderToString(
+      <RouterProvider initialPath="/explore">
+        <AppLayout>
+          <div data-testid="discover-content">Discover Masonry Gallery</div>
+        </AppLayout>
+      </RouterProvider>
+    );
+
+    // Expands to full desktop width
+    expect(discoverHtml).toContain('max-w-[1750px]');
+    expect(discoverHtml).toContain('Discover Masonry Gallery');
+    // On Discover, RightRail is hidden below 2xl so intermediate desktops get full width
+    expect(discoverHtml).toContain('hidden 2xl:block');
+  });
+
+  it('AppLayout preserves focused reading column on Home Feed', () => {
+    const homeHtml = renderToString(
+      <RouterProvider initialPath="/">
+        <AppLayout showRightRail={true}>
+          <div data-testid="home-content">Home Feed Content</div>
+        </AppLayout>
+      </RouterProvider>
+    );
+
+    expect(homeHtml).toContain('max-w-2xl xl:max-w-3xl');
+    expect(homeHtml).toContain('hidden xl:block');
+    expect(homeHtml).toContain('Recommended Hubs');
   });
 });
 
@@ -362,7 +398,7 @@ describe('Screen 2 — Discover: Components & Visual Layout', () => {
       </RouterProvider>
     );
 
-    expect(html).toContain('columns-2 sm:columns-2 md:columns-3 xl:columns-4 2xl:columns-5');
+    expect(html).toContain('columns-2 sm:columns-2 md:columns-3 lg:columns-4 2xl:columns-5 3xl:columns-6');
     expect(html).toContain('break-inside-avoid');
     expect(html).toContain(samplePin.title);
   });

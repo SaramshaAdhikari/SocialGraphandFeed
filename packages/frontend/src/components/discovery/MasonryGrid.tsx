@@ -16,7 +16,7 @@ export function MasonryGrid({
 }: MasonryGridProps) {
   return (
     <div
-      className={`columns-2 sm:columns-2 md:columns-3 xl:columns-4 2xl:columns-5 gap-4 sm:gap-6 ${className}`}
+      className={`columns-2 sm:columns-2 md:columns-3 lg:columns-4 2xl:columns-5 3xl:columns-6 gap-3 sm:gap-4 lg:gap-5 2xl:gap-6 ${className}`}
     >
       {pins.map((pin) => (
         <DiscoveryPinCard
@@ -35,14 +35,14 @@ export function DiscoverySkeleton() {
 
   return (
     <div
-      className="columns-2 sm:columns-2 md:columns-3 xl:columns-4 2xl:columns-5 gap-4 sm:gap-6"
+      className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 2xl:columns-5 3xl:columns-6 gap-3 sm:gap-4 lg:gap-5 2xl:gap-6"
       aria-busy="true"
       aria-label="Loading discovery pins"
     >
       {aspectRatios.map((ratio, i) => (
         <div
           key={i}
-          className="break-inside-avoid mb-4 sm:mb-6 bg-white dark:bg-[#181B22] rounded-2xl border border-[#E2E8F0] dark:border-[#2E3544] overflow-hidden p-3 animate-pulse"
+          className="break-inside-avoid mb-3 sm:mb-4 lg:mb-5 2xl:mb-6 bg-white dark:bg-[#181B22] rounded-2xl border border-[#E2E8F0] dark:border-[#2E3544] overflow-hidden p-3 animate-pulse"
         >
           <div
             className="w-full bg-slate-200 dark:bg-[#262B36] rounded-xl mb-3"
