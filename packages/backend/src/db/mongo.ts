@@ -1,5 +1,6 @@
 import { MongoClient, type Db } from 'mongodb';
 import { config } from '../config/env.js';
+import { ensureIndexes } from './indexes.js';
 
 let client: MongoClient | null = null;
 let db: Db | null = null;
@@ -19,7 +20,13 @@ export async function connectMongo(uri = config.MONGODB_URI, dbName = config.MON
   await client.connect();
   db = client.db(dbName);
 
+  await ensureIndexes(db);
+
   return { client, db };
+}
+
+export function setDbForTesting(testDb: Db | null): void {
+  db = testDb;
 }
 
 export function getDb(): Db {

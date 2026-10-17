@@ -10,7 +10,8 @@
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest run",
-    "test:foundation": "vitest run test/foundation.test.ts"
+    "test:foundation": "vitest run test/foundation.test.ts",
+    "seed": "tsx src/db/seed.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.2",
