@@ -295,6 +295,7 @@ export class MockAdapter implements ISocialGraphApi {
         title: input.title.trim(),
         content: input.content?.trim() || '',
         flair: input.flair || (input.tags && input.tags.length > 0 ? input.tags[0] : undefined),
+        tags: input.tags && input.tags.length > 0 ? input.tags : undefined,
         media: input.media,
       };
     } else {
@@ -314,6 +315,8 @@ export class MockAdapter implements ISocialGraphApi {
         is_saved: false,
         title: input.title.trim(),
         caption: input.caption?.trim() || input.content?.trim() || '',
+        destination_url: input.destination_url?.trim() || undefined,
+        tags: input.tags && input.tags.length > 0 ? input.tags : undefined,
         media: {
           id: mediaItem.id || `m_${Date.now()}`,
           url: mediaItem.url.trim(),

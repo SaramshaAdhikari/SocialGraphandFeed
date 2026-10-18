@@ -40,6 +40,7 @@ export interface UseCreatePostReturn {
   submitSuccess: boolean;
   createdPost: PostCard | null;
   isDirty: boolean;
+  isLiveMode: boolean;
   submitPost: () => Promise<PostCard | null>;
   resetForm: () => void;
 }
@@ -103,6 +104,14 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
 
   // Handle local file preview
   const handleLocalFileSelect = useCallback((file: File) => {
+    if (api.dataSource === 'live') {
+      setErrors((prev) => ({
+        ...prev,
+        imageUrl: 'Local file upload is not supported in live mode without cloud media storage. Please provide an externally accessible image URL.',
+      }));
+      return;
+    }
+
     if (!file.type.startsWith('image/')) {
       setErrors((prev) => ({ ...prev, imageUrl: 'Please select a valid image file (PNG, JPG, WebP, SVG).' }));
       return;
@@ -133,7 +142,7 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
       delete next.imageUrl;
       return next;
     });
-  }, []);
+  }, [api]);
 
   const clearImage = useCallback(() => {
     setImageUrl('');
@@ -200,8 +209,13 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
     }
 
     if (postType === 'visual') {
+      const isLive = api.dataSource === 'live';
       if (!imageUrl.trim()) {
-        newErrors.imageUrl = 'An image URL or local file preview is required.';
+        newErrors.imageUrl = isLive
+          ? 'An externally accessible image URL is required.'
+          : 'An image URL or local file preview is required.';
+      } else if (isLive && (isLocalFile || imageUrl.trim().startsWith('blob:'))) {
+        newErrors.imageUrl = 'Local file upload requires cloud media storage which is not yet configured. Please provide an externally accessible image URL (e.g. https://...).';
       } else if (imageError) {
         newErrors.imageUrl = 'The provided image could not be loaded. Please check the URL.';
       }
@@ -220,7 +234,7 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [postType, title, content, imageUrl, imageError, destinationUrl]);
+  }, [postType, title, content, imageUrl, isLocalFile, imageError, destinationUrl, api]);
 
   // Submission handler
   const submitPost = useCallback(async (): Promise<PostCard | null> => {
@@ -333,6 +347,7 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
     submitSuccess,
     createdPost,
     isDirty,
+    isLiveMode: api.dataSource === 'live',
     submitPost,
     resetForm,
   };

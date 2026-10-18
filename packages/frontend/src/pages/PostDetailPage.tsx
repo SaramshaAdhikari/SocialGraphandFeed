@@ -9,6 +9,7 @@ import {
   AlertCircle,
   Home,
   Compass,
+  ExternalLink,
 } from 'lucide-react';
 import type { DiscussionPostCard, VisualPinCard } from '@socialgraph/shared';
 import { useRouter, Link } from '../router/Router';
@@ -255,6 +256,41 @@ export function PostDetailPage() {
                     </>
                   )}
                 </div>
+
+                {visualPost.destination_url && (
+                  <div className="mt-3">
+                    <a
+                      href={visualPost.destination_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-primary hover:underline hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      <ExternalLink size={12} />
+                      <span className="truncate max-w-[200px]">
+                        {(() => {
+                          try {
+                            return new URL(visualPost.destination_url).hostname;
+                          } catch {
+                            return visualPost.destination_url;
+                          }
+                        })()}
+                      </span>
+                    </a>
+                  </div>
+                )}
+
+                {visualPost.tags && visualPost.tags.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {visualPost.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Action Bar (Consistent with API: Voting & Saving) */}
@@ -421,6 +457,20 @@ export function PostDetailPage() {
                 <div className="text-sm sm:text-base text-[#334155] dark:text-[#CBD5E1] leading-relaxed whitespace-pre-wrap break-words mb-5">
                   {discussionPost.content}
                 </div>
+
+                {/* Discussion Tags */}
+                {discussionPost.tags && discussionPost.tags.length > 0 && (
+                  <div className="mb-4 flex flex-wrap gap-1.5">
+                    {discussionPost.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 {/* Optional Media Attachments */}
                 {discussionPost.media && discussionPost.media.length > 0 && (

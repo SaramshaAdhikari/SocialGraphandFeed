@@ -47,6 +47,7 @@ export function CreatePostPage() {
     submitting,
     submitError,
     isDirty,
+    isLiveMode,
     submitPost,
   } = useCreatePost('discussion');
 
@@ -273,6 +274,7 @@ export function CreatePostPage() {
               onImageLoadedChange={setImageLoaded}
               error={errors.imageUrl}
               destinationUrlError={errors.destinationUrl}
+              isLiveMode={isLiveMode}
             />
           </section>
         )}

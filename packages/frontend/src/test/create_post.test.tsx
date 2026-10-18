@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import { MockAdapter } from '../api/mock/MockAdapter';
+import { LiveClient } from '../api/LiveClient';
 import { ApiClientError } from '../api/client';
-import { mockCommunities } from '../api/mock/fixtures';
+import { mockCommunities, mockUsers } from '../api/mock/fixtures';
 import {
   PostTypeSelector,
   MarkdownEditor,
@@ -376,5 +377,145 @@ describe('Screen 7 — Create Post: Page & Navigation Integration', () => {
     );
     expect(mobileHtml).toContain('href="/create"');
     expect(mobileHtml).toContain('aria-label="Create"');
+  });
+});
+
+describe('Screen 7 — Create Post: Live Mode Restrictions & Field Preservation', () => {
+  let adapter: MockAdapter;
+
+  beforeEach(() => {
+    adapter = new MockAdapter({ simulatedLatencyMs: 0 });
+  });
+
+  it('15. LiveClient explicitly rejects blob: URLs with ApiClientError (VALIDATION_ERROR)', async () => {
+    const liveClient = new LiveClient('http://localhost:3000');
+    await expect(
+      liveClient.createPost({
+        post_type: 'visual',
+        title: 'Session Blob Pin',
+        media: [
+          {
+            id: 'm_blob_1',
+            url: 'blob:http://localhost:5173/550e8400-e29b-41d4-a716-446655440000',
+            aspect_ratio: 1.0,
+          },
+        ],
+      })
+    ).rejects.toThrow(/Local blob URLs cannot be persisted in live mode/);
+  });
+
+  it('16. MockAdapter preserves tags and flair on discussion posts across retrieval by ID', async () => {
+    const created = await adapter.createPost({
+      post_type: 'discussion',
+      title: 'Architecting High-Throughput Event Streams with Zero-Copy Deserialization',
+      content: 'Benchmark evaluation of binary schema formats under high packet arrival rates.',
+      flair: 'Systems Architecture',
+      tags: ['streams', 'zero-copy', 'networking'],
+      community_id: 'c_systems',
+    });
+
+    expect(created.post_type).toBe('discussion');
+    expect((created as any).flair).toBe('Systems Architecture');
+    expect((created as any).tags).toEqual(['streams', 'zero-copy', 'networking']);
+
+    // Retrieve by ID and verify fields survived in-memory round trip
+    const retrieved = await adapter.getPost(created.id);
+    expect((retrieved as any).flair).toBe('Systems Architecture');
+    expect((retrieved as any).tags).toEqual(['streams', 'zero-copy', 'networking']);
+  });
+
+  it('17. MockAdapter preserves caption, destination_url, and tags on visual pins across retrieval by ID', async () => {
+    const created = await adapter.createPost({
+      post_type: 'visual',
+      title: 'Direct-to-Chip Dielectric Cooling Manifold',
+      caption: 'Testing 2-phase fluid loop dissipation across dual NVLink GPU sockets.',
+      destination_url: 'https://specs.hardware.org/telemetry/chassis-2u',
+      tags: ['hardware', 'datacenter', 'cooling'],
+      media: [
+        {
+          id: 'm_manifold_1',
+          url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800',
+          aspect_ratio: 1.5,
+          alt_text: 'Cooling manifold chassis layout',
+        },
+      ],
+    });
+
+    expect(created.post_type).toBe('visual');
+    expect((created as any).caption).toBe('Testing 2-phase fluid loop dissipation across dual NVLink GPU sockets.');
+    expect((created as any).destination_url).toBe('https://specs.hardware.org/telemetry/chassis-2u');
+    expect((created as any).tags).toEqual(['hardware', 'datacenter', 'cooling']);
+
+    // Retrieve by ID and verify all fields survived in-memory round trip
+    const retrieved = await adapter.getPost(created.id);
+    expect((retrieved as any).caption).toBe('Testing 2-phase fluid loop dissipation across dual NVLink GPU sockets.');
+    expect((retrieved as any).destination_url).toBe('https://specs.hardware.org/telemetry/chassis-2u');
+    expect((retrieved as any).tags).toEqual(['hardware', 'datacenter', 'cooling']);
+  });
+
+  it('18. Creating posts increments author post count while preserving data integrity of existing fixtures', async () => {
+    // Check initial user post counts
+    const initialAlex = await adapter.getUserProfile('alex_dev');
+    const initialLucas = await adapter.getUserProfile('lucas_t');
+    expect(initialAlex.posts_count).toBe(3);
+    expect(initialLucas.posts_count).toBe(28);
+
+    // Verify baseline static fixture integrity remains unaltered
+    expect(mockUsers.usr_0.posts_count).toBe(3);
+    expect(mockUsers.usr_1.posts_count).toBe(28);
+
+    // Create a new post
+    await adapter.createPost({
+      post_type: 'discussion',
+      title: 'Validating Raft Snapshot Serialization Edge Cases',
+      content: 'Notes on log compaction boundaries and follower replay recovery.',
+      community_id: 'c_systems',
+    });
+
+    // Author alex_dev post count should be incremented in adapter state
+    const updatedAlex = await adapter.getUserProfile('alex_dev');
+    expect(updatedAlex.posts_count).toBe(4);
+
+    // Peer user post count remains unaffected
+    const updatedLucas = await adapter.getUserProfile('lucas_t');
+    expect(updatedLucas.posts_count).toBe(28);
+
+    // Existing fixture posts remain fully retrievable and unharmed
+    const post101 = await adapter.getPost('post_disc_101');
+    expect(post101.title).toBe(
+      'Spent the weekend digging into TAO’s cache invalidation — here’s why decoupling write invalidation from consistency actually works'
+    );
+    const pin201 = await adapter.getPost('pin_vis_201');
+    expect(pin201.title).toBe('Immersion Cooling Chamber for NVLink GPU Compute');
+  });
+
+  it('19. VisualPinUploader disables file browse action and renders live-mode warning when isLiveMode is true', () => {
+    const htmlLive = renderToString(
+      <VisualPinUploader
+        imageUrl=""
+        onImageUrlChange={() => {}}
+        aspectRatio={1.0}
+        onAspectRatioChange={() => {}}
+        imageAlt=""
+        onImageAltChange={() => {}}
+        destinationUrl=""
+        onDestinationUrlChange={() => {}}
+        caption=""
+        onCaptionChange={() => {}}
+        isLocalFile={false}
+        onLocalFileSelect={() => {}}
+        onClearImage={() => {}}
+        imageError={false}
+        onImageErrorChange={() => {}}
+        imageLoaded={false}
+        onImageLoadedChange={() => {}}
+        isLiveMode={true}
+      />
+    );
+
+    expect(htmlLive).toContain('Live Mode Active:');
+    expect(htmlLive).toContain('Direct image URL is required');
+    expect(htmlLive).toContain('Browse (N/A in Live)');
+    expect(htmlLive).toContain('disabled=""');
   });
 });

@@ -46,6 +46,8 @@ export const VisualPinCardSchema = Type.Object({
   media: MediaAttachmentSchema,
   collection_id: Type.Optional(Type.String()),
   dominant_color: Type.Optional(Type.String()),
+  destination_url: Type.Optional(Type.String()),
+  tags: Type.Optional(Type.Array(Type.String())),
 });
 
 export type VisualPinCard = Static<typeof VisualPinCardSchema>;
@@ -60,6 +62,7 @@ export const DiscussionPostCardSchema = Type.Object({
   content: Type.String({ maxLength: 40000, description: 'Markdown prose body' }),
   media: Type.Optional(Type.Array(MediaAttachmentSchema)),
   flair: Type.Optional(Type.String({ maxLength: 30 })),
+  tags: Type.Optional(Type.Array(Type.String())),
 });
 
 export type DiscussionPostCard = Static<typeof DiscussionPostCardSchema>;

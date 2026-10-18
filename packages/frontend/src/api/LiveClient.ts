@@ -120,6 +120,17 @@ export class LiveClient implements ISocialGraphApi {
   }
 
   public async createPost(input: CreatePostInput): Promise<PostCard> {
+    if (input.media && input.media.some((m) => m.url.startsWith('blob:'))) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/validation',
+        title: 'Validation Error',
+        status: 400,
+        detail: 'Local blob URLs cannot be persisted in live mode. Please provide an externally accessible HTTP/HTTPS image URL.',
+        code: 'VALIDATION_ERROR',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     return this.request<PostCard>('/api/v1/posts', {
       method: 'POST',
       body: JSON.stringify(input),

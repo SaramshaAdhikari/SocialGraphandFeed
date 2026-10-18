@@ -30,6 +30,7 @@ export interface VisualPinUploaderProps {
   onImageLoadedChange: (loaded: boolean) => void;
   error?: string;
   destinationUrlError?: string;
+  isLiveMode?: boolean;
 }
 
 export function VisualPinUploader({
@@ -52,6 +53,7 @@ export function VisualPinUploader({
   onImageLoadedChange,
   error,
   destinationUrlError,
+  isLiveMode = false,
 }: VisualPinUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loadAttempted, setLoadAttempted] = useState(Boolean(imageUrl));
@@ -132,14 +134,27 @@ export function VisualPinUploader({
               type="button"
               variant="outline"
               size="md"
-              onClick={() => fileInputRef.current?.click()}
+              disabled={isLiveMode}
+              title={isLiveMode ? 'Local file upload requires cloud media storage which is not configured in live mode.' : undefined}
+              onClick={() => {
+                if (!isLiveMode) {
+                  fileInputRef.current?.click();
+                }
+              }}
               className="w-full h-10 gap-2 border-dashed font-semibold"
             >
               <Upload size={15} />
-              <span>{isLocalFile ? 'Change File' : 'Browse File'}</span>
+              <span>{isLiveMode ? 'Browse (N/A in Live)' : isLocalFile ? 'Change File' : 'Browse File'}</span>
             </Button>
           </div>
         </div>
+
+        {/* Live mode notice */}
+        {isLiveMode && (
+          <p className="text-[11px] text-[#64748B] dark:text-[#94A3B8] mb-3">
+            <span className="font-semibold text-amber-600 dark:text-amber-400">Live Mode Active:</span> Direct image URL is required. Local file uploads require cloud media storage which is not configured.
+          </p>
+        )}
 
         {/* Local file notice */}
         {isLocalFile && (
