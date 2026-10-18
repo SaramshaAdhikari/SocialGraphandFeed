@@ -2,13 +2,13 @@ import { Type, type Static } from '@sinclair/typebox';
 import { UserSummarySchema } from './user.js';
 
 export const MediaAttachmentSchema = Type.Object({
-  id: Type.String(),
-  url: Type.String({ format: 'uri' }),
+  id: Type.String({ minLength: 1, maxLength: 128 }),
+  url: Type.String({ maxLength: 2048, pattern: '^https?://\\S+$' }),
   aspect_ratio: Type.Number({ minimum: 0.1, maximum: 10.0, description: 'width / height ratio for layout reservation' }),
   width: Type.Optional(Type.Integer({ minimum: 1 })),
   height: Type.Optional(Type.Integer({ minimum: 1 })),
   alt_text: Type.Optional(Type.String({ maxLength: 300 })),
-});
+}, { additionalProperties: false });
 
 export type MediaAttachment = Static<typeof MediaAttachmentSchema>;
 
@@ -74,19 +74,19 @@ export const CreatePostInputSchema = Type.Object({
   post_type: PostTypeSchema,
   title: Type.String({ minLength: 1, maxLength: 300 }),
   content: Type.Optional(Type.String({ maxLength: 40000 })),
-  community_id: Type.Optional(Type.String()),
-  collection_id: Type.Optional(Type.String()),
-  media: Type.Optional(Type.Array(MediaAttachmentSchema)),
+  community_id: Type.Optional(Type.String({ maxLength: 128, pattern: '^[A-Za-z0-9_-]+$' })),
+  collection_id: Type.Optional(Type.String({ maxLength: 128, pattern: '^[A-Za-z0-9_-]+$' })),
+  media: Type.Optional(Type.Array(MediaAttachmentSchema, { maxItems: 10 })),
   flair: Type.Optional(Type.String({ maxLength: 50 })),
   caption: Type.Optional(Type.String({ maxLength: 1000 })),
-  destination_url: Type.Optional(Type.String()),
-  tags: Type.Optional(Type.Array(Type.String())),
-});
+  destination_url: Type.Optional(Type.String({ maxLength: 2048, pattern: '^https?://\\S+$' })),
+  tags: Type.Optional(Type.Array(Type.String({ minLength: 1, maxLength: 50 }), { maxItems: 20 })),
+}, { additionalProperties: false });
 
 export type CreatePostInput = Static<typeof CreatePostInputSchema>;
 
 export const VoteInputSchema = Type.Object({
   direction: Type.Union([Type.Literal(1), Type.Literal(-1), Type.Literal(0)]),
-});
+}, { additionalProperties: false });
 
 export type VoteInput = Static<typeof VoteInputSchema>;

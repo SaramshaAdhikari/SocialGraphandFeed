@@ -1,6 +1,7 @@
 import type { FastifyError, FastifyInstance, FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
 import { AppError } from '@socialgraph/shared';
+import { config } from '../config/env.js';
 
 const errorHandlerPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   fastify.setErrorHandler((error: FastifyError, request, reply) => {
@@ -40,7 +41,7 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) 
       code: 'INTERNAL_SERVER_ERROR',
       statusCode: 500,
       title: 'Internal Server Error',
-      detail: process.env.NODE_ENV === 'production' ? 'An unexpected server error occurred.' : error.message,
+      detail: config.NODE_ENV === 'production' ? 'An unexpected server error occurred.' : error.message,
     });
 
     return reply.status(500).send(internalErr.toRfc7807(request.url));

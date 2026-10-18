@@ -3,6 +3,7 @@ import { Type } from '@sinclair/typebox';
 import { HealthStatusSchema, ApiErrorResponseSchema } from '@socialgraph/shared';
 import { checkMongoHealth } from '../db/mongo.js';
 import { checkRedisHealth } from '../cache/redis.js';
+import { config } from '../config/env.js';
 
 const healthRoutes: FastifyPluginAsyncTypebox = async (fastify) => {
   fastify.get(
@@ -35,14 +36,15 @@ const healthRoutes: FastifyPluginAsyncTypebox = async (fastify) => {
         overallStatus = 'degraded';
       }
 
+      const redactHealth = config.NODE_ENV === 'production';
       const responsePayload = {
         status: overallStatus,
         timestamp: new Date().toISOString(),
         uptime_seconds: Math.floor(process.uptime()),
         version: '0.1.0',
         services: {
-          mongodb: mongoHealth,
-          redis: redisHealth,
+          mongodb: redactHealth ? { status: mongoHealth.status, latency_ms: mongoHealth.latency_ms } : mongoHealth,
+          redis: redactHealth ? { status: redisHealth.status, latency_ms: redisHealth.latency_ms } : redisHealth,
         },
       };
 

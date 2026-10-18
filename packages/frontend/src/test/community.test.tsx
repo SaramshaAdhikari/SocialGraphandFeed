@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import { MockAdapter } from '../api/mock/MockAdapter';
 import { ApiClientError } from '../api/client';
@@ -8,6 +8,8 @@ import { CommunityTabs } from '../components/community/CommunityTabs';
 import { CommunitySidebar } from '../components/community/CommunitySidebar';
 import { CommunitySkeleton } from '../components/community/CommunitySkeleton';
 import { CommunityPage } from '../pages/CommunityPage';
+import { RecommendedHubs } from '../components/layout/RecommendedHubs';
+import { LiveClient } from '../api/LiveClient';
 import { RouterProvider } from '../router/Router';
 import { ThemeProvider } from '../theme/ThemeContext';
 
@@ -52,6 +54,46 @@ describe('Screen 5 — Community Hub: API Contracts & Data Layer', () => {
     }
   });
 
+  it('persists idempotent membership changes in the adapter and reads the same state in hub and recommendations', async () => {
+    const before = await adapter.getCommunity('algorithms');
+    expect(before.is_member).toBe(false);
+    const join = await adapter.setCommunityMembership('algorithms', true);
+    expect(join.is_member).toBe(true);
+    const afterJoin = await adapter.getCommunity('algorithms');
+    expect(afterJoin.is_member).toBe(true);
+    expect((await adapter.getCommunities()).find((c) => c.slug === 'algorithms')).toMatchObject({ is_member: true, members_count: afterJoin.members_count });
+    expect((await adapter.setCommunityMembership('algorithms', true)).members_count).toBe(afterJoin.members_count);
+    await adapter.setCommunityMembership('algorithms', false);
+    await adapter.setCommunityMembership('algorithms', false);
+    expect((await adapter.getCommunity('algorithms')).is_member).toBe(false);
+    expect((await adapter.getCommunity('algorithms')).members_count).toBe(before.members_count);
+  });
+
+  it('does not change visible membership when the membership API rejects the mutation', async () => {
+    const before = await adapter.getCommunity('algorithms');
+    adapter.simulateFailure('/api/v1/communities/algorithms/join', {
+      type: 'https://socialgraph.dev/errors/internal', title: 'Unavailable', status: 503,
+      detail: 'Membership update failed', code: 'SERVICE_UNAVAILABLE', timestamp: new Date().toISOString(),
+    });
+    await expect(adapter.setCommunityMembership('algorithms', true)).rejects.toThrow(ApiClientError);
+    expect(await adapter.getCommunity('algorithms')).toMatchObject({ is_member: before.is_member, members_count: before.members_count });
+  });
+
+  it('sends DELETE without a JSON content type or body', async () => {
+    const originalFetch = globalThis.fetch;
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ community_id: 'comm_systems', is_member: false, members_count: 2 }) });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    try {
+      await new LiveClient().setCommunityMembership('systems', false);
+      const [, options] = fetchMock.mock.calls[0];
+      expect(options.method).toBe('DELETE');
+      expect(options.body).toBeUndefined();
+      expect((options.headers as Record<string, string>)['Content-Type']).toBeUndefined();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   it('retrieves scoped community feed containing only posts for that community', async () => {
     const feedResponse = await adapter.getCommunityFeed('systems', { limit: 20 });
     expect(feedResponse.success).toBe(true);
@@ -80,8 +122,6 @@ describe('Screen 5 — Community Hub: Components UI', () => {
     const html = renderToString(
       <CommunityHeader
         community={comm}
-        isMember={comm.is_member}
-        membersCount={comm.members_count}
         onToggleMembership={() => {}}
       />
     );
@@ -98,8 +138,6 @@ describe('Screen 5 — Community Hub: Components UI', () => {
     const html = renderToString(
       <CommunityHeader
         community={comm}
-        isMember={false}
-        membersCount={comm.members_count}
         onToggleMembership={() => {}}
       />
     );
@@ -107,6 +145,18 @@ describe('Screen 5 — Community Hub: Components UI', () => {
     expect(html).toContain('Algorithms &amp; Data Structures');
     expect(html).toContain('c/algorithms');
     expect(html).toContain('Join Hub');
+  });
+
+  it('renders recommendation membership from the same community state as hub detail', () => {
+    const member = { ...mockCommunities.systems, is_member: true };
+    const nonMember = { ...mockCommunities.algorithms, is_member: false };
+    const recommendations = renderToString(<RouterProvider initialPath="/"><RecommendedHubs communities={[member, nonMember]} onMembershipChange={() => {}} /></RouterProvider>);
+    const memberDetail = renderToString(<CommunityHeader community={member} onToggleMembership={() => {}} />);
+    const nonMemberDetail = renderToString(<CommunityHeader community={nonMember} onToggleMembership={() => {}} />);
+    expect(recommendations).toContain('Joined');
+    expect(memberDetail).toContain('Joined');
+    expect(recommendations).toContain('Join');
+    expect(nonMemberDetail).toContain('Join Hub');
   });
 
   it('renders CommunityTabs with All, Discussions, Visual Pins, and sort controls', () => {
@@ -134,10 +184,7 @@ describe('Screen 5 — Community Hub: Components UI', () => {
   it('renders CommunitySidebar with About metadata and community rules', () => {
     const comm = mockCommunities.systems;
     const html = renderToString(
-      <CommunitySidebar
-        community={comm}
-        membersCount={comm.members_count}
-      />
+      <CommunitySidebar community={comm} />
     );
 
     expect(html).toContain('About Community');
@@ -149,10 +196,7 @@ describe('Screen 5 — Community Hub: Components UI', () => {
   it('renders CommunitySidebar gracefully when community has no rules', () => {
     const comm = mockCommunities.hardware; // rules is empty []
     const html = renderToString(
-      <CommunitySidebar
-        community={comm}
-        membersCount={comm.members_count}
-      />
+      <CommunitySidebar community={comm} />
     );
 
     expect(html).toContain('No custom rules defined yet');

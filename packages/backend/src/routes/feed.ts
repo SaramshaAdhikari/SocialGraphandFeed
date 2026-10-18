@@ -8,6 +8,7 @@ import {
   type DiscoveryQuery,
 } from '@socialgraph/shared';
 import { FeedService } from '../services/FeedService.js';
+import { getRequestUserId } from './identity.js';
 
 const feedRoutes: FastifyPluginAsync = async (fastify) => {
   const feedService = new FeedService();
@@ -23,7 +24,7 @@ const feedRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request) => {
-      const userId = (request as any).userId;
+      const userId = getRequestUserId(request);
       return feedService.getFeed(request.query, userId);
     }
   );
@@ -39,7 +40,7 @@ const feedRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request) => {
-      const userId = (request as any).userId;
+      const userId = getRequestUserId(request);
       return feedService.getDiscovery(request.query, userId);
     }
   );

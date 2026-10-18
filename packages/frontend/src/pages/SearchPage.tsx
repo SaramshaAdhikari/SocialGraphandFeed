@@ -48,6 +48,7 @@ export function SearchPage() {
     clearSearch,
     votePost,
     toggleSavePost,
+    setCommunityMembership,
     retry,
   } = useUniversalSearch();
 
@@ -189,6 +190,7 @@ export function SearchPage() {
                           <CommunitySearchResultCard
                             key={community.id}
                             community={community}
+                            onMembershipChange={setCommunityMembership}
                           />
                         ))}
                       </div>
@@ -336,6 +338,7 @@ export function SearchPage() {
                         <CommunitySearchResultCard
                           key={community.id}
                           community={community}
+                          onMembershipChange={setCommunityMembership}
                         />
                       ))}
                     </div>

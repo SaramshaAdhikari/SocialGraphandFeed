@@ -55,6 +55,12 @@ export interface SavedPostsQuery {
   limit?: number;
 }
 
+export interface CommunityMembershipResult {
+  community_id: string;
+  is_member: boolean;
+  members_count: number;
+}
+
 export interface ISocialGraphApi {
   readonly dataSource: DataSourceType;
 
@@ -81,6 +87,7 @@ export interface ISocialGraphApi {
   toggleFollow(targetUserId: string): Promise<FollowToggleResponse>;
   getCommunity(communitySlug: string): Promise<Community>;
   getCommunities(): Promise<Community[]>;
+  setCommunityMembership(communitySlug: string, isMember: boolean): Promise<CommunityMembershipResult>;
   getCommunityFeed(communitySlug: string, query?: FeedQuery): Promise<FeedResponse>;
 
   // Search

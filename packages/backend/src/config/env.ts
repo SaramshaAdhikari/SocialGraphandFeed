@@ -16,18 +16,49 @@ export interface AppConfig {
   LOG_LEVEL: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 }
 
-function parseEnv(): AppConfig {
-  const nodeEnv = (process.env.NODE_ENV || 'development') as 'development' | 'test' | 'production';
+export function parseEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
+  const configuredNodeEnv = env.NODE_ENV?.toLowerCase();
+  const configuredEnvironment = env.ENVIRONMENT?.toLowerCase();
+  const rawNodeEnv = configuredNodeEnv === 'production' || configuredEnvironment === 'production'
+    ? 'production'
+    : configuredNodeEnv || configuredEnvironment || 'development';
+  if (!['development', 'test', 'production'].includes(rawNodeEnv)) {
+    throw new Error('NODE_ENV must be development, test, or production.');
+  }
+  const nodeEnv = rawNodeEnv as AppConfig['NODE_ENV'];
+  if (nodeEnv === 'production') {
+    for (const name of ['MONGODB_URI', 'MONGODB_DB_NAME', 'REDIS_URL'] as const) {
+      if (!env[name]?.trim()) throw new Error(`${name} is required when NODE_ENV=production.`);
+    }
+    if (env.DEV_USER_BYPASS?.toLowerCase() === 'true') {
+      throw new Error('DEV_USER_BYPASS cannot be enabled when NODE_ENV=production.');
+    }
+  }
+
+  const port = Number(env.PORT || 4000);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error('PORT must be an integer between 1 and 65535.');
+  }
+  const mongoUri = env.MONGODB_URI || (nodeEnv === 'production' ? '' : 'mongodb://localhost:27017');
+  const redisUrl = env.REDIS_URL || (nodeEnv === 'production' ? '' : 'redis://localhost:6379');
+  if (nodeEnv === 'production') {
+    try {
+      if (!['mongodb:', 'mongodb+srv:'].includes(new URL(mongoUri).protocol)) throw new Error();
+      if (!['redis:', 'rediss:'].includes(new URL(redisUrl).protocol)) throw new Error();
+    } catch {
+      throw new Error('MONGODB_URI and REDIS_URL must be valid MongoDB and Redis URLs in production.');
+    }
+  }
 
   return {
     NODE_ENV: nodeEnv,
-    PORT: Number(process.env.PORT || 4000),
-    HOST: process.env.HOST || '0.0.0.0',
-    MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017',
-    MONGODB_DB_NAME: process.env.MONGODB_DB_NAME || (nodeEnv === 'test' ? 'socialgraph_test' : 'socialgraph'),
-    REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
-    DEV_USER_BYPASS: process.env.DEV_USER_BYPASS === 'true' && nodeEnv !== 'production',
-    LOG_LEVEL: (process.env.LOG_LEVEL || (nodeEnv === 'test' ? 'error' : 'info')) as AppConfig['LOG_LEVEL'],
+    PORT: port,
+    HOST: env.HOST || '0.0.0.0',
+    MONGODB_URI: mongoUri,
+    MONGODB_DB_NAME: env.MONGODB_DB_NAME || (nodeEnv === 'test' ? 'socialgraph_test' : 'socialgraph'),
+    REDIS_URL: redisUrl,
+    DEV_USER_BYPASS: env.DEV_USER_BYPASS === 'true' && nodeEnv !== 'production',
+    LOG_LEVEL: (env.LOG_LEVEL || (nodeEnv === 'test' ? 'error' : 'info')) as AppConfig['LOG_LEVEL'],
   };
 }
 

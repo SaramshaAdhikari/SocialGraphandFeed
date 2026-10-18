@@ -23,6 +23,12 @@ import type {
 } from './types';
 import { ApiClientError } from './client';
 
+interface CommunityMembershipResult {
+  community_id: string;
+  is_member: boolean;
+  members_count: number;
+}
+
 export class LiveClient implements ISocialGraphApi {
   public readonly dataSource: DataSourceType = 'live';
   private readonly baseUrl: string;
@@ -34,8 +40,11 @@ export class LiveClient implements ISocialGraphApi {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       Accept: 'application/json',
+      ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(import.meta.env.DEV && import.meta.env.VITE_DEV_USER_ID
+        ? { 'X-Dev-User-Id': import.meta.env.VITE_DEV_USER_ID as string }
+        : {}),
       ...((options.headers as Record<string, string>) || {}),
     };
 
@@ -124,6 +133,7 @@ export class LiveClient implements ISocialGraphApi {
   public async toggleSavePost(postId: string): Promise<{ post_id: string; is_saved: boolean }> {
     return this.request<{ post_id: string; is_saved: boolean }>(`/api/v1/posts/${postId}/save`, {
       method: 'POST',
+      body: JSON.stringify({}),
     });
   }
 
@@ -169,6 +179,7 @@ export class LiveClient implements ISocialGraphApi {
   public async toggleFollow(targetUserId: string): Promise<FollowToggleResponse> {
     return this.request<FollowToggleResponse>(`/api/v1/users/${targetUserId}/follow`, {
       method: 'POST',
+      body: JSON.stringify({}),
     });
   }
 
@@ -178,6 +189,22 @@ export class LiveClient implements ISocialGraphApi {
 
   public async getCommunities(): Promise<Community[]> {
     return this.request<Community[]>('/api/v1/communities');
+  }
+
+  public async setCommunityMembership(
+    communitySlug: string,
+    isMember: boolean
+  ): Promise<CommunityMembershipResult> {
+    const slug = encodeURIComponent(communitySlug);
+    if (isMember) {
+      return this.request<CommunityMembershipResult>(`/api/v1/communities/${slug}/join`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+    }
+    return this.request<CommunityMembershipResult>(`/api/v1/communities/${slug}/join`, {
+      method: 'DELETE',
+    });
   }
 
   public async getCommunityFeed(

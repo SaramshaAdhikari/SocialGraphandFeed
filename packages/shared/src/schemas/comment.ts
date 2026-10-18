@@ -21,7 +21,7 @@ export type CommentNode = Static<typeof CommentNodeSchema>;
 
 export const CreateCommentInputSchema = Type.Object({
   content: Type.String({ minLength: 1, maxLength: 10000 }),
-  parent_id: Type.Optional(Type.Union([Type.String(), Type.Null()])),
-});
+  parent_id: Type.Optional(Type.Union([Type.String({ maxLength: 128, pattern: '^[A-Za-z0-9_-]+$' }), Type.Null()])),
+}, { additionalProperties: false });
 
 export type CreateCommentInput = Static<typeof CreateCommentInputSchema>;

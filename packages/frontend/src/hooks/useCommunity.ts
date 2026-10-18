@@ -22,9 +22,9 @@ export interface UseCommunityReturn {
   postsLoading: boolean;
   error: Error | null;
   isNotFound: boolean;
-  isMember: boolean;
-  membersCount: number;
-  toggleMembership: () => void;
+  membershipPending: boolean;
+  membershipError: Error | null;
+  toggleMembership: () => Promise<void>;
   vote: (postId: string, direction: 1 | -1 | 0) => Promise<void>;
   toggleSave: (postId: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -45,9 +45,8 @@ export function useCommunity(
   const [error, setError] = useState<Error | null>(null);
   const [isNotFound, setIsNotFound] = useState<boolean>(false);
 
-  // Local optimistic membership state
-  const [isMember, setIsMember] = useState<boolean>(false);
-  const [membersCount, setMembersCount] = useState<number>(0);
+  const [membershipPending, setMembershipPending] = useState(false);
+  const [membershipError, setMembershipError] = useState<Error | null>(null);
 
   const fetchTokenRef = useRef(0);
 
@@ -71,8 +70,6 @@ export function useCommunity(
       if (token !== fetchTokenRef.current) return;
 
       setCommunity(fetchedCommunity);
-      setIsMember(Boolean(fetchedCommunity.is_member));
-      setMembersCount(fetchedCommunity.members_count);
       setLoading(false);
 
       // Fetch scoped feed with selected sort
@@ -125,16 +122,23 @@ export function useCommunity(
     return posts;
   }, [posts, activeTab]);
 
-  // Local optimistic membership toggle
-  // Note: ISocialGraphApi specifies read operations getCommunity & getCommunityFeed;
-  // local state provides instant feedback in mock mode.
-  const toggleMembership = useCallback(() => {
-    setIsMember((prev) => {
-      const next = !prev;
-      setMembersCount((count) => Math.max(0, count + (next ? 1 : -1)));
-      return next;
-    });
-  }, []);
+  // Membership state is rendered from the community API response. Mutations
+  // update the view only after the data source confirms the requested state.
+  const toggleMembership = useCallback(async () => {
+    if (!community || membershipPending) return;
+    setMembershipPending(true);
+    setMembershipError(null);
+    try {
+      const result = await apiInstance.setCommunityMembership(community.slug, !community.is_member);
+      setCommunity((current) => current && current.id === result.community_id
+        ? { ...current, is_member: result.is_member, members_count: result.members_count }
+        : current);
+    } catch (err) {
+      setMembershipError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setMembershipPending(false);
+    }
+  }, [apiInstance, community, membershipPending]);
 
   // Optimistic post voting with rollback
   const vote = useCallback(
@@ -208,8 +212,8 @@ export function useCommunity(
     postsLoading,
     error,
     isNotFound,
-    isMember,
-    membersCount,
+    membershipPending,
+    membershipError,
     toggleMembership,
     vote,
     toggleSave,

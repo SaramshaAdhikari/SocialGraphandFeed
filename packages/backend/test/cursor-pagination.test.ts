@@ -80,6 +80,14 @@ describe('Cursor-Based Pagination Engine', () => {
       });
       expect(() => decodeCursor(topCursor, 'new')).toThrow(/does not match expected sort 'new'/);
     });
+
+    it('rejects cursors with invalid dates and query identifiers', () => {
+      const badDate = encodeCursor({ t: 'new', createdAt: 'not-a-date', id: 'post_1' });
+      const badId = encodeCursor({ t: 'new', createdAt: '2026-10-15T12:00:00.000Z', id: '$where' });
+      expect(() => decodeCursor(badDate, 'new')).toThrow(/Invalid or malformed pagination cursor/);
+      expect(() => decodeCursor(badId, 'new')).toThrow(/Invalid or malformed pagination cursor/);
+      expect(() => decodeCursor('a'.repeat(2049), 'new')).toThrow(/Invalid or malformed pagination cursor/);
+    });
   });
 
   describe('MongoDB Cursor Query Boundaries', () => {

@@ -1,6 +1,7 @@
-import type { Db, Filter, Sort } from 'mongodb';
+import { ObjectId, type Db, type Filter, type Sort } from 'mongodb';
 import { AppError, type Community, type FeedQuery, type FeedResponse } from '@socialgraph/shared';
 import { getDb } from '../db/mongo.js';
+import { runInTransaction } from '../db/transaction.js';
 import { COLLECTIONS } from '../db/collections.js';
 import type {
   CommunityDoc,
@@ -38,7 +39,8 @@ export class CommunityService {
       isMember = Boolean(membership);
     }
 
-    return toCommunity(comm, isMember);
+    const membersCount = await membershipsCol.countDocuments({ community_id: comm._id });
+    return toCommunity({ ...comm, members_count: membersCount }, isMember);
   }
 
   public async getCommunityFeed(
@@ -131,59 +133,78 @@ export class CommunityService {
     };
   }
 
-  public async toggleMembership(
+  public async getCommunities(currentUserId?: string): Promise<Community[]> {
+    const commsCol = this.db.collection<CommunityDoc>(COLLECTIONS.COMMUNITIES);
+    const membershipsCol = this.db.collection<CommunityMembershipDoc>(
+      COLLECTIONS.COMMUNITY_MEMBERSHIPS
+    );
+    const comms = await commsCol.find({}).toArray();
+    if (comms.length === 0) {
+      return [];
+    }
+
+    const counts = await membershipsCol.aggregate<{ _id: string; count: number }>([
+      { $group: { _id: '$community_id', count: { $sum: 1 } } },
+    ]).toArray();
+    const countByCommunityId = new Map(counts.map((item) => [item._id, item.count]));
+    const communitiesWithCounts = comms.map((comm) => ({
+      ...comm,
+      members_count: countByCommunityId.get(comm._id) ?? 0,
+    })).sort((a, b) => b.members_count - a.members_count || a.name.localeCompare(b.name));
+
+    let memberCommIds = new Set<string>();
+    if (currentUserId) {
+      const commIds = communitiesWithCounts.map((c) => c._id);
+      const memberships = await membershipsCol
+        .find({ user_id: currentUserId, community_id: { $in: commIds } })
+        .toArray();
+      memberCommIds = new Set(memberships.map((m) => m.community_id));
+    }
+
+    return communitiesWithCounts.map((comm) => toCommunity(comm, memberCommIds.has(comm._id)));
+  }
+
+  /**
+   * Set the desired membership state idempotently. The membership collection
+   * is authoritative; members_count is reconciled from its rows in the same
+   * transaction so repeated requests cannot drift the counter.
+   */
+  public async setMembership(
     communitySlug: string,
-    userId: string
+    userId: string,
+    isMember: boolean
   ): Promise<{ community_id: string; is_member: boolean; members_count: number }> {
     const commsCol = this.db.collection<CommunityDoc>(COLLECTIONS.COMMUNITIES);
     const membershipsCol = this.db.collection<CommunityMembershipDoc>(
       COLLECTIONS.COMMUNITY_MEMBERSHIPS
     );
+    const usersCol = this.db.collection<UserDoc>(COLLECTIONS.USERS);
 
-    const comm = await commsCol.findOne({ slug: communitySlug });
-    if (!comm) {
-      throw AppError.notFound(`Community with slug '${communitySlug}' not found`);
-    }
+    return runInTransaction(async (session) => {
+      const comm = await commsCol.findOne({ slug: communitySlug }, { session });
+      if (!comm) throw AppError.notFound(`Community with slug '${communitySlug}' not found`);
+      const user = await usersCol.findOne({ _id: userId }, { session });
+      if (!user) throw AppError.notFound(`User ${userId} not found`);
 
-    const existing = await membershipsCol.findOne({
-      user_id: userId,
-      community_id: comm._id,
-    });
+      const filter = { user_id: userId, community_id: comm._id };
+      const existing = await membershipsCol.findOne(filter, { session });
+      if (isMember && !existing) {
+        await membershipsCol.insertOne({
+          _id: new ObjectId().toHexString(),
+          ...filter,
+          created_at: new Date(),
+        }, { session });
+      } else if (!isMember && existing) {
+        await membershipsCol.deleteOne({ ...filter, _id: existing._id }, { session });
+      }
 
-    if (existing) {
-      await membershipsCol.deleteOne({
-        user_id: userId,
-        community_id: comm._id,
-      });
-      const updated = await commsCol.findOneAndUpdate(
+      const membersCount = await membershipsCol.countDocuments({ community_id: comm._id }, { session });
+      await commsCol.updateOne(
         { _id: comm._id },
-        { $inc: { members_count: -1 } },
-        { returnDocument: 'after' }
+        { $set: { members_count: membersCount } },
+        { session }
       );
-      return {
-        community_id: comm._id,
-        is_member: false,
-        members_count: Math.max(updated?.members_count ?? 0, 0),
-      };
-    }
-
-    await membershipsCol.insertOne({
-      _id: `mbr_${userId}_${comm._id}`,
-      user_id: userId,
-      community_id: comm._id,
-      created_at: new Date(),
+      return { community_id: comm._id, is_member: isMember, members_count: membersCount };
     });
-
-    const updated = await commsCol.findOneAndUpdate(
-      { _id: comm._id },
-      { $inc: { members_count: 1 } },
-      { returnDocument: 'after' }
-    );
-
-    return {
-      community_id: comm._id,
-      is_member: true,
-      members_count: updated?.members_count ?? (comm.members_count + 1),
-    };
   }
 }

@@ -8,22 +8,25 @@ async function main() {
 
   try {
     // 1. Initialize MongoDB connection
-    app.log.info({ uri: config.MONGODB_URI, db: config.MONGODB_DB_NAME }, 'Connecting to MongoDB...');
+    app.log.info({ db: config.MONGODB_DB_NAME }, 'Connecting to MongoDB...');
     try {
       await connectMongo();
       app.log.info('MongoDB connected successfully.');
     } catch (err: any) {
+      if (config.NODE_ENV === 'production') throw err;
       app.log.warn({ err: err?.message }, 'MongoDB initial connection failed. Will retry on demand.');
     }
 
     // 2. Initialize Redis connection
-    app.log.info({ url: config.REDIS_URL }, 'Connecting to Redis...');
+    app.log.info('Connecting to Redis...');
     try {
       const redis = connectRedis();
       await redis.connect().catch((err) => {
+        if (config.NODE_ENV === 'production') throw err;
         app.log.warn({ err: err?.message }, 'Redis initial connection failed. Fallback mode active.');
       });
     } catch (err: any) {
+      if (config.NODE_ENV === 'production') throw err;
       app.log.warn({ err: err?.message }, 'Redis initialization failed.');
     }
 

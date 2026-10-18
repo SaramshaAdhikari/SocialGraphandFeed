@@ -7,6 +7,7 @@ import {
   type FollowToggleResponse,
 } from '@socialgraph/shared';
 import { getDb } from '../db/mongo.js';
+import { runInTransaction } from '../db/transaction.js';
 import { COLLECTIONS } from '../db/collections.js';
 import type { UserDoc, PostDoc, FollowDoc, PostVoteDoc, PostSaveDoc } from '../db/types.js';
 import { toUserSummary, toUserProfile, toPostCard } from '../db/serialization.js';
@@ -128,61 +129,33 @@ export class UserService {
     const usersCol = this.db.collection<UserDoc>(COLLECTIONS.USERS);
     const followsCol = this.db.collection<FollowDoc>(COLLECTIONS.FOLLOWS);
 
-    const [targetUser, currentUser] = await Promise.all([
-      usersCol.findOne({ _id: targetUserId }),
-      usersCol.findOne({ _id: currentUserId }),
-    ]);
+    return runInTransaction(async (session) => {
+      const targetUser = await usersCol.findOne({ _id: targetUserId }, { session });
+      const currentUser = await usersCol.findOne({ _id: currentUserId }, { session });
+      if (!targetUser) throw AppError.notFound(`Target user ${targetUserId} not found`);
+      if (!currentUser) throw AppError.notFound(`Current user ${currentUserId} not found`);
 
-    if (!targetUser) {
-      throw AppError.notFound(`Target user ${targetUserId} not found`);
-    }
-    if (!currentUser) {
-      throw AppError.notFound(`Current user ${currentUserId} not found`);
-    }
+      const filter = { follower_id: currentUserId, target_user_id: targetUserId };
+      const existing = await followsCol.findOne(filter, { session });
+      if (existing) {
+        const deleted = await followsCol.deleteOne({ ...filter, _id: existing._id }, { session });
+        if (deleted.deletedCount) {
+          await usersCol.updateOne({ _id: targetUserId }, { $inc: { followers_count: -1 } }, { session });
+          await usersCol.updateOne({ _id: currentUserId }, { $inc: { following_count: -1 } }, { session });
+        }
+        const updated = await usersCol.findOne({ _id: targetUserId }, { session });
+        return { target_user_id: targetUserId, is_following: false, followers_count: Math.max(updated?.followers_count ?? 0, 0) };
+      }
 
-    const existingFollow = await followsCol.findOne({
-      follower_id: currentUserId,
-      target_user_id: targetUserId,
+      await followsCol.insertOne({
+        _id: `flw_${currentUserId}_${targetUserId}`,
+        ...filter,
+        created_at: new Date(),
+      }, { session });
+      await usersCol.updateOne({ _id: targetUserId }, { $inc: { followers_count: 1 } }, { session });
+      await usersCol.updateOne({ _id: currentUserId }, { $inc: { following_count: 1 } }, { session });
+      const updated = await usersCol.findOne({ _id: targetUserId }, { session });
+      return { target_user_id: targetUserId, is_following: true, followers_count: updated?.followers_count ?? targetUser.followers_count + 1 };
     });
-
-    if (existingFollow) {
-      await followsCol.deleteOne({
-        follower_id: currentUserId,
-        target_user_id: targetUserId,
-      });
-
-      const updated = await usersCol.findOneAndUpdate(
-        { _id: targetUserId },
-        { $inc: { followers_count: -1 } },
-        { returnDocument: 'after' }
-      );
-      await usersCol.updateOne({ _id: currentUserId }, { $inc: { following_count: -1 } });
-
-      return {
-        target_user_id: targetUserId,
-        is_following: false,
-        followers_count: Math.max(updated?.followers_count ?? 0, 0),
-      };
-    }
-
-    await followsCol.insertOne({
-      _id: `flw_${currentUserId}_${targetUserId}`,
-      follower_id: currentUserId,
-      target_user_id: targetUserId,
-      created_at: new Date(),
-    });
-
-    const updated = await usersCol.findOneAndUpdate(
-      { _id: targetUserId },
-      { $inc: { followers_count: 1 } },
-      { returnDocument: 'after' }
-    );
-    await usersCol.updateOne({ _id: currentUserId }, { $inc: { following_count: 1 } });
-
-    return {
-      target_user_id: targetUserId,
-      is_following: true,
-      followers_count: updated?.followers_count ?? (targetUser.followers_count + 1),
-    };
   }
 }

@@ -2,13 +2,18 @@ import Fastify, { type FastifyInstance, type FastifyServerOptions } from 'fastif
 import cors from '@fastify/cors';
 import sensible from '@fastify/sensible';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
-import { AppError } from '@socialgraph/shared';
 import errorHandlerPlugin from './plugins/error-handler.js';
 import apiRoutes from './routes/index.js';
 import { config } from './config/env.js';
+import { registerIdentityBoundary } from './routes/identity.js';
 
-export function buildApp(opts: FastifyServerOptions = {}): FastifyInstance {
+export function buildApp(
+  opts: FastifyServerOptions = {},
+  identityOptions: { devUserBypass?: boolean } = {}
+): FastifyInstance {
   const app = Fastify({
+    // Reject undeclared keys instead of silently stripping them from requests.
+    ajv: { customOptions: { removeAdditional: false } },
     logger: {
       level: config.LOG_LEVEL,
       transport:
@@ -35,17 +40,7 @@ export function buildApp(opts: FastifyServerOptions = {}): FastifyInstance {
   // Register RFC 7807 Error Handler Plugin
   app.register(errorHandlerPlugin);
 
-  // Security Pre-Handler: Guard X-Dev-User-Id header
-  app.addHook('onRequest', async (request, reply) => {
-    const devUserId = request.headers['x-dev-user-id'];
-    if (devUserId) {
-      if (process.env.NODE_ENV === 'production' || config.NODE_ENV === 'production') {
-        throw AppError.forbidden('X-Dev-User-Id authentication bypass is strictly disabled in production.');
-      }
-      // Attach to request context in non-production environments
-      (request as any).userId = String(devUserId);
-    }
-  });
+  registerIdentityBoundary(app, identityOptions);
 
   // Register API Routes under /api/v1
   app.register(apiRoutes, { prefix: '/api/v1' });

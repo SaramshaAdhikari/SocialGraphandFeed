@@ -24,8 +24,8 @@ export function toUserProfile(user: UserDoc, isFollowing = false): UserProfile {
   return {
     ...toUserSummary(user),
     bio: user.bio || '',
-    banner_url: user.banner_url,
-    website: user.website,
+    banner_url: user.banner_url ?? undefined,
+    website: user.website ?? undefined,
     followers_count: user.followers_count || 0,
     following_count: user.following_count || 0,
     posts_count: user.posts_count || 0,
@@ -43,8 +43,8 @@ export function toPostCard(
   const base = {
     id: post._id,
     author,
-    community_id: post.community_id,
-    community_slug: post.community_slug,
+    community_id: post.community_id ?? undefined,
+    community_slug: post.community_slug ?? undefined,
     created_at: post.created_at.toISOString(),
     updated_at: post.updated_at.toISOString(),
     score: post.score ?? 0,
@@ -64,11 +64,13 @@ export function toPostCard(
     const visualPin: VisualPinCard = {
       ...base,
       post_type: 'visual',
-      title: post.title,
-      caption: post.caption || post.content,
+      title: post.title ?? undefined,
+      caption: post.caption || post.content || undefined,
       media,
-      collection_id: post.collection_id,
-      dominant_color: post.dominant_color,
+      collection_id: post.collection_id ?? undefined,
+      dominant_color: post.dominant_color ?? undefined,
+      destination_url: post.destination_url ?? undefined,
+      tags: post.tags ?? undefined,
     };
     return visualPin;
   }
@@ -85,7 +87,8 @@ export function toPostCard(
     title: post.title,
     content: post.content || '',
     media: mediaArray,
-    flair: post.flair,
+    flair: post.flair ?? undefined,
+    tags: post.tags ?? undefined,
   };
   return discussion;
 }

@@ -30,6 +30,7 @@ export interface PostDoc {
   dominant_color?: string;
   flair?: string;
   tags?: string[];
+  destination_url?: string;
   score: number;
   hot_score: number;
   comments_count: number;

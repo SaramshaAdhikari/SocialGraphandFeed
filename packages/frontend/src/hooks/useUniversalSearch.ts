@@ -29,6 +29,7 @@ export interface UseUniversalSearchReturn {
   clearSearch: () => void;
   votePost: (postId: string, direction: 1 | -1 | 0) => Promise<void>;
   toggleSavePost: (postId: string) => Promise<void>;
+  setCommunityMembership: (communitySlug: string, isMember: boolean) => Promise<void>;
   retry: () => void;
 }
 
@@ -218,6 +219,23 @@ export function useUniversalSearch(
     [results, apiInstance]
   );
 
+  const setCommunityMembership = useCallback(async (communitySlug: string, isMember: boolean) => {
+    const membership = await apiInstance.setCommunityMembership(communitySlug, isMember);
+    setResults((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        communities: current.communities.map((community) => community.id === membership.community_id
+          ? {
+              ...community,
+              is_member: membership.is_member,
+              members_count: membership.members_count,
+            }
+          : community),
+      };
+    });
+  }, [apiInstance]);
+
   const counts = useMemo(() => {
     if (!results) {
       return { all: 0, discussions: 0, visual: 0, communities: 0, people: 0 };
@@ -247,6 +265,7 @@ export function useUniversalSearch(
     clearSearch,
     votePost,
     toggleSavePost,
+    setCommunityMembership,
     retry,
   };
 }

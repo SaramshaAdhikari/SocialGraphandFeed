@@ -704,6 +704,35 @@ export class MockAdapter implements ISocialGraphApi {
     return Object.values(this.communities);
   }
 
+  public async setCommunityMembership(
+    communitySlug: string,
+    isMember: boolean
+  ): Promise<{ community_id: string; is_member: boolean; members_count: number }> {
+    const endpoint = `/api/v1/communities/${communitySlug}/join`;
+    await this.delay(endpoint);
+    const community = Object.values(this.communities).find((item) => item.slug === communitySlug);
+    if (!community) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/not-found',
+        title: 'Community Not Found',
+        status: 404,
+        detail: `Community with slug ${communitySlug} not found`,
+        code: 'COMMUNITY_NOT_FOUND',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (community.is_member !== isMember) {
+      community.is_member = isMember;
+      community.members_count = Math.max(0, community.members_count + (isMember ? 1 : -1));
+    }
+    return {
+      community_id: community.id,
+      is_member: community.is_member,
+      members_count: community.members_count,
+    };
+  }
+
   public async search(query: SearchQuery): Promise<UniversalSearchResults> {
     const rawQ = query.q || '';
     await this.delay(`/api/v1/search?q=${encodeURIComponent(rawQ)}`);

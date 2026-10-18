@@ -1,12 +1,19 @@
 import { MongoClient, type Db } from 'mongodb';
 import { config } from '../config/env.js';
 import { ensureIndexes } from './indexes.js';
+import { reconcileCommunityMemberCounts } from './membershipIntegrity.js';
 
 let client: MongoClient | null = null;
 let db: Db | null = null;
 
 export async function connectMongo(uri = config.MONGODB_URI, dbName = config.MONGODB_DB_NAME): Promise<{ client: MongoClient; db: Db }> {
   if (client && db) {
+    // Tests and maintenance tools may select a different database on the same
+    // Mongo client. Rebind explicitly instead of silently returning the first
+    // database selected by this process.
+    db = client.db(dbName);
+    await ensureIndexes(db);
+    await reconcileCommunityMemberCounts(db, client);
     return { client, db };
   }
 
@@ -21,6 +28,9 @@ export async function connectMongo(uri = config.MONGODB_URI, dbName = config.MON
   db = client.db(dbName);
 
   await ensureIndexes(db);
+  // `community_memberships` is the source of truth; repair stale display
+  // counters before the API begins serving reads.
+  await reconcileCommunityMemberCounts(db, client);
 
   return { client, db };
 }

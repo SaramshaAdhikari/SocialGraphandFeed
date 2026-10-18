@@ -5,26 +5,16 @@ import { connectRedis, disconnectRedis, checkRedisHealth } from '../src/cache/re
 import { HealthStatusSchema, ApiErrorResponseSchema } from '@socialgraph/shared';
 import { Value } from '@sinclair/typebox/value';
 import type { FastifyInstance } from 'fastify';
+import { requiredTestServiceUrl } from './test-env.js';
 
 describe('Milestone 1 — Foundation & Contract Baseline Integration Tests', () => {
-  let app: FastifyInstance;
-
+  let app: FastifyInstance | undefined;
+  let mongoReady = false;
   beforeAll(async () => {
-    // 1. Initialize databases
-    try {
-      await connectMongo();
-    } catch (err) {
-      console.warn('MongoDB connect warning during test setup:', err);
-    }
-
-    try {
-      const redis = connectRedis();
-      await redis.connect().catch((err) => {
-        console.warn('Redis connect warning during test setup:', err);
-      });
-    } catch (err) {
-      console.warn('Redis init warning during test setup:', err);
-    }
+    await connectMongo(requiredTestServiceUrl('MONGODB_TEST_URI'), 'socialgraph_foundation_test');
+    mongoReady = true;
+    const redis = connectRedis(requiredTestServiceUrl('REDIS_TEST_URL'));
+    await redis.connect();
 
     // 2. Build Fastify application
     app = buildApp();
@@ -32,7 +22,8 @@ describe('Milestone 1 — Foundation & Contract Baseline Integration Tests', () 
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) await app.close();
+    if (mongoReady) await getDb().dropDatabase();
     await disconnectMongo();
     await disconnectRedis();
   });
@@ -135,6 +126,7 @@ describe('Milestone 1 — Foundation & Contract Baseline Integration Tests', () 
       // Read key
       const fetched = await redis.get(testKey);
       expect(fetched).toBe(testVal);
+      expect(await redis.ttl(testKey)).toBeGreaterThan(0);
 
       // Delete key
       await redis.del(testKey);

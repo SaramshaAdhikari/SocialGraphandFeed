@@ -4,20 +4,21 @@ import { Button } from '../ui/Button';
 
 export interface CommunityHeaderProps {
   community: Community;
-  isMember: boolean;
-  membersCount: number;
-  onToggleMembership: () => void;
+  onToggleMembership: () => void | Promise<void>;
+  membershipPending?: boolean;
+  membershipError?: Error | null;
   className?: string;
 }
 
 export function CommunityHeader({
   community,
-  isMember,
-  membersCount,
   onToggleMembership,
+  membershipPending = false,
+  membershipError,
   className = '',
 }: CommunityHeaderProps) {
-  const formattedMembers = new Intl.NumberFormat('en-US').format(membersCount);
+  const isMember = community.is_member;
+  const formattedMembers = new Intl.NumberFormat('en-US').format(community.members_count);
 
   // Parse creation year/month
   const formattedCreationDate = (() => {
@@ -84,6 +85,8 @@ export function CommunityHeader({
               variant={isMember ? 'secondary' : 'primary'}
               size="sm"
               onClick={onToggleMembership}
+              disabled={membershipPending}
+              isLoading={membershipPending}
               aria-pressed={isMember}
               className="h-9 px-4 font-semibold text-xs sm:text-sm rounded-full shadow-xs"
               leftIcon={
@@ -98,6 +101,12 @@ export function CommunityHeader({
             </Button>
           </div>
         </div>
+
+        {membershipError && (
+          <p role="alert" className="mb-3 text-xs text-red-600 dark:text-red-400">
+            {membershipError.message}
+          </p>
+        )}
 
         {/* Description */}
         <p className="text-sm text-[#475569] dark:text-[#CBD5E1] leading-relaxed max-w-3xl mb-3">

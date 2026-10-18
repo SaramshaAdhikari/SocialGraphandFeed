@@ -11,6 +11,9 @@ import {
   type CreateCommentInput,
 } from '@socialgraph/shared';
 import { PostService } from '../services/PostService.js';
+import { getRequestUserId, requireIdentity } from './identity.js';
+
+const postIdSchema = Type.String({ minLength: 1, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$' });
 
 const postsRoutes: FastifyPluginAsync = async (fastify) => {
   const postService = new PostService();
@@ -20,7 +23,7 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
     {
       schema: {
         params: Type.Object({
-          postId: Type.String(),
+          postId: postIdSchema,
         }),
         response: {
           200: PostCardSchema,
@@ -28,7 +31,7 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request) => {
-      const userId = (request as any).userId;
+      const userId = getRequestUserId(request);
       return postService.getPost(request.params.postId, userId);
     }
   );
@@ -36,6 +39,7 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post<{ Body: CreatePostInput }>(
     '/posts',
     {
+      preHandler: requireIdentity,
       schema: {
         body: CreatePostInputSchema,
         response: {
@@ -44,7 +48,7 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const userId = (request as any).userId || 'usr_0';
+      const userId = getRequestUserId(request)!;
       const post = await postService.createPost(request.body, userId);
       reply.status(201);
       return post;
@@ -54,9 +58,10 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post<{ Params: { postId: string }; Body: VoteInput }>(
     '/posts/:postId/vote',
     {
+      preHandler: requireIdentity,
       schema: {
         params: Type.Object({
-          postId: Type.String(),
+          postId: postIdSchema,
         }),
         body: VoteInputSchema,
         response: {
@@ -70,7 +75,7 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request) => {
-      const userId = (request as any).userId || 'usr_0';
+      const userId = getRequestUserId(request)!;
       return postService.votePost(request.params.postId, userId, request.body.direction);
     }
   );
@@ -78,10 +83,12 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post<{ Params: { postId: string } }>(
     '/posts/:postId/save',
     {
+      preHandler: requireIdentity,
       schema: {
         params: Type.Object({
-          postId: Type.String(),
+          postId: postIdSchema,
         }),
+        body: Type.Object({}, { additionalProperties: false }),
         response: {
           200: Type.Object({
             post_id: Type.String(),
@@ -91,7 +98,7 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request) => {
-      const userId = (request as any).userId || 'usr_0';
+      const userId = getRequestUserId(request)!;
       return postService.toggleSavePost(request.params.postId, userId);
     }
   );
@@ -101,7 +108,7 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
     {
       schema: {
         params: Type.Object({
-          postId: Type.String(),
+          postId: postIdSchema,
         }),
         response: {
           200: Type.Array(CommentNodeSchema),
@@ -109,7 +116,7 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request) => {
-      const userId = (request as any).userId;
+      const userId = getRequestUserId(request);
       return postService.getComments(request.params.postId, userId);
     }
   );
@@ -117,9 +124,10 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post<{ Params: { postId: string }; Body: CreateCommentInput }>(
     '/posts/:postId/comments',
     {
+      preHandler: requireIdentity,
       schema: {
         params: Type.Object({
-          postId: Type.String(),
+          postId: postIdSchema,
         }),
         body: CreateCommentInputSchema,
         response: {
@@ -128,7 +136,7 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const userId = (request as any).userId || 'usr_0';
+      const userId = getRequestUserId(request)!;
       const comment = await postService.createComment(
         request.params.postId,
         userId,

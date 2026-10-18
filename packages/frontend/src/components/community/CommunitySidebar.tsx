@@ -4,13 +4,11 @@ import { ShieldCheck, BookOpen, ChevronDown, ChevronUp, Users, Calendar, Info } 
 
 export interface CommunitySidebarProps {
   community: Community;
-  membersCount: number;
   className?: string;
 }
 
 export function CommunitySidebar({
   community,
-  membersCount,
   className = '',
 }: CommunitySidebarProps) {
   const [expandedRuleId, setExpandedRuleId] = useState<string | null>(null);
@@ -19,7 +17,7 @@ export function CommunitySidebar({
     setExpandedRuleId((prev) => (prev === ruleId ? null : ruleId));
   };
 
-  const formattedMembers = new Intl.NumberFormat('en-US').format(membersCount);
+  const formattedMembers = new Intl.NumberFormat('en-US').format(community.members_count);
 
   const formattedCreationDate = (() => {
     try {

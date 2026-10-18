@@ -8,6 +8,9 @@ import { UserService } from '../src/services/UserService.js';
 import { CommunityService } from '../src/services/CommunityService.js';
 import { COLLECTIONS } from '../src/db/collections.js';
 import type { Db } from 'mongodb';
+import { requiredTestServiceUrl } from './test-env.js';
+import { calculateHotScore } from '../src/utils/pagination.js';
+import { reconcileCommunityMemberCounts } from '../src/db/membershipIntegrity.js';
 
 describe('Real MongoDB Integration Suite (Local Database)', () => {
   let db: Db;
@@ -17,8 +20,8 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
   let communityService: CommunityService;
 
   beforeAll(async () => {
-    // Connect to local MongoDB using dedicated integration test database
-    const conn = await connectMongo('mongodb://localhost:27017', 'socialgraph_integration_test');
+    // This suite drops its database after execution; never fall back to a developer DB.
+    const conn = await connectMongo(requiredTestServiceUrl('MONGODB_TEST_URI'), 'socialgraph_integration_test');
     db = conn.db;
     feedService = new FeedService();
     postService = new PostService();
@@ -66,6 +69,15 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
           created_at: new Date(),
         })
       ).rejects.toThrow(/duplicate key/i);
+    });
+
+    it('enforces unique user-community membership pairs', async () => {
+      await expect(db.collection(COLLECTIONS.COMMUNITY_MEMBERSHIPS).insertOne({
+        _id: 'mbr_duplicate_pair',
+        user_id: 'usr_0',
+        community_id: 'comm_systems',
+        created_at: new Date(),
+      })).rejects.toThrow(/duplicate key/i);
     });
   });
 
@@ -185,6 +197,17 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
       expect(retrieved.score).toBe(0);
     });
 
+    it('rejects a post that references a missing community without writing it', async () => {
+      const before = await db.collection(COLLECTIONS.POSTS).countDocuments({ author_id: 'usr_0' });
+      await expect(postService.createPost({
+        post_type: 'discussion',
+        title: 'Missing community reference',
+        content: 'must not create a dangling relation',
+        community_id: 'comm_missing',
+      }, 'usr_0')).rejects.toThrow(/Community comm_missing not found/);
+      expect(await db.collection(COLLECTIONS.POSTS).countDocuments({ author_id: 'usr_0' })).toBe(before);
+    });
+
     it('atomically upvotes, downvotes, and cancels vote on post', async () => {
       // 1. Upvote (+1)
       const vote1 = await postService.votePost(createdPostId, 'usr_4', 1);
@@ -277,25 +300,322 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
       );
     });
 
-    it('toggles community membership and maintains members_count', async () => {
+    it('sets membership idempotently and keeps persisted state, listings, and counts consistent', async () => {
       const commBefore = await communityService.getCommunity('systems', 'usr_4');
       const initialMembers = commBefore.members_count;
       expect(commBefore.is_member).toBe(false);
 
-      const join = await communityService.toggleMembership('systems', 'usr_4');
+      const join = await communityService.setMembership('systems', 'usr_4', true);
       expect(join.is_member).toBe(true);
       expect(join.members_count).toBe(initialMembers + 1);
+      const repeatedJoin = await communityService.setMembership('systems', 'usr_4', true);
+      expect(repeatedJoin.members_count).toBe(initialMembers + 1);
+      expect(await db.collection(COLLECTIONS.COMMUNITY_MEMBERSHIPS).countDocuments({ user_id: 'usr_4', community_id: 'comm_systems' })).toBe(1);
 
       const commAfter = await communityService.getCommunity('systems', 'usr_4');
       expect(commAfter.is_member).toBe(true);
+      expect((await communityService.getCommunities('usr_4')).find((c) => c.slug === 'systems')).toMatchObject({ is_member: true, members_count: initialMembers + 1 });
+      expect((await communityService.getCommunity('systems', 'usr_3')).is_member).toBe(false);
 
-      const leave = await communityService.toggleMembership('systems', 'usr_4');
+      const leave = await communityService.setMembership('systems', 'usr_4', false);
       expect(leave.is_member).toBe(false);
       expect(leave.members_count).toBe(initialMembers);
+      const repeatedLeave = await communityService.setMembership('systems', 'usr_4', false);
+      expect(repeatedLeave.members_count).toBe(initialMembers);
+      expect(await db.collection(COLLECTIONS.COMMUNITY_MEMBERSHIPS).countDocuments({ user_id: 'usr_4', community_id: 'comm_systems' })).toBe(0);
+      expect((await communityService.getCommunity('systems', 'usr_4')).is_member).toBe(false);
+    });
+
+    it('serializes concurrent joins without duplicate memberships or count drift', async () => {
+      const before = await communityService.getCommunity('systems', 'usr_3');
+      expect(before.is_member).toBe(false);
+      await Promise.all([
+        communityService.setMembership('systems', 'usr_3', true),
+        communityService.setMembership('systems', 'usr_3', true),
+      ]);
+      const after = await communityService.getCommunity('systems', 'usr_3');
+      expect(after.is_member).toBe(true);
+      expect(after.members_count).toBe(before.members_count + 1);
+      expect(await db.collection(COLLECTIONS.COMMUNITY_MEMBERSHIPS).countDocuments({ user_id: 'usr_3', community_id: 'comm_systems' })).toBe(1);
+      expect((await communityService.getCommunity('systems', 'usr_0')).is_member).toBe(true);
+      await communityService.setMembership('systems', 'usr_3', false);
+    });
+
+    it('rolls back the membership row if updating the derived count fails', async () => {
+      const communities = db.collection(COLLECTIONS.COMMUNITIES);
+      const before = await communityService.getCommunity('systems', 'usr_3');
+      const prototype = Object.getPrototypeOf(communities);
+      const originalUpdateOne = prototype.updateOne;
+      prototype.updateOne = async function (filter: any, ...args: any[]) {
+        if (this.collectionName === COLLECTIONS.COMMUNITIES && filter?._id === 'comm_systems') {
+          throw new Error('injected membership counter failure');
+        }
+        return originalUpdateOne.call(this, filter, ...args);
+      };
+      try {
+        await expect(communityService.setMembership('systems', 'usr_3', true)).rejects.toThrow('injected membership counter failure');
+      } finally {
+        prototype.updateOne = originalUpdateOne;
+      }
+      expect(await db.collection(COLLECTIONS.COMMUNITY_MEMBERSHIPS).countDocuments({ user_id: 'usr_3', community_id: 'comm_systems' })).toBe(0);
+      expect((await communityService.getCommunity('systems', 'usr_3'))).toMatchObject({ is_member: false, members_count: before.members_count });
+    });
+
+    it('rejects unknown users without creating membership and repairs only stale derived counters', async () => {
+      const memberships = db.collection(COLLECTIONS.COMMUNITY_MEMBERSHIPS);
+      const beforeRows = await memberships.find({}).toArray();
+      await expect(communityService.setMembership('systems', 'unknown_user', true)).rejects.toThrow(/User unknown_user not found/);
+      expect(await memberships.find({}).toArray()).toEqual(beforeRows);
+
+      await db.collection(COLLECTIONS.COMMUNITIES).updateOne({ _id: 'comm_systems' }, { $set: { members_count: 999 } });
+      const repaired = await reconcileCommunityMemberCounts(db, (await import('../src/db/mongo.js')).getMongoClient()!);
+      expect(repaired).toBeGreaterThan(0);
+      expect(await memberships.find({}).toArray()).toEqual(beforeRows);
+      expect((await communityService.getCommunity('systems', 'usr_0')).members_count).toBe(await memberships.countDocuments({ community_id: 'comm_systems' }));
+    });
+
+    it('retrieves all communities with getCommunities and checks membership', async () => {
+      const allComms = await communityService.getCommunities('usr_0');
+      expect(allComms.length).toBeGreaterThanOrEqual(5);
+
+      const systemsComm = allComms.find((c) => c.slug === 'systems');
+      expect(systemsComm).toBeDefined();
+      expect(systemsComm?.is_member).toBe(true); // usr_0 is a member in seed
     });
   });
 
-  describe('5. Seed Idempotency', () => {
+  describe('5. Universal Search Engine', () => {
+    let searchService: any;
+
+    beforeAll(async () => {
+      const { SearchService } = await import('../src/services/SearchService.js');
+      searchService = new SearchService();
+    });
+
+    it('matches across discussions, communities, and people for multi-entity term "systems"', async () => {
+      const res = await searchService.search({ q: 'systems', category: 'all' }, 'usr_0');
+      expect(res.total_count).toBeGreaterThan(0);
+
+      const foundComm = res.communities.find((c: any) => c.slug === 'systems');
+      expect(foundComm).toBeDefined();
+
+      const foundUser = res.users.find((u: any) => u.username === 'lucas_t');
+      expect(foundUser).toBeDefined();
+
+      expect(res.discussions.length).toBeGreaterThan(0);
+    });
+
+    it('filters strictly by category', async () => {
+      const discOnly = await searchService.search({ q: 'systems', category: 'discussions' });
+      expect(discOnly.discussions.length).toBeGreaterThan(0);
+      expect(discOnly.visuals).toHaveLength(0);
+      expect(discOnly.communities).toHaveLength(0);
+      expect(discOnly.users).toHaveLength(0);
+      expect(discOnly.total_count).toBe(discOnly.discussions.length);
+
+      const commOnly = await searchService.search({ q: 'systems', category: 'communities' });
+      expect(commOnly.communities.length).toBeGreaterThan(0);
+      expect(commOnly.discussions).toHaveLength(0);
+      expect(commOnly.total_count).toBe(commOnly.communities.length);
+    });
+
+    it('sorts search results by top and new', async () => {
+      const topSearch = await searchService.search({ q: 'concrete', category: 'visual', sort: 'top' });
+      expect(topSearch.visuals.length).toBeGreaterThan(0);
+
+      const newSearch = await searchService.search({ q: 'systems', category: 'discussions', sort: 'new' });
+      expect(newSearch.discussions.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('6. Mutation Integrity & Concurrency Safety', () => {
+    it('handles concurrent votes from the same user idempotently without score drift', async () => {
+      // 1. Create a dedicated post for concurrency testing
+      const testPost = await postService.createPost(
+        {
+          post_type: 'discussion',
+          title: 'Concurrency Test Post',
+          content: 'Testing atomic updates under concurrency',
+        },
+        'usr_0'
+      );
+
+      // 2. Fire 3 concurrent upvotes from the SAME user
+      const results = await Promise.all([
+        postService.votePost(testPost.id, 'usr_3', 1),
+        postService.votePost(testPost.id, 'usr_3', 1),
+        postService.votePost(testPost.id, 'usr_3', 1),
+      ]);
+
+      const finalPost = await postService.getPost(testPost.id);
+      // Net score must be exactly 1, not 3
+      expect(finalPost.score).toBe(1);
+      expect(await db.collection(COLLECTIONS.POST_VOTES).countDocuments({ post_id: testPost.id, user_id: 'usr_3' })).toBe(1);
+      const persistedPost = await db.collection(COLLECTIONS.POSTS).findOne({ _id: testPost.id });
+      expect(persistedPost?.hot_score).toBe(calculateHotScore(1, persistedPost!.created_at));
+    });
+
+    it('handles concurrent upvotes from distinct users correctly summing score', async () => {
+      const testPost = await postService.createPost(
+        {
+          post_type: 'discussion',
+          title: 'Multi-User Concurrency Post',
+          content: 'Testing multiple users voting at once',
+        },
+        'usr_0'
+      );
+
+      // 3 distinct users upvote simultaneously; the post score is the serialization point.
+      await Promise.all([
+        postService.votePost(testPost.id, 'usr_1', 1),
+        postService.votePost(testPost.id, 'usr_2', 1),
+        postService.votePost(testPost.id, 'usr_4', 1),
+      ]);
+
+      const finalPost = await postService.getPost(testPost.id);
+      expect(finalPost.score).toBe(3);
+      expect(await db.collection(COLLECTIONS.POST_VOTES).countDocuments({ post_id: testPost.id })).toBe(3);
+    });
+
+    it('handles concurrent follow requests safely without corrupting counters', async () => {
+      const initialProfile = await userService.getUserProfile('elena_arch');
+      const startCount = initialProfile.followers_count;
+
+      // Two toggles serialize as two state transitions, leaving the original state and counters intact.
+      await Promise.all([
+        userService.toggleFollow('usr_2', 'usr_3'),
+        userService.toggleFollow('usr_2', 'usr_3'),
+      ]);
+
+      const finalProfile = await userService.getUserProfile('elena_arch');
+      expect(finalProfile.followers_count).toBe(startCount);
+      expect(finalProfile.is_following).toBe(false);
+      expect(await db.collection(COLLECTIONS.FOLLOWS).countDocuments({ follower_id: 'usr_3', target_user_id: 'usr_2' })).toBe(0);
+    });
+
+    it('serializes concurrent saves and keeps the unique save record consistent', async () => {
+      const post = await postService.createPost({ post_type: 'discussion', title: 'Concurrent save', content: 'test' }, 'usr_0');
+      await Promise.all([
+        postService.toggleSavePost(post.id, 'usr_3'),
+        postService.toggleSavePost(post.id, 'usr_3'),
+      ]);
+      expect((await postService.getPost(post.id, 'usr_3')).is_saved).toBe(false);
+      expect(await db.collection(COLLECTIONS.POST_SAVES).countDocuments({ post_id: post.id, user_id: 'usr_3' })).toBe(0);
+    });
+
+    it('rolls back a vote record when the score update fails mid-transaction', async () => {
+      const post = await postService.createPost({ post_type: 'discussion', title: 'Failed vote transaction', content: 'test' }, 'usr_0');
+      const prototype = Object.getPrototypeOf(db.collection(COLLECTIONS.POSTS));
+      const originalUpdateOne = prototype.updateOne;
+      prototype.updateOne = async function (filter: any, ...args: any[]) {
+        if (this.collectionName === COLLECTIONS.POSTS && filter?._id === post.id) {
+          throw new Error('injected score write failure');
+        }
+        return originalUpdateOne.call(this, filter, ...args);
+      };
+      try {
+        await expect(postService.votePost(post.id, 'usr_3', 1)).rejects.toThrow('injected score write failure');
+      } finally {
+        prototype.updateOne = originalUpdateOne;
+      }
+      expect(await db.collection(COLLECTIONS.POST_VOTES).countDocuments({ post_id: post.id, user_id: 'usr_3' })).toBe(0);
+      expect((await db.collection(COLLECTIONS.POSTS).findOne({ _id: post.id }))?.score).toBe(0);
+    });
+
+    it('rolls back a follow edge when a counter update fails mid-transaction', async () => {
+      const targetBefore = await db.collection(COLLECTIONS.USERS).findOne({ _id: 'usr_2' });
+      const followerBefore = await db.collection(COLLECTIONS.USERS).findOne({ _id: 'usr_3' });
+      const prototype = Object.getPrototypeOf(db.collection(COLLECTIONS.USERS));
+      const originalUpdateOne = prototype.updateOne;
+      prototype.updateOne = async function (filter: any, ...args: any[]) {
+        if (this.collectionName === COLLECTIONS.USERS && filter?._id === 'usr_2') {
+          throw new Error('injected follower counter failure');
+        }
+        return originalUpdateOne.call(this, filter, ...args);
+      };
+      try {
+        await expect(userService.toggleFollow('usr_2', 'usr_3')).rejects.toThrow('injected follower counter failure');
+      } finally {
+        prototype.updateOne = originalUpdateOne;
+      }
+      expect(await db.collection(COLLECTIONS.FOLLOWS).countDocuments({ follower_id: 'usr_3', target_user_id: 'usr_2' })).toBe(0);
+      expect((await db.collection(COLLECTIONS.USERS).findOne({ _id: 'usr_2' }))?.followers_count).toBe(targetBefore?.followers_count);
+      expect((await db.collection(COLLECTIONS.USERS).findOne({ _id: 'usr_3' }))?.following_count).toBe(followerBefore?.following_count);
+    });
+
+    it('keeps concurrent comment records and comments_count in sync', async () => {
+      const post = await postService.createPost({ post_type: 'discussion', title: 'Concurrent comments', content: 'test' }, 'usr_0');
+      await Promise.all(Array.from({ length: 8 }, (_, index) =>
+        postService.createComment(post.id, 'usr_1', { content: `comment ${index}` })
+      ));
+      const savedPost = await db.collection(COLLECTIONS.POSTS).findOne({ _id: post.id });
+      const comments = await db.collection(COLLECTIONS.COMMENTS).countDocuments({ post_id: post.id });
+      expect(comments).toBe(8);
+      expect(savedPost?.comments_count).toBe(comments);
+    });
+
+    it('rolls back a comment record when the counter update fails mid-transaction', async () => {
+      const post = await postService.createPost({ post_type: 'discussion', title: 'Failed comment transaction', content: 'test' }, 'usr_0');
+      const prototype = Object.getPrototypeOf(db.collection(COLLECTIONS.POSTS));
+      const originalUpdateOne = prototype.updateOne;
+      prototype.updateOne = async function (filter: any, ...args: any[]) {
+        if (this.collectionName === COLLECTIONS.POSTS && filter?._id === post.id) {
+          throw new Error('injected counter write failure');
+        }
+        return originalUpdateOne.call(this, filter, ...args);
+      };
+      try {
+        await expect(postService.createComment(post.id, 'usr_1', { content: 'must roll back' })).rejects.toThrow('injected counter write failure');
+      } finally {
+        prototype.updateOne = originalUpdateOne;
+      }
+      expect(await db.collection(COLLECTIONS.COMMENTS).countDocuments({ post_id: post.id })).toBe(0);
+      expect((await db.collection(COLLECTIONS.POSTS).findOne({ _id: post.id }))?.comments_count).toBe(0);
+    });
+
+    it('retries a duplicate-key race and commits the comment exactly once', async () => {
+      const post = await postService.createPost({ post_type: 'discussion', title: 'Retry comment transaction', content: 'test' }, 'usr_0');
+      const prototype = Object.getPrototypeOf(db.collection(COLLECTIONS.COMMENTS));
+      const originalInsertOne = prototype.insertOne;
+      let injectedRace = true;
+      prototype.insertOne = async function (document: any, ...args: any[]) {
+        if (this.collectionName === COLLECTIONS.COMMENTS && document?.post_id === post.id && injectedRace) {
+          injectedRace = false;
+          throw Object.assign(new Error('injected duplicate-key race'), { code: 11000 });
+        }
+        return originalInsertOne.call(this, document, ...args);
+      };
+      try {
+        await postService.createComment(post.id, 'usr_1', { content: 'retry me once' });
+      } finally {
+        prototype.insertOne = originalInsertOne;
+      }
+      expect(injectedRace).toBe(false);
+      expect(await db.collection(COLLECTIONS.COMMENTS).countDocuments({ post_id: post.id })).toBe(1);
+      expect((await db.collection(COLLECTIONS.POSTS).findOne({ _id: post.id }))?.comments_count).toBe(1);
+    });
+  });
+
+  describe('7. Seed Safety & Fixture Scoping', () => {
+    it('derives seed counters and ranking values from persisted records', async () => {
+      const users = await db.collection(COLLECTIONS.USERS).find({ _id: { $in: Array.from({ length: 20 }, (_, i) => `usr_${i}`) } }).toArray();
+      for (const user of users) {
+        expect(user.followers_count).toBe(await db.collection(COLLECTIONS.FOLLOWS).countDocuments({ target_user_id: user._id }));
+        expect(user.following_count).toBe(await db.collection(COLLECTIONS.FOLLOWS).countDocuments({ follower_id: user._id }));
+        expect(user.posts_count).toBe(await db.collection(COLLECTIONS.POSTS).countDocuments({ author_id: user._id }));
+      }
+      const communities = await db.collection(COLLECTIONS.COMMUNITIES).find({}).toArray();
+      for (const community of communities) {
+        expect(community.members_count).toBe(await db.collection(COLLECTIONS.COMMUNITY_MEMBERSHIPS).countDocuments({ community_id: community._id }));
+      }
+      const posts = await db.collection(COLLECTIONS.POSTS).find({ _id: { $in: ['post_101', 'post_102', 'post_103', 'post_104', 'post_tie_301', 'post_tie_302'] } }).toArray();
+      for (const post of posts) {
+        const votes = await db.collection(COLLECTIONS.POST_VOTES).find({ post_id: post._id }).toArray();
+        expect(post.score).toBe(votes.reduce((score, vote) => score + vote.direction, 0));
+        expect(post.comments_count).toBe(await db.collection(COLLECTIONS.COMMENTS).countDocuments({ post_id: post._id }));
+      }
+    });
+
     it('re-executing seedDatabase is clean and deterministic', async () => {
       const stats = await seedDatabase(db);
       expect(stats.usersCount).toBe(20);
@@ -303,6 +623,57 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
       expect(stats.commentsCount).toBe(4);
       expect(stats.followsCount).toBe(5);
       expect(stats.communitiesCount).toBe(5);
+    });
+
+    it('preserves non-seed user data when seedDatabase is re-executed', async () => {
+      const usersCol = db.collection(COLLECTIONS.USERS);
+      const postsCol = db.collection(COLLECTIONS.POSTS);
+
+      // Create custom non-seed user and post
+      const customUserId = 'usr_custom_preserve_test';
+      const customPostId = 'post_custom_preserve_test';
+
+      await usersCol.insertOne({
+        _id: customUserId,
+        username: 'unrelated_dev',
+        display_name: 'Unrelated Developer',
+        avatar_url: '/avatars/alex-dev.svg',
+        bio: 'Preserve me across seeds!',
+        is_verified: false,
+        followers_count: 0,
+        following_count: 0,
+        posts_count: 1,
+        created_at: new Date(),
+        updated_at: new Date(),
+      } as any);
+
+      await postsCol.insertOne({
+        _id: customPostId,
+        post_type: 'discussion',
+        author_id: customUserId,
+        title: 'Preserved Unrelated Post',
+        score: 0,
+        hot_score: 100,
+        comments_count: 0,
+        created_at: new Date(),
+        updated_at: new Date(),
+      } as any);
+
+      // Re-run seed
+      await seedDatabase(db);
+
+      // Verify that the custom user and post were NOT deleted
+      const foundUser = await usersCol.findOne({ _id: customUserId as any });
+      const foundPost = await postsCol.findOne({ _id: customPostId as any });
+
+      expect(foundUser).not.toBeNull();
+      expect(foundUser?.username).toBe('unrelated_dev');
+      expect(foundPost).not.toBeNull();
+      expect(foundPost?.title).toBe('Preserved Unrelated Post');
+
+      // Cleanup custom records
+      await usersCol.deleteOne({ _id: customUserId as any });
+      await postsCol.deleteOne({ _id: customPostId as any });
     });
   });
 });

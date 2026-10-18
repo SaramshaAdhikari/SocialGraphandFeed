@@ -31,8 +31,8 @@ export function CommunityPage() {
     postsLoading,
     error,
     isNotFound,
-    isMember,
-    membersCount,
+    membershipPending,
+    membershipError,
     toggleMembership,
     vote,
     toggleSave,
@@ -129,9 +129,9 @@ export function CommunityPage() {
       {/* Community Header Banner & Identity */}
       <CommunityHeader
         community={community}
-        isMember={isMember}
-        membersCount={membersCount}
         onToggleMembership={toggleMembership}
+        membershipPending={membershipPending}
+        membershipError={membershipError}
       />
 
       {/* Mobile Rules Accordion (Visible on small screens only) */}
@@ -258,7 +258,6 @@ export function CommunityPage() {
         <div className="hidden lg:block lg:col-span-4 sticky top-20">
           <CommunitySidebar
             community={community}
-            membersCount={membersCount}
           />
         </div>
       </div>

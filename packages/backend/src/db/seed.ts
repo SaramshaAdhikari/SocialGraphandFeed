@@ -13,6 +13,7 @@ import type {
 import { calculateHotScore } from '../utils/pagination.js';
 import { connectMongo, disconnectMongo, getDb } from './mongo.js';
 import { ensureIndexes } from './indexes.js';
+import { runInTransaction } from './transaction.js';
 
 export const CORE_SEED_USER_IDS = ['usr_0', 'usr_1', 'usr_2', 'usr_3', 'usr_4'];
 
@@ -34,17 +35,10 @@ export async function seedDatabase(db: Db): Promise<{
   const votesCol = db.collection<PostVoteDoc>(COLLECTIONS.POST_VOTES);
   const savesCol = db.collection<PostSaveDoc>(COLLECTIONS.POST_SAVES);
 
-  // Clean existing seed collections
-  await Promise.all([
-    usersCol.deleteMany({}),
-    postsCol.deleteMany({}),
-    commentsCol.deleteMany({}),
-    followsCol.deleteMany({}),
-    commsCol.deleteMany({}),
-    mbrsCol.deleteMany({}),
-    votesCol.deleteMany({}),
-    savesCol.deleteMany({}),
-  ]);
+  return runInTransaction(async (session) => {
+
+  // Scoped seed cleanup is performed per collection using deterministic fixture IDs
+  // to guarantee that developer-created or non-seed user data is preserved.
 
   // 1. Core Personas
   const coreUsers: UserDoc[] = [
@@ -142,7 +136,8 @@ export async function seedDatabase(db: Db): Promise<{
   }
 
   const allUsers = [...coreUsers, ...syntheticUsers];
-  await usersCol.insertMany(allUsers);
+  await usersCol.deleteMany({ _id: { $in: allUsers.map((u) => u._id) } }, { session });
+  await usersCol.insertMany(allUsers, { session });
 
   // 2. Communities
   const communities: CommunityDoc[] = [
@@ -213,7 +208,8 @@ export async function seedDatabase(db: Db): Promise<{
       updated_at: new Date('2026-01-09T00:00:00.000Z'),
     },
   ];
-  await commsCol.insertMany(communities);
+  await commsCol.deleteMany({ _id: { $in: communities.map((c) => c._id) } }, { session });
+  await commsCol.insertMany(communities, { session });
 
   // 3. Posts (Discussions and Visual Pins)
   const posts: PostDoc[] = [
@@ -328,7 +324,8 @@ export async function seedDatabase(db: Db): Promise<{
     },
   ];
 
-  await postsCol.insertMany(posts);
+  await postsCol.deleteMany({ _id: { $in: posts.map((p) => p._id) } }, { session });
+  await postsCol.insertMany(posts, { session });
 
   // 4. Comments (Hierarchical)
   const comments: CommentDoc[] = [
@@ -377,7 +374,8 @@ export async function seedDatabase(db: Db): Promise<{
       updated_at: new Date('2026-10-15T09:00:00.000Z'),
     },
   ];
-  await commentsCol.insertMany(comments);
+  await commentsCol.deleteMany({ _id: { $in: comments.map((c) => c._id) } }, { session });
+  await commentsCol.insertMany(comments, { session });
 
   // 5. Follow Edges
   const follows: FollowDoc[] = [
@@ -387,7 +385,8 @@ export async function seedDatabase(db: Db): Promise<{
     { _id: 'flw_1_2', follower_id: 'usr_1', target_user_id: 'usr_2', created_at: new Date() },
     { _id: 'flw_2_4', follower_id: 'usr_2', target_user_id: 'usr_4', created_at: new Date() },
   ];
-  await followsCol.insertMany(follows);
+  await followsCol.deleteMany({ _id: { $in: follows.map((f) => f._id) } }, { session });
+  await followsCol.insertMany(follows, { session });
 
   // 6. Community Memberships
   const memberships: CommunityMembershipDoc[] = [
@@ -397,19 +396,59 @@ export async function seedDatabase(db: Db): Promise<{
     { _id: 'mbr_2_pho', user_id: 'usr_2', community_id: 'comm_photography', created_at: new Date() },
     { _id: 'mbr_4_des', user_id: 'usr_4', community_id: 'comm_design', created_at: new Date() },
   ];
-  await mbrsCol.insertMany(memberships);
+  await mbrsCol.deleteMany({ _id: { $in: memberships.map((m) => m._id) } }, { session });
+  await mbrsCol.insertMany(memberships, { session });
 
   // 7. Votes and Saves
   const votes: PostVoteDoc[] = [
     { _id: 'vote_101_0', post_id: 'post_101', user_id: 'usr_0', direction: 1, created_at: new Date(), updated_at: new Date() },
     { _id: 'vote_102_0', post_id: 'post_102', user_id: 'usr_0', direction: 1, created_at: new Date(), updated_at: new Date() },
   ];
-  await votesCol.insertMany(votes);
+  await votesCol.deleteMany({ _id: { $in: votes.map((v) => v._id) } }, { session });
+  await votesCol.insertMany(votes, { session });
 
   const saves: PostSaveDoc[] = [
     { _id: 'save_102_0', post_id: 'post_102', user_id: 'usr_0', created_at: new Date() },
   ];
-  await savesCol.insertMany(saves);
+  await savesCol.deleteMany({ _id: { $in: saves.map((s) => s._id) } }, { session });
+  await savesCol.insertMany(saves, { session });
+
+  // Fixture aggregates are derived from durable edges and records so displayed
+  // counters and ranking scores never claim data that is absent from MongoDB.
+  const followerCounts = await followsCol.aggregate<{ _id: string; count: number }>([
+    { $group: { _id: '$target_user_id', count: { $sum: 1 } } },
+  ], { session }).toArray();
+  const followingCounts = await followsCol.aggregate<{ _id: string; count: number }>([
+    { $group: { _id: '$follower_id', count: { $sum: 1 } } },
+  ], { session }).toArray();
+  const postCounts = await postsCol.aggregate<{ _id: string; count: number }>([
+    { $group: { _id: '$author_id', count: { $sum: 1 } } },
+  ], { session }).toArray();
+  const memberCounts = await mbrsCol.aggregate<{ _id: string; count: number }>([
+    { $group: { _id: '$community_id', count: { $sum: 1 } } },
+  ], { session }).toArray();
+  for (const user of allUsers) {
+    await usersCol.updateOne({ _id: user._id }, { $set: {
+      followers_count: followerCounts.find((item) => item._id === user._id)?.count ?? 0,
+      following_count: followingCounts.find((item) => item._id === user._id)?.count ?? 0,
+      posts_count: postCounts.find((item) => item._id === user._id)?.count ?? 0,
+    } }, { session });
+  }
+  for (const community of communities) {
+    await commsCol.updateOne({ _id: community._id }, { $set: {
+      members_count: memberCounts.find((item) => item._id === community._id)?.count ?? 0,
+    } }, { session });
+  }
+  for (const post of posts) {
+    const postVotes = await votesCol.find({ post_id: post._id }, { session }).toArray();
+    const score = postVotes.reduce((total, vote) => total + vote.direction, 0);
+    const commentsCount = await commentsCol.countDocuments({ post_id: post._id }, { session });
+    await postsCol.updateOne({ _id: post._id }, { $set: {
+      score,
+      hot_score: calculateHotScore(score, post.created_at),
+      comments_count: commentsCount,
+    } }, { session });
+  }
 
   return {
     usersCount: allUsers.length,
@@ -418,6 +457,7 @@ export async function seedDatabase(db: Db): Promise<{
     followsCount: follows.length,
     communitiesCount: communities.length,
   };
+  });
 }
 
 // CLI standalone runner

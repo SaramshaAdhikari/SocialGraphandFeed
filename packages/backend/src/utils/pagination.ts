@@ -23,6 +23,7 @@ export function encodeCursor(payload: CursorPayload): string {
 
 export function decodeCursor(cursorStr: string, expectedType?: 'new' | 'top' | 'hot' | 'discovery'): CursorPayload {
   try {
+    if (cursorStr.length > 2048) throw new Error('Cursor exceeds maximum length');
     const jsonStr = Buffer.from(cursorStr, 'base64url').toString('utf8');
     const parsed = JSON.parse(jsonStr);
 
@@ -34,27 +35,34 @@ export function decodeCursor(cursorStr: string, expectedType?: 'new' | 'top' | '
       throw new Error(`Cursor type '${parsed.t}' does not match expected sort '${expectedType}'`);
     }
 
+    const validatePosition = () => {
+      if (typeof parsed.createdAt !== 'string' || !Number.isFinite(Date.parse(parsed.createdAt))) throw new Error('Malformed cursor date');
+      if (typeof parsed.id !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(parsed.id)) throw new Error('Malformed cursor ID');
+    };
+
     if (parsed.t === 'new') {
-      if (!parsed.createdAt || !parsed.id) throw new Error('Malformed new cursor');
+      validatePosition();
       return { t: 'new', createdAt: String(parsed.createdAt), id: String(parsed.id) };
     }
 
     if (parsed.t === 'top') {
-      if (typeof parsed.score !== 'number' || !parsed.createdAt || !parsed.id) {
+      if (typeof parsed.score !== 'number' || !Number.isFinite(parsed.score)) {
         throw new Error('Malformed top cursor');
       }
+      validatePosition();
       return { t: 'top', score: Number(parsed.score), createdAt: String(parsed.createdAt), id: String(parsed.id) };
     }
 
     if (parsed.t === 'hot') {
-      if (typeof parsed.hotScore !== 'number' || !parsed.createdAt || !parsed.id) {
+      if (typeof parsed.hotScore !== 'number' || !Number.isFinite(parsed.hotScore)) {
         throw new Error('Malformed hot cursor');
       }
+      validatePosition();
       return { t: 'hot', hotScore: Number(parsed.hotScore), createdAt: String(parsed.createdAt), id: String(parsed.id) };
     }
 
     if (parsed.t === 'discovery') {
-      if (!parsed.createdAt || !parsed.id) throw new Error('Malformed discovery cursor');
+      validatePosition();
       return { t: 'discovery', createdAt: String(parsed.createdAt), id: String(parsed.id) };
     }
 

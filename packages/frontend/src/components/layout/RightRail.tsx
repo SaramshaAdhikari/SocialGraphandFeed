@@ -1,13 +1,39 @@
-import { TrendingUp, Users, Activity } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import type { Community } from '@socialgraph/shared';
+import { TrendingUp, Activity } from 'lucide-react';
 import { Link } from '../../router/Router';
-import { Button } from '../ui/Button';
+import { api } from '../../api';
+import { RecommendedHubs } from './RecommendedHubs';
 
 export function RightRail() {
-  const suggestedCommunities = [
-    { id: 'c_systems', name: 'systems', members: '14.2k' },
-    { id: 'c_algorithms', name: 'algorithms', members: '28.5k' },
-    { id: 'c_hardware', name: 'hardware', members: '9.1k' },
-  ];
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [pendingSlug, setPendingSlug] = useState<string | null>(null);
+  const [membershipError, setMembershipError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void api.getCommunities().then((items) => {
+      if (active) setCommunities(items);
+    }).catch(() => {
+      if (active) setCommunities([]);
+    });
+    return () => { active = false; };
+  }, []);
+
+  const setMembership = async (community: Community) => {
+    setPendingSlug(community.slug);
+    setMembershipError(null);
+    try {
+      const result = await api.setCommunityMembership(community.slug, !community.is_member);
+      setCommunities((items) => items.map((item) => item.id === result.community_id
+        ? { ...item, is_member: result.is_member, members_count: result.members_count }
+        : item));
+    } catch (error) {
+      setMembershipError(error instanceof Error ? error.message : 'Could not update hub membership.');
+    } finally {
+      setPendingSlug(null);
+    }
+  };
 
   const trendingTopics = [
     { tag: '#CacheInvalidation', posts: '1.2k posts' },
@@ -20,33 +46,8 @@ export function RightRail() {
       className="hidden xl:block w-80 shrink-0 p-6 space-y-6 select-none"
       aria-label="Contextual Sidebar"
     >
-      {/* Suggested Communities */}
-      <div className="bg-white dark:bg-[#181B22] rounded-xl border border-[#E2E8F0] dark:border-[#2E3544] p-4 shadow-sm transition-colors">
-        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#F1F5F9] dark:border-[#262B36]">
-          <Users size={16} className="text-primary" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[#0F172A] dark:text-[#F8FAFC]">
-            Recommended Hubs
-          </h2>
-        </div>
-        <div className="space-y-3">
-          {suggestedCommunities.map((c) => (
-            <div key={c.id} className="flex items-center justify-between">
-              <div>
-                <Link
-                  to={`/c/${c.name}`}
-                  className="text-xs font-semibold text-[#0F172A] dark:text-[#F8FAFC] hover:text-primary transition-colors block"
-                >
-                  c/{c.name}
-                </Link>
-                <span className="text-[11px] text-[#94A3B8]">{c.members} members</span>
-              </div>
-              <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs">
-                Join
-              </Button>
-            </div>
-          ))}
-        </div>
-      </div>
+      <RecommendedHubs communities={communities} pendingSlug={pendingSlug} error={membershipError}
+        onMembershipChange={(community) => void setMembership(community)} />
 
       {/* Trending Topics */}
       <div className="bg-white dark:bg-[#181B22] rounded-xl border border-[#E2E8F0] dark:border-[#2E3544] p-4 shadow-sm transition-colors">

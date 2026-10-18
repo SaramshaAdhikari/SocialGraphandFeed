@@ -7,27 +7,33 @@ import { Link } from '../../router/Router';
 export interface CommunitySearchResultCardProps {
   community: Community;
   className?: string;
-  onJoinToggle?: (communityId: string, isMember: boolean) => void;
+  onMembershipChange?: (communitySlug: string, isMember: boolean) => Promise<void>;
 }
 
 export function CommunitySearchResultCard({
   community,
   className = '',
-  onJoinToggle,
+  onMembershipChange,
 }: CommunitySearchResultCardProps) {
-  const [isMember, setIsMember] = useState(community.is_member);
-  const [membersCount, setMembersCount] = useState(community.members_count);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleJoinClick = (e: React.MouseEvent) => {
+  const handleJoinClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const nextState = !isMember;
-    setIsMember(nextState);
-    setMembersCount((prev) => prev + (nextState ? 1 : -1));
-    onJoinToggle?.(community.id, nextState);
+    if (!onMembershipChange || pending) return;
+    setPending(true);
+    setError(null);
+    try {
+      await onMembershipChange(community.slug, !community.is_member);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update hub membership.');
+    } finally {
+      setPending(false);
+    }
   };
 
-  const formattedMembers = new Intl.NumberFormat('en-US').format(membersCount);
+  const formattedMembers = new Intl.NumberFormat('en-US').format(community.members_count);
 
   return (
     <article
@@ -70,13 +76,16 @@ export function CommunitySearchResultCard({
             </Link>
 
             <Button
-              variant={isMember ? 'secondary' : 'primary'}
+              variant={community.is_member ? 'secondary' : 'primary'}
               size="sm"
-              onClick={handleJoinClick}
-              aria-label={isMember ? `Leave ${community.name}` : `Join ${community.name}`}
+              onClick={(event) => void handleJoinClick(event)}
+              disabled={!onMembershipChange}
+              isLoading={pending}
+              aria-pressed={community.is_member}
+              aria-label={community.is_member ? `Leave ${community.name}` : `Join ${community.name}`}
               className="text-xs font-semibold px-3 py-1 h-8 rounded-full"
             >
-              {isMember ? (
+              {community.is_member ? (
                 <>
                   <Check size={13} className="mr-1 text-slate-500" />
                   <span>Joined</span>
@@ -101,6 +110,8 @@ export function CommunitySearchResultCard({
               c/{community.slug}
             </p>
           </Link>
+
+          {error && <p role="alert" className="mt-2 text-xs text-red-600">{error}</p>}
 
           <p className="mt-2 text-xs text-[#475569] dark:text-[#94A3B8] line-clamp-2 leading-relaxed">
             {community.description}

@@ -8,6 +8,10 @@ import {
   type FeedQuery,
 } from '@socialgraph/shared';
 import { UserService } from '../services/UserService.js';
+import { getRequestUserId, requireIdentity } from './identity.js';
+
+const usernameSchema = Type.String({ minLength: 3, maxLength: 30, pattern: '^[A-Za-z0-9_]+$' });
+const userIdSchema = Type.String({ minLength: 1, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$' });
 
 const usersRoutes: FastifyPluginAsync = async (fastify) => {
   const userService = new UserService();
@@ -17,7 +21,7 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
     {
       schema: {
         params: Type.Object({
-          username: Type.String(),
+          username: usernameSchema,
         }),
         response: {
           200: UserProfileSchema,
@@ -25,7 +29,7 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request) => {
-      const currentUserId = (request as any).userId;
+      const currentUserId = getRequestUserId(request);
       return userService.getUserProfile(request.params.username, currentUserId);
     }
   );
@@ -35,7 +39,7 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
     {
       schema: {
         params: Type.Object({
-          username: Type.String(),
+          username: usernameSchema,
         }),
         querystring: FeedQuerySchema,
         response: {
@@ -44,7 +48,7 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request) => {
-      const currentUserId = (request as any).userId;
+      const currentUserId = getRequestUserId(request);
       return userService.getUserPosts(
         request.params.username,
         request.query,
@@ -56,17 +60,19 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post<{ Params: { targetUserId: string } }>(
     '/users/:targetUserId/follow',
     {
+      preHandler: requireIdentity,
       schema: {
         params: Type.Object({
-          targetUserId: Type.String(),
+          targetUserId: userIdSchema,
         }),
+        body: Type.Object({}, { additionalProperties: false }),
         response: {
           200: FollowToggleResponseSchema,
         },
       },
     },
     async (request) => {
-      const currentUserId = (request as any).userId || 'usr_0';
+      const currentUserId = getRequestUserId(request)!;
       return userService.toggleFollow(request.params.targetUserId, currentUserId);
     }
   );

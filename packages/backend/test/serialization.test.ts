@@ -52,6 +52,9 @@ describe('Serialization Mappers & TypeBox Schema Adherence', () => {
       post_type: 'visual',
       author_id: 'usr_0',
       title: 'Brutalist Concrete',
+      caption: 'Substation architecture in monochrome',
+      destination_url: 'https://example.com/gallery',
+      tags: ['architecture', 'berlin'],
       media: {
         id: 'media_1',
         url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=1200',
@@ -69,6 +72,10 @@ describe('Serialization Mappers & TypeBox Schema Adherence', () => {
     expect(card.post_type).toBe('visual');
     expect(card.user_vote).toBe(1);
     expect(card.is_saved).toBe(true);
+    if (card.post_type === 'visual') {
+      expect(card.destination_url).toBe('https://example.com/gallery');
+      expect(card.tags).toEqual(['architecture', 'berlin']);
+    }
   });
 
   it('serializes Discussion PostDoc to PostCard conforming to PostCardSchema', () => {
@@ -78,6 +85,8 @@ describe('Serialization Mappers & TypeBox Schema Adherence', () => {
       author_id: 'usr_0',
       title: 'Deep dive into cursor pagination in MongoDB',
       content: 'Here are the details on multi-key index boundary optimization...',
+      flair: 'Database',
+      tags: ['mongodb', 'architecture'],
       score: 110,
       hot_score: 1350,
       comments_count: 5,
@@ -88,6 +97,10 @@ describe('Serialization Mappers & TypeBox Schema Adherence', () => {
     const card = toPostCard(mockPost, toUserSummary(mockUser), 0, false);
     expect(Value.Check(PostCardSchema, card)).toBe(true);
     expect(card.post_type).toBe('discussion');
+    if (card.post_type === 'discussion') {
+      expect(card.flair).toBe('Database');
+      expect(card.tags).toEqual(['mongodb', 'architecture']);
+    }
   });
 
   it('serializes CommunityDoc conforming to CommunitySchema', () => {
