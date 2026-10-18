@@ -49,17 +49,18 @@ export function UserProfilePage() {
   // Loading Skeleton State
   if (loading) {
     return (
-      <main className="max-w-4xl mx-auto px-4 py-6 sm:py-8" aria-label="Loading Profile">
+      <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8" role="region" aria-label="Loading Profile">
         <ProfileSkeleton />
-      </main>
+      </div>
     );
   }
 
   // 404 User Not Found State
   if (isNotFound || (!profile && error)) {
     return (
-      <main
+      <div
         className="max-w-2xl mx-auto px-4 py-16 text-center"
+        role="region"
         aria-label="User Profile Not Found"
         data-testid="profile-not-found"
       >
@@ -95,15 +96,16 @@ export function UserProfilePage() {
             </Button>
           </div>
         </div>
-      </main>
+      </div>
     );
   }
 
   if (!profile) return null;
 
   return (
-    <main
+    <div
       className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6"
+      role="region"
       aria-label={`${profile.display_name} Profile`}
       data-testid="user-profile-page"
     >
@@ -220,6 +222,6 @@ export function UserProfilePage() {
           </div>
         )}
       </section>
-    </main>
+    </div>
   );
 }

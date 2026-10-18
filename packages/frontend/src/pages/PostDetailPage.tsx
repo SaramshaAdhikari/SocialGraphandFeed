@@ -81,7 +81,7 @@ export function PostDetailPage() {
   // 2. 404 Not Found State
   if (isNotFound || (!post && error)) {
     return (
-      <main className="max-w-xl mx-auto px-4 py-16 text-center" aria-label="Post Not Found">
+      <div className="max-w-xl mx-auto px-4 py-16 text-center" role="region" aria-label="Post Not Found">
         <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#181B22] p-8 shadow-sm">
           <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400 mb-4">
             <AlertCircle size={28} />
@@ -111,7 +111,7 @@ export function PostDetailPage() {
             </Button>
           </div>
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -122,8 +122,10 @@ export function PostDetailPage() {
   const discussionPost = !isVisual ? (post as DiscussionPostCard) : null;
 
   return (
-    <main
+    <div
       data-testid="post-detail-page"
+      role="region"
+      aria-label="Post Detail"
       className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6"
     >
       {/* Top Breadcrumb & Back Navigation */}
@@ -499,6 +501,6 @@ export function PostDetailPage() {
           </div>
         </article>
       )}
-    </main>
+    </div>
   );
 }

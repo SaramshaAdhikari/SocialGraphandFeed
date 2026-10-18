@@ -66,7 +66,7 @@ export function CommunityPage() {
   // 2. 404 Community Not Found State
   if (isNotFound || (!community && error)) {
     return (
-      <main className="max-w-xl mx-auto px-4 py-16 text-center" aria-label="Community Not Found">
+      <div className="max-w-xl mx-auto px-4 py-16 text-center" role="region" aria-label="Community Not Found">
         <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#181B22] p-8 shadow-sm">
           <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400 mb-4">
             <AlertCircle size={28} />
@@ -96,15 +96,17 @@ export function CommunityPage() {
             </Button>
           </div>
         </div>
-      </main>
+      </div>
     );
   }
 
   if (!community) return null;
 
   return (
-    <main
+    <div
       data-testid="community-page"
+      role="region"
+      aria-label={`${community.name} Community`}
       className="w-full space-y-4"
     >
       {/* Top Breadcrumb Navigation */}
@@ -260,6 +262,6 @@ export function CommunityPage() {
           />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

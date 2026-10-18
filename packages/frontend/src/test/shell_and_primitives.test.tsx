@@ -172,7 +172,7 @@ describe('Checkpoint 2.1 — Application Shell Layout', () => {
     expect(html).toContain('Communities');
     expect(html).toContain('Diagnostics');
 
-    // Right rail content
+    // Right rail content on Home Feed
     expect(html).toContain('Recommended Hubs');
     expect(html).toContain('Trending Discussions');
 
@@ -181,5 +181,25 @@ describe('Checkpoint 2.1 — Application Shell Layout', () => {
 
     // Overflow protection
     expect(html).toContain('overflow-x-hidden');
+  });
+
+  it('AppLayout provisions dedicated full-width canvases on /post/, /u/, /search, and /c/ without RightRail collision', () => {
+    const paths = ['/post/post_123', '/u/alex_dev', '/search', '/c/distributed-systems'];
+
+    for (const path of paths) {
+      const html = renderToString(
+        <RouterProvider initialPath={path}>
+          <AppLayout showRightRail={true}>
+            <div data-testid="dedicated-content">Dedicated Surface Canvas Content</div>
+          </AppLayout>
+        </RouterProvider>
+      );
+
+      // Dedicated surfaces must render full width canvas without generic RightRail
+      expect(html).toContain('max-w-5xl xl:max-w-6xl mx-auto');
+      expect(html).not.toContain('max-w-2xl xl:max-w-3xl');
+      expect(html).not.toContain('Recommended Hubs');
+      expect(html).toContain('Dedicated Surface Canvas Content');
+    }
   });
 });

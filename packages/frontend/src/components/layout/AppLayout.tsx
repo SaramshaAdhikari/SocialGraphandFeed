@@ -16,6 +16,10 @@ export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
   const isDiscover = currentPath === '/explore';
   const isSettings = currentPath.startsWith('/settings');
   const isCommunity = currentPath.startsWith('/c/');
+  const isPostDetail = currentPath.startsWith('/post/');
+  const isProfile = currentPath.startsWith('/u/');
+  const isSearch = currentPath === '/search';
+  const isDedicatedCanvas = isCommunity || isPostDetail || isProfile || isSearch;
 
   return (
     <div className="min-h-screen bg-canvas dark:bg-[#0F1117] text-[#0F172A] dark:text-[#F8FAFC] flex flex-col w-full max-w-full overflow-x-hidden transition-colors">
@@ -35,8 +39,6 @@ export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
                 ? 'px-3 sm:px-6 lg:px-8 py-6'
                 : isSettings
                 ? 'px-4 sm:px-6 lg:px-8 py-8'
-                : isCommunity
-                ? 'px-4 sm:px-6 lg:px-8 py-6'
                 : 'px-4 sm:px-6 lg:px-8 py-6'
             }`}
           >
@@ -54,8 +56,9 @@ export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
             ) : isSettings ? (
               // Settings Layout: Focused comfortable form layout
               <div className="w-full max-w-4xl mx-auto">{children}</div>
-            ) : isCommunity ? (
-              // Community Hub Layout: Community header + Scoped feed + Dedicated community sidebar
+            ) : isDedicatedCanvas ? (
+              // Dedicated Surface Canvas (Community Hub, Post Detail, Profile, Universal Search):
+              // Full-width max-w-5xl xl:max-w-6xl without global RightRail bottleneck
               <div className="w-full max-w-5xl xl:max-w-6xl mx-auto">{children}</div>
             ) : (
               // Default / Home Feed Layout: Focused reading column + Right Rail
