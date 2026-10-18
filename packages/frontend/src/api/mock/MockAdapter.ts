@@ -408,7 +408,14 @@ export class MockAdapter implements ISocialGraphApi {
 
   public async getCommunity(communitySlug: string): Promise<Community> {
     await this.delay(`/api/v1/communities/${communitySlug}`);
-    const comm = this.communities[communitySlug];
+    const normalized = communitySlug.toLowerCase();
+    const comm =
+      this.communities[communitySlug] ||
+      this.communities[normalized] ||
+      Object.values(this.communities).find(
+        (c) => c.slug.toLowerCase() === normalized || c.id === communitySlug
+      );
+
     if (!comm) {
       throw new ApiClientError({
         type: 'https://socialgraph.dev/errors/not-found',
@@ -428,9 +435,19 @@ export class MockAdapter implements ISocialGraphApi {
   ): Promise<FeedResponse> {
     await this.delay(`/api/v1/communities/${communitySlug}/feed`);
     const community = await this.getCommunity(communitySlug);
-    const { limit = 10, cursor } = query;
+    const { sort = 'hot', limit = 10, cursor } = query;
 
     const scoped = this.posts.filter((p) => p.community_id === community.id);
+
+    // Sorting implementation
+    if (sort === 'hot' || sort === 'top') {
+      scoped.sort((a, b) => b.score - a.score);
+    } else if (sort === 'new') {
+      scoped.sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    }
+
     let startIndex = 0;
     if (cursor) {
       const idx = scoped.findIndex((p) => p.id === cursor);

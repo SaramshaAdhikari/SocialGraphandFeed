@@ -5,6 +5,7 @@ import { HomePage } from './pages/HomePage';
 import { DiscoverPage } from './pages/DiscoverPage';
 import { PostDetailPage } from './pages/PostDetailPage';
 import { UserProfilePage } from './pages/UserProfilePage';
+import { CommunityPage } from './pages/CommunityPage';
 import { SettingsAppearancePage } from './pages/SettingsAppearancePage';
 import { DiagnosticsView } from './components/common/DiagnosticsView';
 import { PlaceholderPage } from './components/common/PlaceholderPage';
@@ -36,22 +37,11 @@ export function App() {
               {/* Screen 3: Post Detail & Threaded Comments */}
               <Route path="/post/:postId" element={<PostDetailPage />} />
 
-            {/* Screen 4: User Profile */}
-            <Route path="/u/:username" element={<UserProfilePage />} />
+              {/* Screen 4: User Profile */}
+              <Route path="/u/:username" element={<UserProfilePage />} />
 
-            {/* Screen 5: Community Hub */}
-            <Route
-              path="/c/:communityId"
-              element={
-                <PlaceholderPage
-                  title="Community Hub"
-                  personality="Discussion & Community"
-                  milestone="Checkpoint 2.7 — Screen 5"
-                  reference="reddit_DESIGN.md"
-                  description="Dedicated topical space with community header banner, member count, scoped feed, and rules sidebar."
-                />
-              }
-            />
+              {/* Screen 5: Community Hub */}
+              <Route path="/c/:communityId" element={<CommunityPage />} />
 
             {/* Screen 6: Universal Search */}
             <Route
