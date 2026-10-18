@@ -14,7 +14,13 @@ import type {
   Community,
   ApiErrorResponse,
 } from '@socialgraph/shared';
-import type { ISocialGraphApi, VoteResult, DataSourceType } from '../types';
+import type {
+  ISocialGraphApi,
+  VoteResult,
+  DataSourceType,
+  SearchQuery,
+  UniversalSearchResults,
+} from '../types';
 import { ApiClientError } from '../client';
 import {
   mockUsers,
@@ -467,6 +473,181 @@ export class MockAdapter implements ISocialGraphApi {
         count: page.length,
         server_execution_time_ms: 2.1,
       },
+    };
+  }
+
+  public async search(query: SearchQuery): Promise<UniversalSearchResults> {
+    const rawQ = query.q || '';
+    await this.delay(`/api/v1/search?q=${encodeURIComponent(rawQ)}`);
+
+    const q = rawQ.trim().toLowerCase();
+    const sort = query.sort || 'relevance';
+    const category = query.category || 'all';
+
+    if (!q) {
+      return {
+        query: rawQ,
+        discussions: [],
+        visuals: [],
+        communities: [],
+        users: [],
+        total_count: 0,
+      };
+    }
+
+    const terms = q.split(/\s+/).filter(Boolean);
+
+    const matchesTerm = (text?: string): boolean => {
+      if (!text) return false;
+      const lower = text.toLowerCase();
+      return terms.some((t) => lower.includes(t));
+    };
+
+    const calculateRelevance = (primaryText?: string, secondaryText?: string): number => {
+      let score = 0;
+      const lowerPrimary = primaryText ? primaryText.toLowerCase() : '';
+      const lowerSecondary = secondaryText ? secondaryText.toLowerCase() : '';
+
+      // Exact phrase match in primary
+      if (lowerPrimary && lowerPrimary === q) score += 100;
+      else if (lowerPrimary && lowerPrimary.startsWith(q)) score += 50;
+      else if (lowerPrimary && lowerPrimary.includes(q)) score += 30;
+
+      // Token matches
+      for (const t of terms) {
+        if (lowerPrimary && lowerPrimary.includes(t)) score += 15;
+        if (lowerSecondary && lowerSecondary.includes(t)) score += 5;
+      }
+      return score;
+    };
+
+    // Filter discussions
+    let matchingDiscussions: DiscussionPostCard[] = [];
+    if (category === 'all' || category === 'discussions') {
+      matchingDiscussions = (
+        this.posts.filter((p) => p.post_type === 'discussion') as DiscussionPostCard[]
+      ).filter((post) => {
+        return (
+          matchesTerm(post.title) ||
+          matchesTerm(post.content) ||
+          matchesTerm(post.flair) ||
+          matchesTerm(post.community_slug) ||
+          matchesTerm(post.author.username) ||
+          matchesTerm(post.author.display_name)
+        );
+      });
+
+      if (sort === 'relevance') {
+        matchingDiscussions.sort((a, b) => {
+          const relA = calculateRelevance(a.title, `${a.content} ${a.flair || ''} ${a.community_slug || ''}`);
+          const relB = calculateRelevance(b.title, `${b.content} ${b.flair || ''} ${b.community_slug || ''}`);
+          return relB !== relA ? relB - relA : b.score - a.score;
+        });
+      } else if (sort === 'top') {
+        matchingDiscussions.sort((a, b) => b.score - a.score);
+      } else if (sort === 'new') {
+        matchingDiscussions.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      }
+    }
+
+    // Filter visuals
+    let matchingVisuals: VisualPinCard[] = [];
+    if (category === 'all' || category === 'visual') {
+      matchingVisuals = (
+        this.posts.filter((p) => p.post_type === 'visual') as VisualPinCard[]
+      ).filter((pin) => {
+        return (
+          matchesTerm(pin.title) ||
+          matchesTerm(pin.caption) ||
+          matchesTerm(pin.community_slug) ||
+          matchesTerm(pin.media.alt_text) ||
+          matchesTerm(pin.author.username) ||
+          matchesTerm(pin.author.display_name)
+        );
+      });
+
+      if (sort === 'relevance') {
+        matchingVisuals.sort((a, b) => {
+          const relA = calculateRelevance(a.title, `${a.caption || ''} ${a.media.alt_text || ''} ${a.community_slug || ''}`);
+          const relB = calculateRelevance(b.title, `${b.caption || ''} ${b.media.alt_text || ''} ${b.community_slug || ''}`);
+          return relB !== relA ? relB - relA : b.score - a.score;
+        });
+      } else if (sort === 'top') {
+        matchingVisuals.sort((a, b) => b.score - a.score);
+      } else if (sort === 'new') {
+        matchingVisuals.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      }
+    }
+
+    // Filter communities
+    let matchingCommunities: Community[] = [];
+    if (category === 'all' || category === 'communities') {
+      matchingCommunities = Object.values(this.communities).filter((comm) => {
+        return (
+          matchesTerm(comm.name) ||
+          matchesTerm(comm.slug) ||
+          matchesTerm(comm.description)
+        );
+      });
+
+      if (sort === 'relevance') {
+        matchingCommunities.sort((a, b) => {
+          const relA = calculateRelevance(a.name, `${a.slug} ${a.description}`);
+          const relB = calculateRelevance(b.name, `${b.slug} ${b.description}`);
+          return relB !== relA ? relB - relA : b.members_count - a.members_count;
+        });
+      } else if (sort === 'top') {
+        matchingCommunities.sort((a, b) => b.members_count - a.members_count);
+      } else if (sort === 'new') {
+        matchingCommunities.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      }
+    }
+
+    // Filter users
+    let matchingUsers: UserProfile[] = [];
+    if (category === 'all' || category === 'people') {
+      matchingUsers = Object.values(this.users).filter((u) => {
+        return (
+          matchesTerm(u.username) ||
+          matchesTerm(u.display_name) ||
+          matchesTerm(u.bio)
+        );
+      });
+
+      if (sort === 'relevance') {
+        matchingUsers.sort((a, b) => {
+          const relA = calculateRelevance(a.username, `${a.display_name} ${a.bio || ''}`);
+          const relB = calculateRelevance(b.username, `${b.display_name} ${b.bio || ''}`);
+          return relB !== relA ? relB - relA : b.followers_count - a.followers_count;
+        });
+      } else if (sort === 'top') {
+        matchingUsers.sort((a, b) => b.followers_count - a.followers_count);
+      } else if (sort === 'new') {
+        matchingUsers.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      }
+    }
+
+    const total_count =
+      matchingDiscussions.length +
+      matchingVisuals.length +
+      matchingCommunities.length +
+      matchingUsers.length;
+
+    return {
+      query: rawQ,
+      discussions: matchingDiscussions,
+      visuals: matchingVisuals,
+      communities: matchingCommunities,
+      users: matchingUsers,
+      total_count,
     };
   }
 }

@@ -1,6 +1,8 @@
 import type {
   HealthStatus,
   PostCard,
+  DiscussionPostCard,
+  VisualPinCard,
   FeedQuery,
   FeedResponse,
   DiscoveryQuery,
@@ -18,6 +20,25 @@ export interface VoteResult {
   post_id: string;
   new_score: number;
   user_vote: 1 | -1 | 0;
+}
+
+export type SearchCategory = 'all' | 'discussions' | 'visual' | 'communities' | 'people';
+export type SearchSort = 'relevance' | 'top' | 'new';
+
+export interface SearchQuery {
+  q: string;
+  category?: SearchCategory;
+  sort?: SearchSort;
+  limit?: number;
+}
+
+export interface UniversalSearchResults {
+  query: string;
+  discussions: DiscussionPostCard[];
+  visuals: VisualPinCard[];
+  communities: Community[];
+  users: UserProfile[];
+  total_count: number;
 }
 
 export interface ISocialGraphApi {
@@ -44,4 +65,7 @@ export interface ISocialGraphApi {
   toggleFollow(targetUserId: string): Promise<FollowToggleResponse>;
   getCommunity(communitySlug: string): Promise<Community>;
   getCommunityFeed(communitySlug: string, query?: FeedQuery): Promise<FeedResponse>;
+
+  // Search
+  search(query: SearchQuery): Promise<UniversalSearchResults>;
 }

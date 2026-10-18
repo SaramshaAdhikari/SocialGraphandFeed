@@ -23,6 +23,13 @@ export function TopHeader() {
     setMode(nextMode);
   };
 
+  // Sync search input with router query if URL query changes
+  useEffect(() => {
+    if (query.q !== undefined) {
+      setSearchVal(query.q);
+    }
+  }, [query.q]);
+
   // Close profile dropdown on outside click or Escape key
   useEffect(() => {
     if (!profileMenuOpen) return;

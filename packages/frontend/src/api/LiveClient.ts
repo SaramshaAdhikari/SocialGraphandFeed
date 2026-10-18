@@ -12,7 +12,13 @@ import type {
   Community,
   ApiErrorResponse,
 } from '@socialgraph/shared';
-import type { ISocialGraphApi, VoteResult, DataSourceType } from './types';
+import type {
+  ISocialGraphApi,
+  VoteResult,
+  DataSourceType,
+  SearchQuery,
+  UniversalSearchResults,
+} from './types';
 import { ApiClientError } from './client';
 
 export class LiveClient implements ISocialGraphApi {
@@ -147,5 +153,16 @@ export class LiveClient implements ISocialGraphApi {
 
     const qs = params.toString() ? `?${params.toString()}` : '';
     return this.request<FeedResponse>(`/api/v1/communities/${communitySlug}/feed${qs}`);
+  }
+
+  public async search(query: SearchQuery): Promise<UniversalSearchResults> {
+    const params = new URLSearchParams();
+    if (query.q) params.set('q', query.q);
+    if (query.category) params.set('category', query.category);
+    if (query.sort) params.set('sort', query.sort);
+    if (query.limit) params.set('limit', String(query.limit));
+
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return this.request<UniversalSearchResults>(`/api/v1/search${qs}`);
   }
 }

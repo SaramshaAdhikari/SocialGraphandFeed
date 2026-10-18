@@ -6,6 +6,7 @@ import { DiscoverPage } from './pages/DiscoverPage';
 import { PostDetailPage } from './pages/PostDetailPage';
 import { UserProfilePage } from './pages/UserProfilePage';
 import { CommunityPage } from './pages/CommunityPage';
+import { SearchPage } from './pages/SearchPage';
 import { SettingsAppearancePage } from './pages/SettingsAppearancePage';
 import { DiagnosticsView } from './components/common/DiagnosticsView';
 import { PlaceholderPage } from './components/common/PlaceholderPage';
@@ -43,19 +44,8 @@ export function App() {
               {/* Screen 5: Community Hub */}
               <Route path="/c/:communityId" element={<CommunityPage />} />
 
-            {/* Screen 6: Universal Search */}
-            <Route
-              path="/search"
-              element={
-                <PlaceholderPage
-                  title="Universal Search"
-                  personality="Utility & Management"
-                  milestone="Checkpoint 2.8 — Screen 6"
-                  reference="meta_DESIGN.md"
-                  description="Multi-entity search with debounced querying and tabbed filters across posts, communities, and people."
-                />
-              }
-            />
+              {/* Screen 6: Universal Search */}
+              <Route path="/search" element={<SearchPage />} />
 
             {/* Supporting Surface: Saved Collections */}
             <Route
