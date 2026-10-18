@@ -13,6 +13,7 @@ import type {
   FollowToggleResponse,
   Community,
   ApiErrorResponse,
+  CreatePostInput,
 } from '@socialgraph/shared';
 import type {
   ISocialGraphApi,
@@ -209,6 +210,129 @@ export class MockAdapter implements ISocialGraphApi {
   public async getComments(postId: string): Promise<CommentNode[]> {
     await this.delay(`/api/v1/posts/${postId}/comments`);
     return this.comments[postId] || [];
+  }
+
+  public async createPost(input: CreatePostInput): Promise<PostCard> {
+    await this.delay('/api/v1/posts');
+
+    if (!input.title || input.title.trim().length === 0) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/validation',
+        title: 'Validation Error',
+        status: 400,
+        detail: 'Post title is required and cannot be empty.',
+        code: 'VALIDATION_ERROR',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (input.post_type === 'discussion') {
+      if (input.title.trim().length < 3) {
+        throw new ApiClientError({
+          type: 'https://socialgraph.dev/errors/validation',
+          title: 'Validation Error',
+          status: 400,
+          detail: 'Discussion title must be at least 3 characters.',
+          code: 'VALIDATION_ERROR',
+          timestamp: new Date().toISOString(),
+        });
+      }
+      if (!input.content || input.content.trim().length === 0) {
+        throw new ApiClientError({
+          type: 'https://socialgraph.dev/errors/validation',
+          title: 'Validation Error',
+          status: 400,
+          detail: 'Discussion body content is required.',
+          code: 'VALIDATION_ERROR',
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+
+    if (input.post_type === 'visual') {
+      const mediaItem = input.media?.[0];
+      if (!mediaItem || !mediaItem.url || mediaItem.url.trim().length === 0) {
+        throw new ApiClientError({
+          type: 'https://socialgraph.dev/errors/validation',
+          title: 'Validation Error',
+          status: 400,
+          detail: 'Visual pin requires a media URL.',
+          code: 'VALIDATION_ERROR',
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+
+    const authorUser = this.users['usr_0'] || mockUsers.usr_0;
+    const author = toUserSummary(authorUser);
+
+    let comm: Community | undefined;
+    if (input.community_id) {
+      comm =
+        this.communities[input.community_id] ||
+        Object.values(this.communities).find(
+          (c) => c.id === input.community_id || c.slug === input.community_id
+        );
+    }
+
+    const now = new Date().toISOString();
+    let createdPost: DiscussionPostCard | VisualPinCard;
+
+    if (input.post_type === 'discussion') {
+      const postId = `post_disc_${Date.now()}`;
+      createdPost = {
+        id: postId,
+        post_type: 'discussion',
+        author,
+        community_id: comm?.id,
+        community_slug: comm?.slug,
+        created_at: now,
+        updated_at: now,
+        score: 1,
+        user_vote: 1,
+        comments_count: 0,
+        is_saved: false,
+        title: input.title.trim(),
+        content: input.content?.trim() || '',
+        flair: input.flair || (input.tags && input.tags.length > 0 ? input.tags[0] : undefined),
+        media: input.media,
+      };
+    } else {
+      const pinId = `pin_vis_${Date.now()}`;
+      const mediaItem = input.media![0];
+      createdPost = {
+        id: pinId,
+        post_type: 'visual',
+        author,
+        community_id: comm?.id,
+        community_slug: comm?.slug,
+        created_at: now,
+        updated_at: now,
+        score: 1,
+        user_vote: 1,
+        comments_count: 0,
+        is_saved: false,
+        title: input.title.trim(),
+        caption: input.caption?.trim() || input.content?.trim() || '',
+        media: {
+          id: mediaItem.id || `m_${Date.now()}`,
+          url: mediaItem.url.trim(),
+          aspect_ratio: mediaItem.aspect_ratio || 1.0,
+          alt_text: mediaItem.alt_text || input.title.trim(),
+          width: mediaItem.width,
+          height: mediaItem.height,
+        },
+        dominant_color: '#3B82F6',
+      };
+    }
+
+    this.posts.unshift(createdPost);
+    this.comments[createdPost.id] = [];
+    if (authorUser) {
+      authorUser.posts_count = (authorUser.posts_count || 0) + 1;
+    }
+
+    return createdPost;
   }
 
   public async votePost(postId: string, direction: 1 | -1 | 0): Promise<VoteResult> {
@@ -474,6 +598,11 @@ export class MockAdapter implements ISocialGraphApi {
         server_execution_time_ms: 2.1,
       },
     };
+  }
+
+  public async getCommunities(): Promise<Community[]> {
+    await this.delay('/api/v1/communities');
+    return Object.values(this.communities);
   }
 
   public async search(query: SearchQuery): Promise<UniversalSearchResults> {

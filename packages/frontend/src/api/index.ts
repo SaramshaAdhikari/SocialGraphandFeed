@@ -46,3 +46,7 @@ export function getActiveDataSource(): DataSourceType {
 export function isMockMode(): boolean {
   return activeApi.dataSource === 'mock';
 }
+
+export function useApi(): ISocialGraphApi {
+  return api;
+}

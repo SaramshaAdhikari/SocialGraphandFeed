@@ -12,6 +12,7 @@ import type {
   UserProfile,
   FollowToggleResponse,
   Community,
+  CreatePostInput,
 } from '@socialgraph/shared';
 
 export type DataSourceType = 'mock' | 'live';
@@ -55,6 +56,7 @@ export interface ISocialGraphApi {
   // Posts & Interactions
   getPost(postId: string): Promise<PostCard>;
   getComments(postId: string): Promise<CommentNode[]>;
+  createPost(input: CreatePostInput): Promise<PostCard>;
   votePost(postId: string, direction: 1 | -1 | 0): Promise<VoteResult>;
   toggleSavePost(postId: string): Promise<{ post_id: string; is_saved: boolean }>;
   createComment(postId: string, input: CreateCommentInput): Promise<CommentNode>;
@@ -64,6 +66,7 @@ export interface ISocialGraphApi {
   getUserPosts(username: string, query?: FeedQuery): Promise<FeedResponse>;
   toggleFollow(targetUserId: string): Promise<FollowToggleResponse>;
   getCommunity(communitySlug: string): Promise<Community>;
+  getCommunities(): Promise<Community[]>;
   getCommunityFeed(communitySlug: string, query?: FeedQuery): Promise<FeedResponse>;
 
   // Search

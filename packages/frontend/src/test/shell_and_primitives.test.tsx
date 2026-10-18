@@ -202,4 +202,20 @@ describe('Checkpoint 2.1 — Application Shell Layout', () => {
       expect(html).toContain('Dedicated Surface Canvas Content');
     }
   });
+
+  it('AppLayout provisions focused form layout on /create and /settings without RightRail collision', () => {
+    for (const path of ['/create', '/settings', '/settings/appearance']) {
+      const html = renderToString(
+        <RouterProvider initialPath={path}>
+          <AppLayout showRightRail={true}>
+            <div data-testid="form-content">Form Content</div>
+          </AppLayout>
+        </RouterProvider>
+      );
+      expect(html).toContain('max-w-4xl mx-auto');
+      expect(html).not.toContain('max-w-2xl xl:max-w-3xl');
+      expect(html).not.toContain('Recommended Hubs');
+      expect(html).toContain('Form Content');
+    }
+  });
 });

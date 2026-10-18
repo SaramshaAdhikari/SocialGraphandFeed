@@ -7,6 +7,7 @@ import { PostDetailPage } from './pages/PostDetailPage';
 import { UserProfilePage } from './pages/UserProfilePage';
 import { CommunityPage } from './pages/CommunityPage';
 import { SearchPage } from './pages/SearchPage';
+import { CreatePostPage } from './pages/CreatePostPage';
 import { SettingsAppearancePage } from './pages/SettingsAppearancePage';
 import { DiagnosticsView } from './components/common/DiagnosticsView';
 import { PlaceholderPage } from './components/common/PlaceholderPage';
@@ -46,6 +47,9 @@ export function App() {
 
               {/* Screen 6: Universal Search */}
               <Route path="/search" element={<SearchPage />} />
+
+              {/* Screen 7: Create Post Composer */}
+              <Route path="/create" element={<CreatePostPage />} />
 
             {/* Supporting Surface: Saved Collections */}
             <Route

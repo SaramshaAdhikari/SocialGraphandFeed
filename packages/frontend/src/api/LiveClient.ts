@@ -11,6 +11,7 @@ import type {
   FollowToggleResponse,
   Community,
   ApiErrorResponse,
+  CreatePostInput,
 } from '@socialgraph/shared';
 import type {
   ISocialGraphApi,
@@ -118,6 +119,13 @@ export class LiveClient implements ISocialGraphApi {
     });
   }
 
+  public async createPost(input: CreatePostInput): Promise<PostCard> {
+    return this.request<PostCard>('/api/v1/posts', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
   public async getUserProfile(username: string): Promise<UserProfile> {
     return this.request<UserProfile>(`/api/v1/users/${username}`);
   }
@@ -140,6 +148,10 @@ export class LiveClient implements ISocialGraphApi {
 
   public async getCommunity(communitySlug: string): Promise<Community> {
     return this.request<Community>(`/api/v1/communities/${communitySlug}`);
+  }
+
+  public async getCommunities(): Promise<Community[]> {
+    return this.request<Community[]>('/api/v1/communities');
   }
 
   public async getCommunityFeed(

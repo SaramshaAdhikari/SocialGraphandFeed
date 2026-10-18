@@ -74,6 +74,10 @@ export const CreatePostInputSchema = Type.Object({
   community_id: Type.Optional(Type.String()),
   collection_id: Type.Optional(Type.String()),
   media: Type.Optional(Type.Array(MediaAttachmentSchema)),
+  flair: Type.Optional(Type.String({ maxLength: 50 })),
+  caption: Type.Optional(Type.String({ maxLength: 1000 })),
+  destination_url: Type.Optional(Type.String()),
+  tags: Type.Optional(Type.Array(Type.String())),
 });
 
 export type CreatePostInput = Static<typeof CreatePostInputSchema>;

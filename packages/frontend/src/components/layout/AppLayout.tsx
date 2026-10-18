@@ -19,6 +19,7 @@ export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
   const isPostDetail = currentPath.startsWith('/post/');
   const isProfile = currentPath.startsWith('/u/');
   const isSearch = currentPath === '/search';
+  const isCreate = currentPath === '/create';
   const isDedicatedCanvas = isCommunity || isPostDetail || isProfile || isSearch;
 
   return (
@@ -37,7 +38,7 @@ export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
             className={`flex-1 flex justify-center w-full max-w-full overflow-x-hidden ${
               isDiscover
                 ? 'px-3 sm:px-6 lg:px-8 py-6'
-                : isSettings
+                : isSettings || isCreate
                 ? 'px-4 sm:px-6 lg:px-8 py-8'
                 : 'px-4 sm:px-6 lg:px-8 py-6'
             }`}
@@ -53,8 +54,8 @@ export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
                   </div>
                 )}
               </div>
-            ) : isSettings ? (
-              // Settings Layout: Focused comfortable form layout
+            ) : isSettings || isCreate ? (
+              // Settings & Create Post Layout: Focused comfortable form layout
               <div className="w-full max-w-4xl mx-auto">{children}</div>
             ) : isDedicatedCanvas ? (
               // Dedicated Surface Canvas (Community Hub, Post Detail, Profile, Universal Search):

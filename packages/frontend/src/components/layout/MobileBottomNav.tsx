@@ -1,4 +1,4 @@
-import { Home, Compass, Users, Search, User } from 'lucide-react';
+import { Home, Compass, PlusCircle, Search, User } from 'lucide-react';
 import { Link, useRouter } from '../../router/Router';
 
 export function MobileBottomNav() {
@@ -7,8 +7,8 @@ export function MobileBottomNav() {
   const items = [
     { label: 'Home', to: '/', icon: Home, exact: true },
     { label: 'Discover', to: '/explore', icon: Compass },
+    { label: 'Create', to: '/create', icon: PlusCircle },
     { label: 'Search', to: '/search', icon: Search },
-    { label: 'Communities', to: '/communities', icon: Users },
     { label: 'Profile', to: '/u/alex_dev', icon: User },
   ];
 
