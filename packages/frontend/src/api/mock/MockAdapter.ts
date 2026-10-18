@@ -21,6 +21,7 @@ import type {
   DataSourceType,
   SearchQuery,
   UniversalSearchResults,
+  SavedPostsQuery,
 } from '../types';
 import { ApiClientError } from '../client';
 import {
@@ -187,6 +188,101 @@ export class MockAdapter implements ISocialGraphApi {
       meta: {
         count: page.length,
         server_execution_time_ms: 2.8,
+      },
+    };
+  }
+
+  public async getSavedPosts(query: SavedPostsQuery = {}): Promise<FeedResponse> {
+    await this.delay('/api/v1/posts/saved');
+    const {
+      type = 'all',
+      communitySlug,
+      topic,
+      query: searchQuery,
+      sort = 'new',
+      cursor,
+      limit = 12,
+    } = query;
+
+    // 1. Filter to posts bookmarked by current user (is_saved === true)
+    let items = this.posts.filter((p) => p.is_saved === true);
+
+    // 2. Type filtering
+    if (type === 'discussions') {
+      items = items.filter((p) => p.post_type === 'discussion');
+    } else if (type === 'visual') {
+      items = items.filter((p) => p.post_type === 'visual');
+    }
+
+    // 3. Community / Topic filtering
+    if (communitySlug && communitySlug !== 'all') {
+      const targetSlug = communitySlug.replace(/^c\//, '').toLowerCase();
+      items = items.filter(
+        (p) =>
+          p.community_slug?.toLowerCase() === targetSlug ||
+          p.community_id?.toLowerCase() === targetSlug
+      );
+    }
+    if (topic && topic !== 'all') {
+      const lowerTopic = topic.replace(/^#/, '').toLowerCase();
+      items = items.filter((p) => {
+        const matchesCommunity = p.community_slug?.toLowerCase() === lowerTopic;
+        const matchesTags = p.tags?.some((t) => t.toLowerCase() === lowerTopic);
+        const matchesFlair = p.post_type === 'discussion' && p.flair?.toLowerCase() === lowerTopic;
+        return Boolean(matchesCommunity || matchesTags || matchesFlair);
+      });
+    }
+
+    // 4. Search query filtering
+    if (searchQuery && searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      items = items.filter((p) => {
+        const titleMatch = p.title?.toLowerCase().includes(q) ?? false;
+        const contentMatch =
+          p.post_type === 'discussion'
+            ? p.content?.toLowerCase().includes(q) ?? false
+            : p.caption?.toLowerCase().includes(q) ?? false;
+        const tagMatch = p.tags?.some((t) => t.toLowerCase().includes(q)) ?? false;
+        const authorMatch =
+          p.author.username.toLowerCase().includes(q) ||
+          p.author.display_name.toLowerCase().includes(q);
+        const communityMatch = p.community_slug?.toLowerCase().includes(q) ?? false;
+        return titleMatch || contentMatch || tagMatch || authorMatch || communityMatch;
+      });
+    }
+
+    // 5. Sorting
+    if (sort === 'new') {
+      items.sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    } else if (sort === 'top') {
+      items.sort((a, b) => b.score - a.score);
+    } else if (sort === 'comments') {
+      items.sort((a, b) => b.comments_count - a.comments_count);
+    }
+
+    // 6. Pagination
+    let startIndex = 0;
+    if (cursor) {
+      const foundIdx = items.findIndex((p) => p.id === cursor);
+      if (foundIdx >= 0) {
+        startIndex = foundIdx + 1;
+      }
+    }
+
+    const page = items.slice(startIndex, startIndex + limit);
+    const hasMore = startIndex + limit < items.length;
+    const nextCursor = hasMore && page.length > 0 ? page[page.length - 1].id : null;
+
+    return {
+      success: true,
+      data: page,
+      next_cursor: nextCursor,
+      has_more: hasMore,
+      meta: {
+        count: page.length,
+        server_execution_time_ms: 2.2,
       },
     };
   }

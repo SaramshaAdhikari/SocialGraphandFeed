@@ -42,6 +42,19 @@ export interface UniversalSearchResults {
   total_count: number;
 }
 
+export type SavedPostTypeFilter = 'all' | 'discussions' | 'visual';
+export type SavedPostSort = 'new' | 'top' | 'comments';
+
+export interface SavedPostsQuery {
+  type?: SavedPostTypeFilter;
+  communitySlug?: string;
+  topic?: string;
+  query?: string;
+  sort?: SavedPostSort;
+  cursor?: string | null;
+  limit?: number;
+}
+
 export interface ISocialGraphApi {
   readonly dataSource: DataSourceType;
 
@@ -52,6 +65,7 @@ export interface ISocialGraphApi {
   // Feeds
   getFeed(query?: FeedQuery): Promise<FeedResponse>;
   getDiscovery(query?: DiscoveryQuery): Promise<DiscoveryResponse>;
+  getSavedPosts(query?: SavedPostsQuery): Promise<FeedResponse>;
 
   // Posts & Interactions
   getPost(postId: string): Promise<PostCard>;

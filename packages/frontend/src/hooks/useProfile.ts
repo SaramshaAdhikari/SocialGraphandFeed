@@ -14,6 +14,7 @@ export interface UseProfileOptions {
 export interface UseProfileReturn {
   profile: UserProfile | null;
   posts: PostCard[];
+  savedPosts: PostCard[];
   filteredPosts: PostCard[];
   activeTab: ProfileTab;
   setActiveTab: (tab: ProfileTab) => void;
@@ -39,6 +40,7 @@ export function useProfile(
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [posts, setPosts] = useState<PostCard[]>([]);
+  const [savedPosts, setSavedPosts] = useState<PostCard[]>([]);
   const [activeTab, setActiveTab] = useState<ProfileTab>('all');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
@@ -61,16 +63,32 @@ export function useProfile(
     setIsNotFound(false);
 
     try {
-      // Fetch profile and user posts in parallel
-      const [fetchedProfile, postsResponse] = await Promise.all([
+      // Fetch profile, authored posts, and (for self) bookmarked saved posts in parallel
+      const [fetchedProfile, postsResponse, savedResponse] = await Promise.all([
         apiInstance.getUserProfile(username),
         apiInstance.getUserPosts(username, { limit: 50 }),
+        isSelf
+          ? apiInstance.getSavedPosts({ limit: 50 }).catch(() => ({
+              success: true,
+              data: [],
+              next_cursor: null,
+              has_more: false,
+            }))
+          : Promise.resolve({
+              success: true,
+              data: [],
+              next_cursor: null,
+              has_more: false,
+            }),
       ]);
 
       if (token !== fetchTokenRef.current) return;
 
       setProfile(fetchedProfile);
       setPosts(postsResponse.data);
+      if (isSelf) {
+        setSavedPosts(savedResponse.data || []);
+      }
     } catch (err: any) {
       if (token !== fetchTokenRef.current) return;
 
@@ -85,19 +103,23 @@ export function useProfile(
         setLoading(false);
       }
     }
-  }, [username, apiInstance]);
+  }, [username, isSelf, apiInstance]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Tab filtering logic
-  const filteredPosts = posts.filter((p) => {
-    if (activeTab === 'discussions') return p.post_type === 'discussion';
-    if (activeTab === 'visual') return p.post_type === 'visual';
-    if (activeTab === 'saved') return p.is_saved === true;
-    return true; // 'all' tab
-  });
+  // Tab filtering logic: 'saved' returns savedPosts for isSelf; otherwise standard authored post filter
+  const displayPosts =
+    activeTab === 'saved'
+      ? isSelf
+        ? savedPosts
+        : []
+      : posts.filter((p) => {
+          if (activeTab === 'discussions') return p.post_type === 'discussion';
+          if (activeTab === 'visual') return p.post_type === 'visual';
+          return true; // 'all' tab
+        });
 
   // Optimistic Follow Toggle with Rollback
   const toggleFollow = useCallback(async () => {
@@ -182,17 +204,36 @@ export function useProfile(
   // Optimistic Post Save/Bookmark Toggle with Rollback
   const toggleSave = useCallback(
     async (postId: string) => {
-      const targetPost = posts.find((p) => p.id === postId);
+      const targetPost =
+        posts.find((p) => p.id === postId) ||
+        savedPosts.find((p) => p.id === postId);
       if (!targetPost) return;
 
-      const previousState = targetPost.is_saved;
+      const previousSaved = targetPost.is_saved;
+      const originalPosts = [...posts];
+      const originalSavedPosts = [...savedPosts];
 
-      // Optimistic update
+      // Optimistic update in posts
       setPosts((prev) =>
         prev.map((p) =>
-          p.id === postId ? { ...p, is_saved: !previousState } : p
+          p.id === postId ? { ...p, is_saved: !previousSaved } : p
         )
       );
+
+      // Optimistic update in savedPosts
+      setSavedPosts((prev) => {
+        if (previousSaved) {
+          // Unsaving: remove from savedPosts list
+          return prev.filter((p) => p.id !== postId);
+        } else {
+          // Saving: re-add to savedPosts list
+          const foundInPosts = originalPosts.find((p) => p.id === postId);
+          if (foundInPosts) {
+            return [{ ...foundInPosts, is_saved: true }, ...prev];
+          }
+          return prev;
+        }
+      });
 
       try {
         const result = await apiInstance.toggleSavePost(postId);
@@ -201,23 +242,24 @@ export function useProfile(
             p.id === postId ? { ...p, is_saved: result.is_saved } : p
           )
         );
+        if (!result.is_saved) {
+          setSavedPosts((prev) => prev.filter((p) => p.id !== postId));
+        }
       } catch (err) {
         // Rollback
-        setPosts((prev) =>
-          prev.map((p) =>
-            p.id === postId ? { ...p, is_saved: previousState } : p
-          )
-        );
+        setPosts(originalPosts);
+        setSavedPosts(originalSavedPosts);
         throw err;
       }
     },
-    [posts, apiInstance]
+    [posts, savedPosts, apiInstance]
   );
 
   return {
     profile,
     posts,
-    filteredPosts,
+    savedPosts,
+    filteredPosts: displayPosts,
     activeTab,
     setActiveTab,
     loading,

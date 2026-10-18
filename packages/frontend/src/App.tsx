@@ -8,6 +8,7 @@ import { UserProfilePage } from './pages/UserProfilePage';
 import { CommunityPage } from './pages/CommunityPage';
 import { SearchPage } from './pages/SearchPage';
 import { CreatePostPage } from './pages/CreatePostPage';
+import { SavedCollectionsPage } from './pages/SavedCollectionsPage';
 import { SettingsAppearancePage } from './pages/SettingsAppearancePage';
 import { DiagnosticsView } from './components/common/DiagnosticsView';
 import { PlaceholderPage } from './components/common/PlaceholderPage';
@@ -51,21 +52,10 @@ export function App() {
               {/* Screen 7: Create Post Composer */}
               <Route path="/create" element={<CreatePostPage />} />
 
-            {/* Supporting Surface: Saved Collections */}
-            <Route
-              path="/saved"
-              element={
-                <PlaceholderPage
-                  title="Saved & Collections"
-                  personality="Visual Discovery & Personal Library"
-                  milestone="Supporting Surface (Milestone 4)"
-                  reference="pinterest_DESIGN.md"
-                  description="Personal curation library for saved visual pins and bookmarked discussions."
-                />
-              }
-            />
+              {/* Supporting Surface: Saved Collections */}
+              <Route path="/saved" element={<SavedCollectionsPage />} />
 
-            {/* Supporting Surface: Community Directory */}
+              {/* Supporting Surface: Community Directory */}
             <Route
               path="/communities"
               element={

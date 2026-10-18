@@ -21,6 +21,7 @@ export function UserProfilePage() {
   const {
     profile,
     posts,
+    savedPosts,
     filteredPosts,
     activeTab,
     setActiveTab,
@@ -37,14 +38,14 @@ export function UserProfilePage() {
   const counts = useMemo(() => {
     const discussions = posts.filter((p) => p.post_type === 'discussion').length;
     const visual = posts.filter((p) => p.post_type === 'visual').length;
-    const saved = posts.filter((p) => p.is_saved).length;
+    const saved = isSelf ? savedPosts.length : undefined;
     return {
       all: posts.length,
       discussions,
       visual,
       saved,
     };
-  }, [posts]);
+  }, [posts, savedPosts, isSelf]);
 
   // Loading Skeleton State
   if (loading) {

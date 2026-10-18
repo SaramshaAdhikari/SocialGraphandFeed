@@ -19,6 +19,7 @@ import type {
   DataSourceType,
   SearchQuery,
   UniversalSearchResults,
+  SavedPostsQuery,
 } from './types';
 import { ApiClientError } from './client';
 
@@ -89,6 +90,20 @@ export class LiveClient implements ISocialGraphApi {
 
     const qs = params.toString() ? `?${params.toString()}` : '';
     return this.request<DiscoveryResponse>(`/api/v1/discovery${qs}`);
+  }
+
+  public async getSavedPosts(query: SavedPostsQuery = {}): Promise<FeedResponse> {
+    const params = new URLSearchParams();
+    if (query.cursor) params.set('cursor', query.cursor);
+    if (query.limit) params.set('limit', String(query.limit));
+    if (query.sort) params.set('sort', query.sort);
+    if (query.type) params.set('type', query.type);
+    if (query.communitySlug) params.set('community', query.communitySlug);
+    if (query.topic) params.set('topic', query.topic);
+    if (query.query) params.set('q', query.query);
+
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return this.request<FeedResponse>(`/api/v1/posts/saved${qs}`);
   }
 
   public async getPost(postId: string): Promise<PostCard> {
