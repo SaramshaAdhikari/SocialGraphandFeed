@@ -25,7 +25,7 @@ describe('Checkpoint 2.2 — Typed Mock Adapter & Schema Conformance', () => {
     const liveClient = new LiveClient();
     expect(liveClient.dataSource).toBe('live');
     expect(getActiveDataSource()).toBeDefined();
-    expect(isMockMode()).toBe(true); // in dev/test environment
+    expect(isMockMode()).toBe(false); // live API is the default; fixtures require explicit VITE_DATA_SOURCE=mock
   });
 
   it('returns health response conforming to HealthStatusSchema', async () => {

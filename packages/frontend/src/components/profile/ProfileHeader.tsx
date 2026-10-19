@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { UserProfile } from '@socialgraph/shared';
-import { Calendar, Link2, Settings, UserPlus, UserCheck, Share2, Check } from 'lucide-react';
+import { Calendar, Link2, Settings, UserPlus, UserCheck, Share2, Check, X } from 'lucide-react';
 import { Avatar, Button } from '../ui';
 import { Link } from '../../router/Router';
+import { api } from '../../api';
+import { useAuth } from '../../auth/AuthContext';
+import type { FollowListResponse } from '@socialgraph/shared';
 
 export interface ProfileHeaderProps {
   profile: UserProfile;
   isSelf: boolean;
   onToggleFollow: () => Promise<void>;
+  onProfileRefresh?: () => Promise<void>;
   className?: string;
 }
 
@@ -15,18 +19,92 @@ export function ProfileHeader({
   profile,
   isSelf,
   onToggleFollow,
+  onProfileRefresh,
   className = '',
 }: ProfileHeaderProps) {
   const [followSubmitting, setFollowSubmitting] = useState(false);
+  const [followError, setFollowError] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
+  const [listType, setListType] = useState<'followers' | 'following' | null>(null);
+  const [list, setList] = useState<FollowListResponse | null>(null);
+  const [listLoading, setListLoading] = useState(false);
+  const [listError, setListError] = useState('');
+  const [listBusy, setListBusy] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  const openerRef = useRef<HTMLButtonElement | null>(null);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!listType) return;
+    let active = true;
+    setListLoading(true); setListError(''); setList(null);
+    const load = listType === 'followers' ? api.getFollowers : api.getFollowing;
+    load.call(api, profile.username, null, 20).then((result) => { if (active) setList(result); })
+      .catch(() => { if (active) setListError('Could not load this list. Please try again.'); })
+      .finally(() => { if (active) setListLoading(false); });
+    return () => { active = false; };
+  }, [listType, profile.username]);
+
+  useEffect(() => {
+    if (!listType) return;
+    dialogRef.current?.querySelector<HTMLElement>('button, a[href]')?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { setListType(null); return; }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])'));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => { window.removeEventListener('keydown', onKey); openerRef.current?.focus(); };
+  }, [listType]);
+
+  const openList = (type: 'followers' | 'following', event: React.MouseEvent<HTMLButtonElement>) => {
+    openerRef.current = event.currentTarget;
+    setListType(type);
+  };
+
+  const loadMore = async () => {
+    if (!listType || !list?.next_cursor || listLoading) return;
+    setListLoading(true); setListError('');
+    try {
+      const next = listType === 'followers' ? await api.getFollowers(profile.username, list.next_cursor, 20) : await api.getFollowing(profile.username, list.next_cursor, 20);
+      setList((previous) => previous ? { ...next, data: [...previous.data, ...next.data] } : next);
+    } catch { setListError('Could not load more accounts. Please try again.'); }
+    finally { setListLoading(false); }
+  };
+
+  const toggleListedUser = async (id: string, isFollowing: boolean) => {
+    setListBusy(id); setListError('');
+    try {
+      const result = await api.toggleFollow(id, !isFollowing);
+      setList((previous) => previous ? {
+        ...previous,
+        data: previous.data.map((entry) => entry.id === id ? { ...entry, is_following: result.is_following } : entry),
+      } : previous);
+      try {
+        const refreshed = listType === 'followers' ? await api.getFollowers(profile.username) : await api.getFollowing(profile.username);
+        setList(refreshed);
+      } catch {
+        setListError('Follow status updated, but this list could not be refreshed. Please reopen it to retry.');
+      }
+      try { await onProfileRefresh?.(); }
+      catch { setListError('Follow status updated, but profile counts could not be refreshed. Please reload the profile.'); }
+    } catch { setListError('The follow change failed. Please try again.'); }
+    finally { setListBusy(null); }
+  };
 
   const handleFollowClick = async () => {
     if (followSubmitting) return;
     setFollowSubmitting(true);
+    setFollowError('');
     try {
       await onToggleFollow();
     } catch {
-      // Error handled by hook rollback
+      setFollowError('Could not update follow status. Please try again.');
     } finally {
       setFollowSubmitting(false);
     }
@@ -102,6 +180,7 @@ export function ProfileHeader({
               </span>
             )}
           </div>
+          {followError && <p role="alert" className="text-xs text-red-600">{followError}</p>}
 
           {/* Action Row: Follow / Edit Profile & Share */}
           <div className="flex items-center gap-2.5 sm:mb-2 self-start sm:self-end">
@@ -200,22 +279,34 @@ export function ProfileHeader({
               <span className="text-[#64748B] dark:text-[#94A3B8]">Posts</span>
             </div>
 
-            <div data-testid="profile-stat-followers">
+            <button type="button" data-testid="profile-stat-followers" onClick={(event) => openList('followers', event)} className="text-left hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded">
               <span className="font-bold text-[#0F172A] dark:text-[#F8FAFC] tabular-nums">
                 {profile.followers_count.toLocaleString()}
               </span>{' '}
               <span className="text-[#64748B] dark:text-[#94A3B8]">Followers</span>
-            </div>
+            </button>
 
-            <div>
+            <button type="button" data-testid="profile-stat-following" onClick={(event) => openList('following', event)} className="text-left hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded">
               <span className="font-bold text-[#0F172A] dark:text-[#F8FAFC] tabular-nums">
                 {profile.following_count.toLocaleString()}
               </span>{' '}
               <span className="text-[#64748B] dark:text-[#94A3B8]">Following</span>
-            </div>
+            </button>
           </div>
         </div>
       </div>
+      {listType && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setListType(null); }}>
+        <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="follow-list-title" tabIndex={-1} className="w-full max-w-md max-h-[80vh] overflow-hidden rounded-2xl bg-white dark:bg-[#181B22] shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col">
+          <header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-5 py-4"><h2 id="follow-list-title" className="font-bold">{listType === 'followers' ? 'Followers' : 'Following'}</h2><button type="button" aria-label="Close" onClick={() => setListType(null)} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700"><X size={18} /></button></header>
+          <div className="overflow-y-auto p-4 space-y-3">
+            {listLoading && !list && <p role="status">Loading accounts…</p>}
+            {listError && <p role="alert" className="text-sm text-red-600">{listError}</p>}
+            {!listLoading && list?.data.length === 0 && <p className="py-8 text-center text-sm text-slate-500">No {listType} yet.</p>}
+            {list?.data.map((entry) => <div key={entry.id} className="flex items-center gap-3"><Link to={`/u/${encodeURIComponent(entry.username)}`} onClick={() => setListType(null)} className="flex min-w-0 flex-1 items-center gap-3"><Avatar src={entry.avatar_url} alt={entry.display_name} size="sm" /><span className="min-w-0"><strong className="block truncate text-sm">{entry.display_name}</strong><span className="block truncate text-xs text-slate-500">@{entry.username}</span></span></Link>{user && user.id !== entry.id && <Button size="sm" variant={entry.is_following ? 'secondary' : 'primary'} disabled={listBusy === entry.id} onClick={() => void toggleListedUser(entry.id, entry.is_following)}>{entry.is_following ? 'Following' : 'Follow'}</Button>}</div>)}
+            {list?.has_more && <Button variant="secondary" disabled={listLoading} onClick={() => void loadMore()}>{listLoading ? 'Loading…' : 'Load more'}</Button>}
+          </div>
+        </section>
+      </div>}
     </div>
   );
 }

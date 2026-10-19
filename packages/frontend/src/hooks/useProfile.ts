@@ -35,7 +35,7 @@ export function useProfile(
 ): UseProfileReturn {
   const {
     apiInstance = defaultApi,
-    currentViewerUsername = 'alex_dev',
+    currentViewerUsername,
   } = options;
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -54,11 +54,11 @@ export function useProfile(
     username.toLowerCase() === currentViewerUsername.toLowerCase()
   );
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (silent = false) => {
     if (!username) return;
 
     const token = ++fetchTokenRef.current;
-    setLoading(true);
+    if (!silent) setLoading(true);
     setError(null);
     setIsNotFound(false);
 
@@ -99,11 +99,13 @@ export function useProfile(
       }
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
-      if (token === fetchTokenRef.current) {
+      if (token === fetchTokenRef.current && !silent) {
         setLoading(false);
       }
     }
   }, [username, isSelf, apiInstance]);
+
+  const refresh = useCallback(() => loadData(true), [loadData]);
 
   useEffect(() => {
     loadData();
@@ -141,7 +143,7 @@ export function useProfile(
     );
 
     try {
-      const res = await apiInstance.toggleFollow(profile.id);
+      const res = await apiInstance.toggleFollow(profile.id, nextIsFollowing);
       // Synchronize with server response
       setProfile((prev) =>
         prev
@@ -270,6 +272,6 @@ export function useProfile(
     toggleFollow,
     vote,
     toggleSave,
-    refresh: loadData,
+    refresh,
   };
 }

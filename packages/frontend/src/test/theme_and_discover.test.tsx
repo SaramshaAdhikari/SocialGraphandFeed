@@ -117,9 +117,10 @@ describe('Header Appearance Controls vs Settings Page Architecture', () => {
     expect(html).toContain('aria-label="Switch to dark mode"');
     expect(html).toContain('title="Switch to dark mode"');
 
-    // Profile menu trigger present
-    expect(html).toContain('aria-label="User account menu for Alex Rivera"');
-    expect(html).toContain('aria-haspopup="menu"');
+    // A user identity is never assumed before backend session restoration.
+    expect(html).toContain('Checking session');
+    expect(html).not.toContain('Alex Rivera');
+    expect(html).not.toContain('aria-haspopup="menu"');
 
     // Standalone settings gear is removed from top-level header
     expect(html).not.toContain('title="Theme &amp; Appearance Settings"');

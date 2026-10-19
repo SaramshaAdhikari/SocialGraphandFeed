@@ -36,3 +36,13 @@ export const FollowToggleResponseSchema = Type.Object({
 });
 
 export type FollowToggleResponse = Static<typeof FollowToggleResponseSchema>;
+
+export const FollowListUserSchema = Type.Intersect([UserSummarySchema, Type.Object({ is_following: Type.Boolean() })]);
+export type FollowListUser = Static<typeof FollowListUserSchema>;
+export const FollowListResponseSchema = Type.Object({
+  data: Type.Array(FollowListUserSchema),
+  total_count: Type.Integer({ minimum: 0 }),
+  next_cursor: Type.Union([Type.String(), Type.Null()]),
+  has_more: Type.Boolean(),
+});
+export type FollowListResponse = Static<typeof FollowListResponseSchema>;

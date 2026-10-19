@@ -11,6 +11,9 @@ import type { Db } from 'mongodb';
 import { requiredTestServiceUrl } from './test-env.js';
 import { calculateHotScore } from '../src/utils/pagination.js';
 import { reconcileCommunityMemberCounts } from '../src/db/membershipIntegrity.js';
+import { promoteExistingAlexAdmin } from '../src/db/bootstrap-admin.js';
+import { AuthService, verifyPassword } from '../src/services/AuthService.js';
+import { buildApp } from '../src/app.js';
 
 describe('Real MongoDB Integration Suite (Local Database)', () => {
   let db: Db;
@@ -18,6 +21,7 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
   let postService: PostService;
   let userService: UserService;
   let communityService: CommunityService;
+  let app: ReturnType<typeof buildApp>;
 
   beforeAll(async () => {
     // This suite drops its database after execution; never fall back to a developer DB.
@@ -27,12 +31,15 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
     postService = new PostService();
     userService = new UserService();
     communityService = new CommunityService();
+    app = buildApp();
+    await app.ready();
 
     // Seed test database
     await seedDatabase(db);
   });
 
   afterAll(async () => {
+    if (app) await app.close();
     if (db) {
       await db.dropDatabase();
     }
@@ -40,6 +47,86 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
   });
 
   describe('1. Index Idempotency & Constraint Enforcement', () => {
+    it('registers, logs in, restores and invalidates a session with CSRF enforcement', async () => {
+      const username = `auth_test_${Date.now()}`;
+      const registration = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload: { username, password: 'correct horse battery', password_confirmation: 'correct horse battery' } });
+      expect(registration.statusCode).toBe(200);
+      expect(registration.body).not.toContain('password_hash');
+      expect(registration.json().user.username).toBe(username);
+      const login = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { username: username.toUpperCase(), password: 'correct horse battery' } });
+      expect(login.statusCode).toBe(200);
+      const cookie = login.headers['set-cookie']?.split(';')[0];
+      const csrf = login.json().csrf_token;
+      expect(login.headers['set-cookie']).toContain('HttpOnly');
+      const restored = await app.inject({ method: 'GET', url: '/api/v1/auth/session', headers: { cookie } });
+      expect(restored.statusCode).toBe(200);
+      expect(restored.json().user.username).toBe(username);
+      const csrfRejected = await app.inject({ method: 'POST', url: '/api/v1/posts', headers: { cookie }, payload: { post_type: 'discussion', title: 'A valid test post', content: 'body' } });
+      expect(csrfRejected.statusCode).toBe(403);
+      const logout = await app.inject({ method: 'POST', url: '/api/v1/auth/logout', headers: { cookie, 'x-csrf-token': csrf }, payload: {} });
+      expect(logout.statusCode).toBe(200);
+      expect(logout.headers['set-cookie']).toContain('Max-Age=0');
+      const invalidated = await app.inject({ method: 'GET', url: '/api/v1/auth/session', headers: { cookie } });
+      expect(invalidated.statusCode).toBe(401);
+      const protectedAfterLogout = await app.inject({ method: 'POST', url: '/api/v1/communities/systems/join', headers: { cookie, 'x-csrf-token': csrf }, payload: {} });
+      expect(protectedAfterLogout.statusCode).toBe(401);
+      const duplicate = await app.inject({ method: 'POST', url: '/api/v1/auth/register', payload: { username: username.toUpperCase(), password: 'correct horse battery', password_confirmation: 'correct horse battery' } });
+      expect(duplicate.statusCode).toBe(400);
+      const wrongPassword = await app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { username, password: 'wrong password' } });
+      expect(wrongPassword.statusCode).toBe(401);
+      await db.collection(COLLECTIONS.USERS).deleteOne({ username });
+    });
+    it('promotes alex_dev repeatably without changing identity or existing relationships', async () => {
+      const before = await db.collection(COLLECTIONS.USERS).findOne({ _id: 'usr_0' });
+      const posts = await db.collection(COLLECTIONS.POSTS).countDocuments({ author_id: 'usr_0' });
+      const comments = await db.collection(COLLECTIONS.COMMENTS).countDocuments({ author_id: 'usr_0' });
+      const follows = await db.collection(COLLECTIONS.FOLLOWS).countDocuments({ $or: [{ follower_id: 'usr_0' }, { target_user_id: 'usr_0' }] });
+      const memberships = await db.collection(COLLECTIONS.COMMUNITY_MEMBERSHIPS).countDocuments({ user_id: 'usr_0' });
+      const votes = await db.collection(COLLECTIONS.POST_VOTES).countDocuments({ user_id: 'usr_0' });
+      const saves = await db.collection(COLLECTIONS.POST_SAVES).countDocuments({ user_id: 'usr_0' });
+      await promoteExistingAlexAdmin(db, 'admin');
+      await promoteExistingAlexAdmin(db, 'must-not-reset-existing-password');
+      const after = await db.collection(COLLECTIONS.USERS).findOne({ _id: 'usr_0' });
+      expect(after?._id).toBe(before?._id);
+      expect(after?.username).toBe('alex_dev');
+      expect(after?.role).toBe('admin');
+      expect(await verifyPassword('admin', after?.password_hash)).toBe(true);
+      expect(await verifyPassword('must-not-reset-existing-password', after?.password_hash)).toBe(false);
+      const developmentLogin = await new AuthService('development').login('admin', 'admin');
+      expect(developmentLogin.user.id).toBe(before?._id);
+      expect(developmentLogin.user.role).toBe('admin');
+      expect(await db.collection(COLLECTIONS.USERS).countDocuments({ username: 'alex_dev' })).toBe(1);
+      expect(await db.collection(COLLECTIONS.POSTS).countDocuments({ author_id: 'usr_0' })).toBe(posts);
+      expect(await db.collection(COLLECTIONS.COMMENTS).countDocuments({ author_id: 'usr_0' })).toBe(comments);
+      expect(await db.collection(COLLECTIONS.FOLLOWS).countDocuments({ $or: [{ follower_id: 'usr_0' }, { target_user_id: 'usr_0' }] })).toBe(follows);
+      expect(await db.collection(COLLECTIONS.COMMUNITY_MEMBERSHIPS).countDocuments({ user_id: 'usr_0' })).toBe(memberships);
+      expect(await db.collection(COLLECTIONS.POST_VOTES).countDocuments({ user_id: 'usr_0' })).toBe(votes);
+      expect(await db.collection(COLLECTIONS.POST_SAVES).countDocuments({ user_id: 'usr_0' })).toBe(saves);
+      const adminSession = await new AuthService().createSession('usr_0');
+      const adminList = await app.inject({ method: 'GET', url: '/api/v1/admin/users', headers: { cookie: `sg_session=${adminSession.token}` } });
+      expect(adminList.statusCode).toBe(200);
+      expect(adminList.body).not.toContain('password_hash');
+      const ordinarySession = await new AuthService().createSession('usr_1');
+      const forbiddenAdmin = await app.inject({ method: 'GET', url: '/api/v1/admin/users', headers: { cookie: `sg_session=${ordinarySession.token}`, 'x-user-role': 'admin' } });
+      expect(forbiddenAdmin.statusCode).toBe(403);
+    });
+
+    it('expires sessions and rate limits repeated invalid login attempts', async () => {
+      const session = await new AuthService().createSession('usr_0');
+      const { createHmac } = await import('node:crypto');
+      const { config } = await import('../src/config/env.js');
+      const sessionId = createHmac('sha256', config.SESSION_SECRET).update(session.token).digest('hex');
+      await db.collection(COLLECTIONS.SESSIONS).updateOne({ _id: sessionId }, { $set: { expires_at: new Date(Date.now() - 1000) } });
+      const expired = await app.inject({ method: 'GET', url: '/api/v1/auth/session', headers: { cookie: `sg_session=${session.token}` } });
+      expect(expired.statusCode).toBe(401);
+      expect(expired.headers['set-cookie']).toContain('Max-Age=0');
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        const rejected = await app.inject({ method: 'POST', url: '/api/v1/auth/login', remoteAddress: '198.51.100.23', payload: { username: 'absent_user', password: 'incorrect' } });
+        expect(rejected.statusCode).toBe(401);
+      }
+      const limited = await app.inject({ method: 'POST', url: '/api/v1/auth/login', remoteAddress: '198.51.100.23', payload: { username: 'absent_user', password: 'incorrect' } });
+      expect(limited.statusCode).toBe(429);
+    });
     it('runs ensureIndexes repeatedly without error', async () => {
       await expect(ensureIndexes(db)).resolves.not.toThrow();
     });
@@ -294,6 +381,22 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
       expect(follow2.followers_count).toBe(initialFollowers);
     });
 
+    it('uses persisted edges for idempotent follow state, counts, and paginated lists', async () => {
+      await Promise.all([
+        userService.setFollow('usr_1', 'usr_6', true),
+        userService.setFollow('usr_1', 'usr_6', true),
+      ]);
+      const freshProfile = await userService.getUserProfile('lucas_t', 'usr_6');
+      expect(freshProfile.is_following).toBe(true);
+      expect(freshProfile.followers_count).toBe(await db.collection(COLLECTIONS.FOLLOWS).countDocuments({ target_user_id: 'usr_1' }));
+      expect(await db.collection(COLLECTIONS.FOLLOWS).countDocuments({ follower_id: 'usr_6', target_user_id: 'usr_1' })).toBe(1);
+      const followers = await userService.getFollowList('lucas_t', 'followers', 'usr_6', null, 50);
+      expect(followers.data.map((entry) => entry.id)).toContain('usr_6');
+      expect(followers.total_count).toBe(freshProfile.followers_count);
+      await userService.setFollow('usr_1', 'usr_6', false);
+      expect((await userService.getUserProfile('lucas_t', 'usr_6')).is_following).toBe(false);
+    });
+
     it('rejects self-follow with 400 Bad Request', async () => {
       await expect(userService.toggleFollow('usr_0', 'usr_0')).rejects.toThrow(
         /Users cannot follow themselves/
@@ -522,25 +625,14 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
       expect((await db.collection(COLLECTIONS.POSTS).findOne({ _id: post.id }))?.score).toBe(0);
     });
 
-    it('rolls back a follow edge when a counter update fails mid-transaction', async () => {
+    it('keeps follow records authoritative without mutating cached user counters', async () => {
       const targetBefore = await db.collection(COLLECTIONS.USERS).findOne({ _id: 'usr_2' });
       const followerBefore = await db.collection(COLLECTIONS.USERS).findOne({ _id: 'usr_3' });
-      const prototype = Object.getPrototypeOf(db.collection(COLLECTIONS.USERS));
-      const originalUpdateOne = prototype.updateOne;
-      prototype.updateOne = async function (filter: any, ...args: any[]) {
-        if (this.collectionName === COLLECTIONS.USERS && filter?._id === 'usr_2') {
-          throw new Error('injected follower counter failure');
-        }
-        return originalUpdateOne.call(this, filter, ...args);
-      };
-      try {
-        await expect(userService.toggleFollow('usr_2', 'usr_3')).rejects.toThrow('injected follower counter failure');
-      } finally {
-        prototype.updateOne = originalUpdateOne;
-      }
-      expect(await db.collection(COLLECTIONS.FOLLOWS).countDocuments({ follower_id: 'usr_3', target_user_id: 'usr_2' })).toBe(0);
+      await userService.setFollow('usr_2', 'usr_3', true);
+      expect(await db.collection(COLLECTIONS.FOLLOWS).countDocuments({ follower_id: 'usr_3', target_user_id: 'usr_2' })).toBe(1);
       expect((await db.collection(COLLECTIONS.USERS).findOne({ _id: 'usr_2' }))?.followers_count).toBe(targetBefore?.followers_count);
       expect((await db.collection(COLLECTIONS.USERS).findOne({ _id: 'usr_3' }))?.following_count).toBe(followerBefore?.following_count);
+      await userService.setFollow('usr_2', 'usr_3', false);
     });
 
     it('keeps concurrent comment records and comments_count in sync', async () => {
@@ -674,6 +766,15 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
       // Cleanup custom records
       await usersCol.deleteOne({ _id: customUserId as any });
       await postsCol.deleteOne({ _id: customPostId as any });
+    });
+
+    it('preserves alex_dev credentials, role, profile, and id when the seed is rerun', async () => {
+      const alex = db.collection(COLLECTIONS.USERS);
+      const markerHash = 'preserved-test-hash';
+      await alex.updateOne({ _id: 'usr_0' }, { $set: { role: 'admin', password_hash: markerHash, display_name: 'Alex test profile' } });
+      await seedDatabase(db);
+      const after = await alex.findOne({ _id: 'usr_0' });
+      expect(after).toMatchObject({ _id: 'usr_0', username: 'alex_dev', role: 'admin', password_hash: markerHash, display_name: 'Alex test profile' });
     });
   });
 });

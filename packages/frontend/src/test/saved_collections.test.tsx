@@ -218,7 +218,7 @@ describe('Screen 8 — Saved Collections: Profile Saved Tab Integration & Privac
     expect(htmlOther).toContain('Visual Pins');
   });
 
-  it('10b. UserProfilePage renders for self on /u/alex_dev without runtime exceptions', () => {
+  it('10b. UserProfilePage renders as a public profile without assuming alex_dev is signed in', () => {
     const html = renderToString(
       <ThemeProvider>
         <RouterProvider initialPath="/u/alex_dev">
@@ -299,6 +299,21 @@ describe('Screen 8 — Saved Collections: Live Client Contract & Honest Error Ha
       expect(err.problem.detail).toContain('Route GET /api/v1/posts/saved not found');
     }
   });
+
+  it('clears the shared authentication state signal when an API request returns 401', async () => {
+    const target = new EventTarget();
+    vi.stubGlobal('window', target);
+    let invalidated = 0;
+    target.addEventListener('socialgraph:unauthorized', () => { invalidated += 1; });
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false, status: 401, statusText: 'Unauthorized',
+      json: async () => ({ type: 'about:blank', title: 'Unauthorized', status: 401, detail: 'Unauthorized', code: 'UNAUTHORIZED', timestamp: new Date().toISOString() }),
+    } as any);
+
+    await expect(new LiveClient().getSavedPosts()).rejects.toThrow(ApiClientError);
+    expect(invalidated).toBe(1);
+    vi.unstubAllGlobals();
+  });
 });
 
 describe('Screen 8 — Saved Collections: UI Page Rendering & Shell Navigation', () => {
@@ -337,7 +352,7 @@ describe('Screen 8 — Saved Collections: UI Page Rendering & Shell Navigation',
       </ThemeProvider>
     );
     expect(topHeaderHtml).toBeDefined();
-    expect(topHeaderHtml).toContain('u/alex_dev');
+    expect(topHeaderHtml).not.toContain('u/alex_dev');
   });
 
   it('15. DiscussionPostCard and VisualPinCard render active saved bookmark state', () => {

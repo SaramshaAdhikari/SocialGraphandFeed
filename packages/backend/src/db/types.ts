@@ -14,7 +14,11 @@ export interface UserDoc {
   posts_count: number;
   created_at: Date;
   updated_at: Date;
+  password_hash?: string;
+  role?: 'user' | 'admin';
 }
+
+export interface SessionDoc { _id: string; user_id: string; csrf_token: string; expires_at: Date; created_at: Date; }
 
 export interface PostDoc {
   _id: string;

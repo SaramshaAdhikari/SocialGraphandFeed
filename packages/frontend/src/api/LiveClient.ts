@@ -9,6 +9,7 @@ import type {
   CreateCommentInput,
   UserProfile,
   FollowToggleResponse,
+  FollowListResponse,
   Community,
   ApiErrorResponse,
   CreatePostInput,
@@ -22,6 +23,9 @@ import type {
   SavedPostsQuery,
 } from './types';
 import { ApiClientError } from './client';
+
+let csrfToken: string | undefined;
+export function setCsrfToken(token?: string) { csrfToken = token; }
 
 interface CommunityMembershipResult {
   community_id: string;
@@ -39,16 +43,23 @@ export class LiveClient implements ISocialGraphApi {
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
+    const mutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method || '');
+    if (mutating && !csrfToken) {
+      const sessionResponse = await fetch(`${this.baseUrl}/api/v1/auth/session`, { credentials: 'include' });
+      if (sessionResponse.ok) csrfToken = (await sessionResponse.json()).csrf_token;
+    }
     const headers: Record<string, string> = {
       Accept: 'application/json',
       ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-      ...(import.meta.env.DEV && import.meta.env.VITE_DEV_USER_ID
-        ? { 'X-Dev-User-Id': import.meta.env.VITE_DEV_USER_ID as string }
-        : {}),
+      ...(mutating && csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
       ...((options.headers as Record<string, string>) || {}),
     };
 
-    const res = await fetch(url, { ...options, headers });
+    const res = await fetch(url, { ...options, headers, credentials: 'include' });
+
+    if (res.status === 401 && typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('socialgraph:unauthorized'));
+    }
 
     if (!res.ok) {
       let problem: ApiErrorResponse;
@@ -176,11 +187,19 @@ export class LiveClient implements ISocialGraphApi {
     return this.request<FeedResponse>(`/api/v1/users/${username}/posts${qs}`);
   }
 
-  public async toggleFollow(targetUserId: string): Promise<FollowToggleResponse> {
+  public async toggleFollow(targetUserId: string, isFollowing?: boolean): Promise<FollowToggleResponse> {
+    if (isFollowing !== undefined) return this.request<FollowToggleResponse>(`/api/v1/users/${targetUserId}/follow`, { method: 'PUT', body: JSON.stringify({ is_following: isFollowing }) });
     return this.request<FollowToggleResponse>(`/api/v1/users/${targetUserId}/follow`, {
       method: 'POST',
       body: JSON.stringify({}),
     });
+  }
+
+  public async getFollowers(username: string, cursor?: string | null, limit = 20): Promise<FollowListResponse> { return this.getFollowList(username, 'followers', cursor, limit); }
+  public async getFollowing(username: string, cursor?: string | null, limit = 20): Promise<FollowListResponse> { return this.getFollowList(username, 'following', cursor, limit); }
+  private async getFollowList(username: string, direction: 'followers' | 'following', cursor?: string | null, limit = 20): Promise<FollowListResponse> {
+    const params = new URLSearchParams({ limit: String(limit) }); if (cursor) params.set('cursor', cursor);
+    return this.request<FollowListResponse>(`/api/v1/users/${encodeURIComponent(username)}/${direction}?${params}`);
   }
 
   public async getCommunity(communitySlug: string): Promise<Community> {

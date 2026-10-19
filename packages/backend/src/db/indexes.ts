@@ -3,6 +3,7 @@ import { COLLECTIONS } from './collections.js';
 
 export async function ensureIndexes(db: Db): Promise<void> {
   const users = db.collection(COLLECTIONS.USERS);
+  const sessions = db.collection(COLLECTIONS.SESSIONS);
   const posts = db.collection(COLLECTIONS.POSTS);
   const comments = db.collection(COLLECTIONS.COMMENTS);
   const follows = db.collection(COLLECTIONS.FOLLOWS);
@@ -14,6 +15,7 @@ export async function ensureIndexes(db: Db): Promise<void> {
   await Promise.all([
     // Users: unique username
     users.createIndex({ username: 1 }, { unique: true, name: 'uniq_username' }),
+    sessions.createIndex({ expires_at:  1 }, { expireAfterSeconds: 0, name: 'ttl_sessions' }),
 
     // Posts: reverse-chronological, top score, and hot score cursor pagination
     posts.createIndex({ created_at: -1, _id: -1 }, { name: 'idx_posts_created_at_id' }),

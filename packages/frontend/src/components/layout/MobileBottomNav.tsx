@@ -1,15 +1,17 @@
 import { Home, Compass, PlusCircle, Search, User } from 'lucide-react';
 import { Link, useRouter } from '../../router/Router';
+import { useAuth } from '../../auth/AuthContext';
 
 export function MobileBottomNav() {
   const { currentPath } = useRouter();
+  const { user, status } = useAuth();
 
   const items = [
     { label: 'Home', to: '/', icon: Home, exact: true },
     { label: 'Discover', to: '/explore', icon: Compass },
     { label: 'Create', to: '/create', icon: PlusCircle },
     { label: 'Search', to: '/search', icon: Search },
-    { label: 'Profile', to: '/u/alex_dev', icon: User },
+    ...(user && status === 'authenticated' ? [{ label: 'Profile', to: `/u/${user.username}`, icon: User }] : []),
   ];
 
   return (

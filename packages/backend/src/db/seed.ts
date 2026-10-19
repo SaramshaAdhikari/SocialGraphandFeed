@@ -136,8 +136,17 @@ export async function seedDatabase(db: Db): Promise<{
   }
 
   const allUsers = [...coreUsers, ...syntheticUsers];
-  await usersCol.deleteMany({ _id: { $in: allUsers.map((u) => u._id) } }, { session });
-  await usersCol.insertMany(allUsers, { session });
+  // Fixture users are insert-only. In particular this preserves the existing
+  // alex_dev identity, profile, role, and authentication hash across reseeds.
+  for (const user of allUsers) {
+    const byId = await usersCol.findOne({ _id: user._id }, { session });
+    if (byId) continue;
+    const usernameOwner = await usersCol.findOne({ username: user.username }, { session });
+    if (usernameOwner) {
+      throw new Error(`Cannot seed ${user.username}: it already belongs to ${usernameOwner._id}, not fixture id ${user._id}. No user data was changed.`);
+    }
+    await usersCol.insertOne(user, { session });
+  }
 
   // 2. Communities
   const communities: CommunityDoc[] = [

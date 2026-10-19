@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { UserProfile } from '@socialgraph/shared';
 import { UserCheck, UserPlus, CheckCircle2 } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { Link } from '../../router/Router';
+import { api } from '../../api';
+import { useAuth } from '../../auth/AuthContext';
 
 export interface UserSearchResultCardProps {
   user: UserProfile;
@@ -18,14 +20,25 @@ export function UserSearchResultCard({
 }: UserSearchResultCardProps) {
   const [isFollowing, setIsFollowing] = useState(user.is_following);
   const [followersCount, setFollowersCount] = useState(user.followers_count);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const { user: viewer } = useAuth();
 
-  const handleFollowClick = (e: React.MouseEvent) => {
+  useEffect(() => { setIsFollowing(user.is_following); setFollowersCount(user.followers_count); }, [user.id, user.is_following, user.followers_count]);
+
+  const handleFollowClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!viewer || submitting) { setError('Sign in to follow accounts.'); return; }
     const nextState = !isFollowing;
-    setIsFollowing(nextState);
-    setFollowersCount((prev) => prev + (nextState ? 1 : -1));
-    onFollowToggle?.(user.id, nextState);
+    setSubmitting(true); setError('');
+    try {
+      const result = await api.toggleFollow(user.id, nextState);
+      setIsFollowing(result.is_following);
+      setFollowersCount(result.followers_count);
+      onFollowToggle?.(user.id, result.is_following);
+    } catch { setError('Could not update follow status. Please try again.'); }
+    finally { setSubmitting(false); }
   };
 
   const formattedFollowers = new Intl.NumberFormat('en-US').format(followersCount);
@@ -97,6 +110,7 @@ export function UserSearchResultCard({
           variant={isFollowing ? 'secondary' : 'primary'}
           size="sm"
           onClick={handleFollowClick}
+          disabled={submitting || !viewer || user.id === viewer.id}
           aria-label={isFollowing ? `Unfollow ${user.display_name}` : `Follow ${user.display_name}`}
           className="text-xs font-semibold px-3 py-1 h-8 rounded-full"
         >
@@ -113,6 +127,7 @@ export function UserSearchResultCard({
           )}
         </Button>
       </div>
+      {error && <p role="alert" className="mt-2 text-xs text-red-600">{error}</p>}
     </article>
   );
 }

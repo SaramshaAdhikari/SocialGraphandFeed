@@ -31,19 +31,19 @@ export interface UsePostDetailReturn {
   refresh: () => Promise<void>;
 }
 
-const DEFAULT_VIEWER: UserSummary = {
-  id: 'usr_0',
-  username: 'alex_dev',
-  display_name: 'Alex Rivera',
-  avatar_url: '/avatars/alex-dev.svg',
-  is_verified: true,
+const GUEST_VIEWER: UserSummary = {
+  id: '',
+  username: '',
+  display_name: 'Guest',
+  avatar_url: '',
+  is_verified: false,
 };
 
 export function usePostDetail(
   postId: string,
   options: UsePostDetailOptions = {}
 ): UsePostDetailReturn {
-  const { apiInstance = defaultApi, currentViewer = DEFAULT_VIEWER } = options;
+  const { apiInstance = defaultApi, currentViewer = GUEST_VIEWER } = options;
 
   const [post, setPost] = useState<PostCard | null>(null);
   const [comments, setComments] = useState<CommentNode[]>([]);

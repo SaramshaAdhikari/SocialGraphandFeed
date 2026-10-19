@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { UserX, Compass, Home, MessageSquare, Image, Bookmark, Sparkles } from 'lucide-react';
 import { useRouter, Link } from '../router/Router';
 import { useProfile } from '../hooks/useProfile';
+import { useAuth } from '../auth/AuthContext';
 import { ProfileHeader, ProfileTabs, ProfileSkeleton } from '../components/profile';
 import { DiscussionPostCard, VisualPinCard } from '../components/feed';
 import { MasonryGrid } from '../components/discovery/MasonryGrid';
@@ -18,6 +19,7 @@ export function UserProfilePage() {
     return match ? decodeURIComponent(match[1]) : '';
   }, [params.username, currentPath]);
 
+  const { user } = useAuth();
   const {
     profile,
     posts,
@@ -30,9 +32,10 @@ export function UserProfilePage() {
     isNotFound,
     isSelf,
     toggleFollow,
+    refresh,
     vote,
     toggleSave,
-  } = useProfile(username);
+  } = useProfile(username, { currentViewerUsername: user?.username });
 
   // Compute category counts for tab badges
   const counts = useMemo(() => {
@@ -115,6 +118,7 @@ export function UserProfilePage() {
         profile={profile}
         isSelf={isSelf}
         onToggleFollow={toggleFollow}
+        onProfileRefresh={refresh}
       />
 
       {/* Content Navigation Tabs */}

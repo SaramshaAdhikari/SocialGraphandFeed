@@ -611,7 +611,7 @@ export class MockAdapter implements ISocialGraphApi {
     };
   }
 
-  public async toggleFollow(targetUserId: string): Promise<FollowToggleResponse> {
+  public async toggleFollow(targetUserId: string, desiredState?: boolean): Promise<FollowToggleResponse> {
     await this.delay(`/api/v1/users/${targetUserId}/follow`);
     const user = this.users[targetUserId];
     if (!user) {
@@ -625,7 +625,7 @@ export class MockAdapter implements ISocialGraphApi {
       });
     }
 
-    user.is_following = !user.is_following;
+    user.is_following = desiredState ?? !user.is_following;
     user.followers_count += user.is_following ? 1 : -1;
 
     return {
@@ -633,6 +633,19 @@ export class MockAdapter implements ISocialGraphApi {
       is_following: user.is_following,
       followers_count: user.followers_count,
     };
+  }
+
+  public async getFollowers(username: string, cursor?: string | null, limit = 20): Promise<import('@socialgraph/shared').FollowListResponse> { return this.mockFollowList(username, true, cursor, limit); }
+  public async getFollowing(username: string, cursor?: string | null, limit = 20): Promise<import('@socialgraph/shared').FollowListResponse> { return this.mockFollowList(username, false, cursor, limit); }
+  private async mockFollowList(username: string, followers: boolean, cursor?: string | null, limit = 20): Promise<import('@socialgraph/shared').FollowListResponse> {
+    await this.delay(`/api/v1/users/${username}/${followers ? 'followers' : 'following'}`);
+    const target = Object.values(this.users).find((u) => u.username === username);
+    if (!target) throw new Error('User not found');
+    const candidates = Object.values(this.users).filter((u) => followers ? u.is_following : target.is_following && u.id === 'usr_0');
+    const start = cursor ? Math.max(0, candidates.findIndex((u) => u.id === cursor) + 1) : 0;
+    const page = candidates.slice(start, start + limit);
+    const hasMore = start + limit < candidates.length;
+    return { data: page.map((u) => ({ id: u.id, username: u.username, display_name: u.display_name, avatar_url: u.avatar_url, is_verified: u.is_verified, is_following: u.is_following })), total_count: candidates.length, has_more: hasMore, next_cursor: hasMore ? page[page.length - 1].id : null };
   }
 
   public async getCommunity(communitySlug: string): Promise<Community> {

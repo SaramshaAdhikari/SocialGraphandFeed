@@ -11,6 +11,7 @@ import type {
   CreateCommentInput,
   UserProfile,
   FollowToggleResponse,
+  FollowListResponse,
   Community,
   CreatePostInput,
 } from '@socialgraph/shared';
@@ -84,7 +85,9 @@ export interface ISocialGraphApi {
   // Social Graph (Users & Communities)
   getUserProfile(username: string): Promise<UserProfile>;
   getUserPosts(username: string, query?: FeedQuery): Promise<FeedResponse>;
-  toggleFollow(targetUserId: string): Promise<FollowToggleResponse>;
+  toggleFollow(targetUserId: string, isFollowing?: boolean): Promise<FollowToggleResponse>;
+  getFollowers(username: string, cursor?: string | null, limit?: number): Promise<FollowListResponse>;
+  getFollowing(username: string, cursor?: string | null, limit?: number): Promise<FollowListResponse>;
   getCommunity(communitySlug: string): Promise<Community>;
   getCommunities(): Promise<Community[]>;
   setCommunityMembership(communitySlug: string, isMember: boolean): Promise<CommunityMembershipResult>;

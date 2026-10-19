@@ -14,6 +14,7 @@
     "test:frontend": "npm run build --workspace=@socialgraph/shared && npm run test --workspace=@socialgraph/frontend",
     "test:foundation": "npm run test:foundation --workspace=packages/backend",
     "seed": "npm run seed --workspace=@socialgraph/backend",
+    "auth:bootstrap-admin": "npm run auth:bootstrap-admin --workspace=@socialgraph/backend",
     "docker:up": "docker compose -f docker-compose.yml up -d",
     "docker:down": "docker compose -f docker-compose.yml down",
     "docker:status": "docker compose -f docker-compose.yml ps",
