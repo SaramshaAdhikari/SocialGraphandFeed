@@ -46,6 +46,14 @@ export function connectRedis(url = config.REDIS_URL): Redis {
   return redisClient;
 }
 
+export async function ensureRedisConnected(): Promise<Redis> {
+  const client = connectRedis();
+  if (client.status === 'wait') {
+    await client.connect();
+  }
+  return client;
+}
+
 export function getRedisClient(): Redis | null {
   return redisClient;
 }

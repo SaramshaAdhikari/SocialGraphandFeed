@@ -17,6 +17,7 @@ export class AppError extends Error {
   public readonly detail: string;
   public readonly invalidParams?: Array<{ name: string; reason: string }>;
   public readonly type: string;
+  public readonly retryAfter?: number;
 
   constructor(opts: {
     code: ErrorCode;
@@ -25,6 +26,7 @@ export class AppError extends Error {
     detail: string;
     invalidParams?: Array<{ name: string; reason: string }>;
     type?: string;
+    retryAfter?: number;
   }) {
     super(opts.detail);
     this.name = 'AppError';
@@ -33,9 +35,10 @@ export class AppError extends Error {
     this.detail = opts.detail;
     this.invalidParams = opts.invalidParams;
     this.type = opts.type ?? `https://socialgraph.dev/errors/${opts.code.toLowerCase().replace(/_/g, '-')}`;
+    this.retryAfter = opts.retryAfter;
   }
 
-  public toRfc7807(instance?: string): ApiErrorResponse {
+  public toRfc7807(instance?: string, requestId?: string): ApiErrorResponse {
     return {
       type: this.type,
       title: this.messageTitle(),
@@ -44,6 +47,8 @@ export class AppError extends Error {
       instance,
       code: this.code,
       invalidParams: this.invalidParams,
+      request_id: requestId,
+      retry_after: this.retryAfter,
       timestamp: new Date().toISOString(),
     };
   }
@@ -115,6 +120,25 @@ export class AppError extends Error {
       statusCode: 403,
       title: 'Action Forbidden',
       detail,
+    });
+  }
+
+  public static conflict(detail = 'Resource conflict or concurrent operation in progress'): AppError {
+    return new AppError({
+      code: 'CONFLICT',
+      statusCode: 409,
+      title: 'Resource Conflict',
+      detail,
+    });
+  }
+
+  public static rateLimited(detail = 'Rate limit exceeded. Please try again later.', retryAfter?: number): AppError {
+    return new AppError({
+      code: 'RATE_LIMITED',
+      statusCode: 429,
+      title: 'Rate Limit Exceeded',
+      detail,
+      retryAfter,
     });
   }
 

@@ -25,6 +25,10 @@ import {
   toCommunity,
 } from '../db/serialization.js';
 
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export class SearchService {
   private get db(): Db {
     return getDb();
@@ -52,6 +56,7 @@ export class SearchService {
     }
 
     const terms = q.split(/\s+/).filter(Boolean);
+    const searchRegex = new RegExp(terms.map(escapeRegex).join('|'), 'i');
 
     const matchesTerm = (text?: string): boolean => {
       if (!text) return false;
@@ -83,16 +88,31 @@ export class SearchService {
     const votesCol = this.db.collection<PostVoteDoc>(COLLECTIONS.POST_VOTES);
     const savesCol = this.db.collection<PostSaveDoc>(COLLECTIONS.POST_SAVES);
 
-    // Pre-fetch all users for author resolution and user search
-    const allUsers = await usersCol.find({}).toArray();
-    const userMap = new Map<string, UserDoc>(allUsers.map((u) => [u._id, u]));
-
-    // 1. Discussions
+    // 1. Discussions (bounded query with limit 200)
     let matchingDiscussions: DiscussionPostCard[] = [];
     if (category === 'all' || category === 'discussions') {
-      const discussionDocs = await postsCol.find({ post_type: 'discussion' }).toArray();
+      const discussionDocs = await postsCol
+        .find({
+          post_type: 'discussion',
+          $or: [
+            { title: { $regex: searchRegex } },
+            { content: { $regex: searchRegex } },
+            { flair: { $regex: searchRegex } },
+            { community_slug: { $regex: searchRegex } },
+            { tags: { $in: terms } },
+          ],
+        })
+        .limit(200)
+        .toArray();
+
+      const authorIds = [...new Set(discussionDocs.map((p) => p.author_id))];
+      const authorDocs = authorIds.length
+        ? await usersCol.find({ _id: { $in: authorIds } }).toArray()
+        : [];
+      const discussionUserMap = new Map<string, UserDoc>(authorDocs.map((u) => [u._id, u]));
+
       const filtered = discussionDocs.filter((post) => {
-        const author = userMap.get(post.author_id);
+        const author = discussionUserMap.get(post.author_id);
         const tagsStr = post.tags ? post.tags.join(' ') : '';
         return (
           matchesTerm(post.title) ||
@@ -132,7 +152,7 @@ export class SearchService {
       }
 
       matchingDiscussions = paged.map((post) => {
-        const authorDoc = userMap.get(post.author_id);
+        const authorDoc = discussionUserMap.get(post.author_id);
         const author = authorDoc ? toUserSummary(authorDoc) : {
           id: post.author_id,
           username: 'unknown',
@@ -144,12 +164,31 @@ export class SearchService {
       });
     }
 
-    // 2. Visuals
+    // 2. Visuals (bounded query with limit 200)
     let matchingVisuals: VisualPinCard[] = [];
     if (category === 'all' || category === 'visual') {
-      const visualDocs = await postsCol.find({ post_type: 'visual' }).toArray();
+      const visualDocs = await postsCol
+        .find({
+          post_type: 'visual',
+          $or: [
+            { title: { $regex: searchRegex } },
+            { caption: { $regex: searchRegex } },
+            { content: { $regex: searchRegex } },
+            { community_slug: { $regex: searchRegex } },
+            { tags: { $in: terms } },
+          ],
+        })
+        .limit(200)
+        .toArray();
+
+      const authorIds = [...new Set(visualDocs.map((p) => p.author_id))];
+      const authorDocs = authorIds.length
+        ? await usersCol.find({ _id: { $in: authorIds } }).toArray()
+        : [];
+      const visualUserMap = new Map<string, UserDoc>(authorDocs.map((u) => [u._id, u]));
+
       const filtered = visualDocs.filter((pin) => {
-        const author = userMap.get(pin.author_id);
+        const author = visualUserMap.get(pin.author_id);
         const rawMedia = Array.isArray(pin.media) ? pin.media[0] : pin.media;
         const tagsStr = pin.tags ? pin.tags.join(' ') : '';
         return (
@@ -193,7 +232,7 @@ export class SearchService {
       }
 
       matchingVisuals = paged.map((post) => {
-        const authorDoc = userMap.get(post.author_id);
+        const authorDoc = visualUserMap.get(post.author_id);
         const author = authorDoc ? toUserSummary(authorDoc) : {
           id: post.author_id,
           username: 'unknown',
@@ -205,13 +244,27 @@ export class SearchService {
       });
     }
 
-    // 3. Communities
+    // 3. Communities (bounded query with limit 100)
     let matchingCommunities: Community[] = [];
     if (category === 'all' || category === 'communities') {
-      const commDocs = await commsCol.find({}).toArray();
-      const membershipCounts = await mbrsCol.aggregate<{ _id: string; count: number }>([
-        { $group: { _id: '$community_id', count: { $sum: 1 } } },
-      ]).toArray();
+      const commDocs = await commsCol
+        .find({
+          $or: [
+            { name: { $regex: searchRegex } },
+            { slug: { $regex: searchRegex } },
+            { description: { $regex: searchRegex } },
+          ],
+        })
+        .limit(100)
+        .toArray();
+
+      const commIds = commDocs.map((c) => c._id);
+      const membershipCounts = commIds.length
+        ? await mbrsCol.aggregate<{ _id: string; count: number }>([
+            { $match: { community_id: { $in: commIds } } },
+            { $group: { _id: '$community_id', count: { $sum: 1 } } },
+          ]).toArray()
+        : [];
       const memberCountByCommunityId = new Map(membershipCounts.map((item) => [item._id, item.count]));
       const communitiesWithCounts = commDocs.map((comm) => ({
         ...comm,
@@ -241,9 +294,9 @@ export class SearchService {
       let memberSet = new Set<string>();
 
       if (currentUserId && paged.length > 0) {
-        const commIds = paged.map((c) => c._id);
+        const pagedCommIds = paged.map((c) => c._id);
         const memberships = await mbrsCol
-          .find({ user_id: currentUserId, community_id: { $in: commIds } })
+          .find({ user_id: currentUserId, community_id: { $in: pagedCommIds } })
           .toArray();
         memberSet = new Set(memberships.map((m) => m.community_id));
       }
@@ -251,10 +304,21 @@ export class SearchService {
       matchingCommunities = paged.map((comm) => toCommunity(comm, memberSet.has(comm._id)));
     }
 
-    // 4. Users (People)
+    // 4. Users (People) (bounded query with limit 100)
     let matchingUsers: UserProfile[] = [];
     if (category === 'all' || category === 'people') {
-      const filtered = allUsers.filter((u) => {
+      const userDocs = await usersCol
+        .find({
+          $or: [
+            { username: { $regex: searchRegex } },
+            { display_name: { $regex: searchRegex } },
+            { bio: { $regex: searchRegex } },
+          ],
+        })
+        .limit(100)
+        .toArray();
+
+      const filtered = userDocs.filter((u) => {
         return (
           matchesTerm(u.username) ||
           matchesTerm(u.display_name) ||

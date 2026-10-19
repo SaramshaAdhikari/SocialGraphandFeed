@@ -18,7 +18,14 @@ export interface UserDoc {
   role?: 'user' | 'admin';
 }
 
-export interface SessionDoc { _id: string; user_id: string; csrf_token: string; expires_at: Date; created_at: Date; }
+export interface SessionDoc {
+  _id: string;
+  user_id: string | null;
+  csrf_token: string;
+  expires_at: Date;
+  created_at: Date;
+  last_active_at?: Date;
+}
 
 export interface PostDoc {
   _id: string;
@@ -38,6 +45,7 @@ export interface PostDoc {
   score: number;
   hot_score: number;
   comments_count: number;
+  idempotency_key?: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -50,6 +58,7 @@ export interface CommentDoc {
   content: string;
   score: number;
   depth: number;
+  idempotency_key?: string;
   created_at: Date;
   updated_at: Date;
 }

@@ -24,11 +24,19 @@ export async function ensureIndexes(db: Db): Promise<void> {
     posts.createIndex({ author_id: 1, created_at: -1 }, { name: 'idx_posts_author_created_at' }),
     posts.createIndex({ community_id: 1, created_at: -1 }, { name: 'idx_posts_community_created_at' }),
     posts.createIndex({ community_slug: 1, created_at: -1 }, { name: 'idx_posts_community_slug_created_at' }),
+    posts.createIndex(
+      { author_id: 1, idempotency_key: 1 },
+      { unique: true, partialFilterExpression: { idempotency_key: { $type: 'string' } }, name: 'uniq_posts_author_idemp' }
+    ),
 
     // Comments: post comment tree traversal
     comments.createIndex(
       { post_id: 1, parent_id: 1, created_at: 1 },
       { name: 'idx_comments_post_parent_created' }
+    ),
+    comments.createIndex(
+      { author_id: 1, idempotency_key: 1 },
+      { unique: true, partialFilterExpression: { idempotency_key: { $type: 'string' } }, name: 'uniq_comments_author_idemp' }
     ),
 
     // Follows: unique directed edges

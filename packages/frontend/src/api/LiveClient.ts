@@ -46,7 +46,12 @@ export class LiveClient implements ISocialGraphApi {
     const mutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method || '');
     if (mutating && !csrfToken) {
       const sessionResponse = await fetch(`${this.baseUrl}/api/v1/auth/session`, { credentials: 'include' });
-      if (sessionResponse.ok) csrfToken = (await sessionResponse.json()).csrf_token;
+      if (sessionResponse.ok) {
+        csrfToken = (await sessionResponse.json()).csrf_token;
+      } else {
+        const csrfResponse = await fetch(`${this.baseUrl}/api/v1/auth/csrf`, { credentials: 'include' });
+        if (csrfResponse.ok) csrfToken = (await csrfResponse.json()).csrf_token;
+      }
     }
     const headers: Record<string, string> = {
       Accept: 'application/json',

@@ -5,17 +5,46 @@ import { config } from '../config/env.js';
 
 declare module 'fastify' { interface FastifyRequest { userId?: string; userRole?: string; csrfToken?: string; sessionToken?: string; } }
 export function registerIdentityBoundary(app: FastifyInstance): void {
+  const authService = new AuthService();
   app.addHook('onRequest', async (request) => {
     const cookie = request.headers.cookie?.split(';').map((part) => part.trim()).find((part) => part.startsWith('sg_session='));
     const token = cookie?.slice('sg_session='.length);
     if (!token) return;
     request.sessionToken = token;
-    const session = await new AuthService().session(token);
-    if (session) { request.userId = session.user.id; request.userRole = session.user.role; request.csrfToken = session.csrf; }
+    const session = await authService.session(token);
+    if (session) {
+      if (session.user) {
+        request.userId = session.user.id;
+        request.userRole = session.user.role;
+      }
+      request.csrfToken = session.csrf;
+    }
   });
   app.addHook('preHandler', async (request) => {
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method) && request.userId) {
-      if (request.headers['x-csrf-token'] !== request.csrfToken) throw AppError.forbidden('CSRF token missing or invalid.');
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) {
+      // 1. Cross-Origin validation defense
+      const origin = request.headers.origin;
+      if (origin && typeof origin === 'string') {
+        const allowed = [config.WEB_ORIGIN];
+        if (config.NODE_ENV !== 'production') {
+          allowed.push('http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:4000', 'http://127.0.0.1:4000');
+        }
+        if (!allowed.includes(origin)) {
+          throw AppError.forbidden('Cross-origin request rejected.');
+        }
+      }
+
+      // 2. Session-bound CSRF token validation
+      const headerCsrf = request.headers['x-csrf-token'];
+      if (request.userId) {
+        if (!headerCsrf || typeof headerCsrf !== 'string' || headerCsrf !== request.csrfToken) {
+          throw AppError.forbidden('CSRF token missing or invalid.');
+        }
+      } else if (request.csrfToken) {
+        if (!headerCsrf || typeof headerCsrf !== 'string' || headerCsrf !== request.csrfToken) {
+          throw AppError.forbidden('CSRF token missing or invalid.');
+        }
+      }
     }
   });
 }

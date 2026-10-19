@@ -1,0 +1,381 @@
+Perform a FULL security audit and adversarial simulation pass across the entire codebase.
+
+This is NOT a checklist review.
+This is a **hostile verification pass** where you actively try to break the system.
+
+---
+
+# 🔒 SECURITY AUTHORITY (MANDATORY)
+
+The file:
+→ security.md
+
+is the **absolute enforcement contract**.
+
+You MUST:
+
+1. Treat every rule in security.md as REQUIRED (not optional)
+2. Verify each rule against actual implementation
+3. Enforce missing protections
+4. Reject any implementation that violates the contract
+
+If OWASP conflicts with security.md:
+→ security.md WINS
+
+---
+
+# ⚠️ HARD RULES
+
+* DO NOT break working functionality
+
+* DO NOT refactor unrelated code
+
+* DO NOT remove valid logic
+
+* ONLY harden, enforce, or fix security
+
+* Every fix must:
+  → be minimal
+  → be verified
+  → not introduce regressions
+
+---
+
+# 🎯 PRIMARY OBJECTIVE
+
+Prove that the system is secure by:
+
+1. Simulating real attacks
+2. Forcing failure conditions
+3. Verifying fail-safe behavior
+4. Hardening weak points
+
+If something “looks safe” but is not tested → it is NOT considered secure
+
+---
+
+# 🧠 ATTACK MODEL (MANDATORY)
+
+You MUST behave like:
+
+* a malicious user
+* an authenticated attacker
+* an unauthenticated attacker
+* a script/bot abusing APIs
+
+For EACH vulnerability class:
+
+* attempt bypass
+* attempt escalation
+* attempt data leakage
+
+---
+
+# 🔍 PHASE 1 — INPUT & EXECUTION ATTACKS
+
+## Test ALL endpoints with:
+
+1. SQL injection payloads:
+
+   * `' OR 1=1 --`
+   * UNION-based payloads
+   * malformed numeric inputs
+
+2. XSS payloads:
+
+   * `<script>alert(1)</script>`
+   * event handlers
+   * JSON-based injection
+
+3. Malformed payloads:
+
+   * missing required fields
+   * extra unknown fields
+   * wrong data types
+   * deeply nested JSON
+
+4. Boundary abuse:
+
+   * extremely large payloads
+   * extremely long strings
+
+---
+
+## VERIFY:
+
+* Strict schema enforcement (reject unknown fields)
+* No partial execution
+* Deterministic 400 responses
+* No DB mutation on failure
+
+---
+
+# 🔐 PHASE 2 — AUTH & SESSION ATTACKS
+
+Simulate:
+
+* session fixation (reuse old session after login)
+* session reuse after logout
+* missing session regeneration
+* cookie tampering
+
+---
+
+## VERIFY:
+
+* session ID rotates on login
+* invalid sessions fail immediately
+* logout fully invalidates session
+* cookie flags:
+
+  * HttpOnly
+  * Secure (if HTTPS)
+  * SameSite enforced
+
+---
+
+# 🧾 PHASE 3 — AUTHORIZATION BREAKING
+
+Attempt:
+
+* accessing other users’ data
+* modifying other users’ content
+* bypassing ownership checks
+
+---
+
+## VERIFY:
+
+* all queries are owner-scoped
+* write operations enforce ownership at DB level
+* unauthorized access always fails
+
+---
+
+# ⚡ PHASE 4 — RATE LIMITING & ABUSE
+
+Simulate:
+
+* brute-force login attempts
+* rapid posting
+* spam messaging
+* repeated identical API calls
+
+---
+
+## VERIFY:
+
+* server-side rate limits exist
+* limits trigger 429 responses
+* limits apply per IP AND per user
+
+If missing → IMPLEMENT minimal rate limiting
+
+---
+
+# 🔁 PHASE 5 — API ABUSE & LOGIC EXPLOITS
+
+Test:
+
+* replay identical requests
+* pagination abuse (huge page sizes)
+* duplicate submissions
+
+---
+
+## VERIFY:
+
+* pagination caps enforced
+* idempotency for write operations
+* duplicate requests do NOT create duplicates
+
+---
+
+# 📂 PHASE 6 — FILE & MEDIA ATTACKS
+
+Test uploads:
+
+* fake MIME types
+* executable payloads
+* oversized files
+
+---
+
+## VERIFY:
+
+* server-side MIME detection
+* extension whitelist
+* max size enforced
+* files stored with randomized names
+* uploads not executable
+
+---
+
+# 🌐 PHASE 7 — FRONTEND SECURITY
+
+Check:
+
+* DOM injection paths
+* unsafe rendering
+* any use of dangerouslySetInnerHTML (must be NONE)
+
+---
+
+## VERIFY CSP:
+
+Must match EXACTLY:
+
+Content-Security-Policy:
+default-src 'self';
+script-src 'self';
+style-src 'self';
+img-src 'self' data: https:;
+font-src 'self' data:;
+connect-src 'self' https://<api-origin>;
+frame-ancestors 'none';
+base-uri 'self';
+form-action 'self'
+
+---
+
+# 🔑 PHASE 8 — SECRETS & CONFIG
+
+Scan entire codebase for:
+
+* API keys
+* DB credentials
+* tokens
+
+---
+
+## VERIFY:
+
+* secrets ONLY from environment
+* no hardcoded credentials
+* .env not exposed
+* exposed keys must be flagged
+
+---
+
+# 🧱 PHASE 9 — HEADERS & RESPONSE HARDENING
+
+Verify headers:
+
+* X-Frame-Options: DENY
+* X-Content-Type-Options: nosniff
+* Referrer-Policy: strict-origin-when-cross-origin
+
+---
+
+## VERIFY:
+
+* no stack traces in responses
+* no sensitive error leakage
+* consistent JSON envelope with request_id
+
+---
+
+# 🧾 PHASE 10 — LOGGING & MONITORING
+
+Verify logging exists for:
+
+* failed auth
+* CSRF failures
+* rate limit hits
+
+---
+
+## VERIFY:
+
+* logs contain:
+
+  * timestamp
+  * request_id
+  * actor (if known)
+  * IP
+* logs DO NOT contain secrets
+
+---
+
+# 🔄 PHASE 11 — CSRF PROTECTION
+
+Test:
+
+* missing CSRF token
+* invalid CSRF token
+
+---
+
+## VERIFY:
+
+* ALL non-GET endpoints enforce CSRF
+* failure returns 403
+* no state mutation occurs
+
+---
+
+# 🧪 PHASE 12 — FAIL-SAFE BEHAVIOR
+
+For ALL failure cases:
+
+* system MUST fail closed
+* no partial execution
+* no inconsistent state
+
+---
+
+# 🔧 HARDENING REQUIREMENTS
+
+You MUST implement fixes for:
+
+* missing validation
+* missing rate limits
+* weak headers
+* unsafe queries
+* improper session handling
+* inconsistent authorization checks
+
+---
+
+# ✅ FINAL VALIDATION
+
+You MUST confirm:
+
+1. All security.md rules are enforced
+2. All OWASP Top 10 risks are mitigated
+3. No sensitive data leaks
+4. All attack simulations fail safely
+5. No regressions introduced
+
+---
+
+# 📊 OUTPUT FORMAT (STRICT)
+
+Provide:
+
+1. **Confirmed vulnerabilities**
+
+   * exact file + issue
+   * how it can be exploited
+
+2. **Fixes applied**
+
+   * what changed
+   * why
+
+3. **Attack simulations**
+
+   * what was attempted
+   * result
+
+4. **Security contract compliance**
+
+   * Fully compliant rules
+   * Partially compliant rules
+   * Violated rules
+
+5. **Residual risks (if any)**
+
+---
+
+STOP after full audit + hardening pass.

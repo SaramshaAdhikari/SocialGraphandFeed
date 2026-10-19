@@ -19,6 +19,7 @@ import type {
 } from '../db/types.js';
 import { toUserSummary, toPostCard, buildCommentTree } from '../db/serialization.js';
 import { calculateHotScore } from '../utils/pagination.js';
+import { getRedisClient } from '../cache/redis.js';
 
 export interface VoteResult {
   post_id: string;
@@ -32,7 +33,25 @@ export class PostService {
     return getDb();
   }
 
+  private async invalidatePostCache(postId: string): Promise<void> {
+    const redis = getRedisClient();
+    if (!redis) return;
+    try {
+      const keys = await redis.keys(`cache:post:${postId}:*`);
+      if (keys.length > 0) await redis.del(...keys);
+    } catch {}
+  }
+
   public async getPost(postId: string, currentUserId?: string): Promise<PostCard> {
+    const redis = getRedisClient();
+    const cacheKey = currentUserId ? `cache:post:${postId}:u:${currentUserId}` : `cache:post:${postId}:anon`;
+    if (redis) {
+      try {
+        const hit = await redis.get(cacheKey);
+        if (hit) return JSON.parse(hit) as PostCard;
+      } catch {}
+    }
+
     const postsCol = this.db.collection<PostDoc>(COLLECTIONS.POSTS);
     const usersCol = this.db.collection<UserDoc>(COLLECTIONS.USERS);
     const votesCol = this.db.collection<PostVoteDoc>(COLLECTIONS.POST_VOTES);
@@ -64,13 +83,25 @@ export class PostService {
       if (save) isSaved = true;
     }
 
-    return toPostCard(post, author, userVote, isSaved);
+    const result = toPostCard(post, author, userVote, isSaved);
+    if (redis) {
+      await redis.set(cacheKey, JSON.stringify(result), 'EX', 30).catch(() => {});
+    }
+    return result;
   }
 
-  public async createPost(input: CreatePostInput, authorId: string): Promise<PostCard> {
+  public async createPost(input: CreatePostInput, authorId: string, idempotencyKey?: string): Promise<PostCard> {
     const postsCol = this.db.collection<PostDoc>(COLLECTIONS.POSTS);
     const usersCol = this.db.collection<UserDoc>(COLLECTIONS.USERS);
     const commsCol = this.db.collection<CommunityDoc>(COLLECTIONS.COMMUNITIES);
+
+    // Durable DB-level idempotency recovery
+    if (idempotencyKey) {
+      const existing = await postsCol.findOne({ author_id: authorId, idempotency_key: idempotencyKey });
+      if (existing) {
+        return this.getPost(existing._id, authorId);
+      }
+    }
 
     return runInTransaction(async (session) => {
       const author = await usersCol.findOne({ _id: authorId }, { session });
@@ -101,11 +132,21 @@ export class PostService {
         score: 0,
         hot_score: calculateHotScore(0, now),
         comments_count: 0,
+        idempotency_key: idempotencyKey || undefined,
         created_at: now,
         updated_at: now,
       };
 
-      await postsCol.insertOne(postDoc, { session });
+      try {
+        await postsCol.insertOne(postDoc, { session });
+      } catch (err: any) {
+        if (err?.code === 11000 && idempotencyKey) {
+          const dup = await postsCol.findOne({ author_id: authorId, idempotency_key: idempotencyKey }, { session });
+          if (dup) return toPostCard(dup, toUserSummary(author), 0, false);
+        }
+        throw err;
+      }
+
       await usersCol.updateOne({ _id: authorId }, { $inc: { posts_count: 1 } }, { session });
       return toPostCard(postDoc, toUserSummary(author), 0, false);
     });
@@ -115,7 +156,7 @@ export class PostService {
     const postsCol = this.db.collection<PostDoc>(COLLECTIONS.POSTS);
     const votesCol = this.db.collection<PostVoteDoc>(COLLECTIONS.POST_VOTES);
 
-    return runInTransaction(async (session) => {
+    const res = await runInTransaction(async (session) => {
       const post = await postsCol.findOne({ _id: postId }, { session });
       if (!post) throw AppError.notFound(`Cannot vote: post ${postId} not found`);
 
@@ -149,13 +190,16 @@ export class PostService {
       }
       return { post_id: postId, score, new_score: score, user_vote: direction };
     });
+
+    await this.invalidatePostCache(postId);
+    return res;
   }
 
   public async toggleSavePost(postId: string, userId: string): Promise<{ post_id: string; is_saved: boolean }> {
     const postsCol = this.db.collection<PostDoc>(COLLECTIONS.POSTS);
     const savesCol = this.db.collection<PostSaveDoc>(COLLECTIONS.POST_SAVES);
 
-    return runInTransaction(async (session) => {
+    const res = await runInTransaction(async (session) => {
       const post = await postsCol.findOne({ _id: postId }, { session });
       if (!post) throw AppError.notFound(`Cannot bookmark: post ${postId} not found`);
       const filter = { post_id: postId, user_id: userId };
@@ -172,6 +216,9 @@ export class PostService {
       }, { session });
       return { post_id: postId, is_saved: true };
     });
+
+    await this.invalidatePostCache(postId);
+    return res;
   }
 
   public async getComments(postId: string, currentUserId?: string): Promise<CommentNode[]> {
@@ -196,12 +243,38 @@ export class PostService {
     return buildCommentTree(commentDocs, authorMap);
   }
 
-  public async createComment(postId: string, userId: string, input: CreateCommentInput): Promise<CommentNode> {
+  public async createComment(
+    postId: string,
+    userId: string,
+    input: CreateCommentInput,
+    idempotencyKey?: string
+  ): Promise<CommentNode> {
     const postsCol = this.db.collection<PostDoc>(COLLECTIONS.POSTS);
     const commentsCol = this.db.collection<CommentDoc>(COLLECTIONS.COMMENTS);
     const usersCol = this.db.collection<UserDoc>(COLLECTIONS.USERS);
 
-    return runInTransaction(async (session) => {
+    // Durable DB-level idempotency recovery
+    if (idempotencyKey) {
+      const existing = await commentsCol.findOne({ author_id: userId, idempotency_key: idempotencyKey });
+      if (existing) {
+        const author = await usersCol.findOne({ _id: userId });
+        return {
+          id: existing._id,
+          post_id: postId,
+          parent_id: existing.parent_id,
+          author: author ? toUserSummary(author) : { id: userId, username: 'unknown', display_name: 'Unknown User', avatar_url: '/avatars/alex-dev.svg', is_verified: false },
+          content: existing.content,
+          created_at: existing.created_at.toISOString(),
+          updated_at: existing.updated_at.toISOString(),
+          score: existing.score,
+          user_vote: 0,
+          depth: existing.depth,
+          replies: [],
+        };
+      }
+    }
+
+    const res = await runInTransaction<CommentNode>(async (session): Promise<CommentNode> => {
       const post = await postsCol.findOne({ _id: postId }, { session });
       if (!post) throw AppError.notFound(`Cannot comment: post ${postId} not found`);
       const author = await usersCol.findOne({ _id: userId }, { session });
@@ -222,10 +295,35 @@ export class PostService {
         content: input.content,
         score: 0,
         depth,
+        idempotency_key: idempotencyKey || undefined,
         created_at: now,
         updated_at: now,
       };
-      await commentsCol.insertOne(commentDoc, { session });
+
+      try {
+        await commentsCol.insertOne(commentDoc, { session });
+      } catch (err: any) {
+        if (err?.code === 11000 && idempotencyKey) {
+          const dup = await commentsCol.findOne({ author_id: userId, idempotency_key: idempotencyKey }, { session });
+          if (dup) {
+            return {
+              id: dup._id,
+              post_id: postId,
+              parent_id: dup.parent_id,
+              author: toUserSummary(author),
+              content: dup.content,
+              created_at: dup.created_at.toISOString(),
+              updated_at: dup.updated_at.toISOString(),
+              score: dup.score,
+              user_vote: 0,
+              depth: dup.depth,
+              replies: [],
+            };
+          }
+        }
+        throw err;
+      }
+
       await postsCol.updateOne({ _id: postId }, { $inc: { comments_count: 1 }, $set: { updated_at: now } }, { session });
       return {
         id: commentDoc._id,
@@ -241,5 +339,8 @@ export class PostService {
         replies: [],
       };
     });
+
+    await this.invalidatePostCache(postId);
+    return res;
   }
 }

@@ -13,6 +13,7 @@ import type {
 } from '../db/types.js';
 import { toCommunity, toUserSummary, toPostCard } from '../db/serialization.js';
 import { buildCursorFilter, encodePostCursor } from '../utils/pagination.js';
+import { getRedisClient } from '../cache/redis.js';
 
 export class CommunityService {
   private get db(): Db {
@@ -134,6 +135,15 @@ export class CommunityService {
   }
 
   public async getCommunities(currentUserId?: string): Promise<Community[]> {
+    const redis = getRedisClient();
+    const cacheKey = `cache:communities:${currentUserId || 'anon'}`;
+    if (redis) {
+      try {
+        const hit = await redis.get(cacheKey);
+        if (hit) return JSON.parse(hit) as Community[];
+      } catch {}
+    }
+
     const commsCol = this.db.collection<CommunityDoc>(COLLECTIONS.COMMUNITIES);
     const membershipsCol = this.db.collection<CommunityMembershipDoc>(
       COLLECTIONS.COMMUNITY_MEMBERSHIPS
@@ -161,7 +171,11 @@ export class CommunityService {
       memberCommIds = new Set(memberships.map((m) => m.community_id));
     }
 
-    return communitiesWithCounts.map((comm) => toCommunity(comm, memberCommIds.has(comm._id)));
+    const result = communitiesWithCounts.map((comm) => toCommunity(comm, memberCommIds.has(comm._id)));
+    if (redis) {
+      await redis.set(cacheKey, JSON.stringify(result), 'EX', 30).catch(() => {});
+    }
+    return result;
   }
 
   /**
@@ -180,7 +194,7 @@ export class CommunityService {
     );
     const usersCol = this.db.collection<UserDoc>(COLLECTIONS.USERS);
 
-    return runInTransaction(async (session) => {
+    const res = await runInTransaction(async (session) => {
       const comm = await commsCol.findOne({ slug: communitySlug }, { session });
       if (!comm) throw AppError.notFound(`Community with slug '${communitySlug}' not found`);
       const user = await usersCol.findOne({ _id: userId }, { session });
@@ -206,5 +220,16 @@ export class CommunityService {
       );
       return { community_id: comm._id, is_member: isMember, members_count: membersCount };
     });
+
+    // Invalidate community cache across users
+    const redis = getRedisClient();
+    if (redis) {
+      try {
+        const keys = await redis.keys('cache:communities:*');
+        if (keys.length > 0) await redis.del(...keys);
+      } catch {}
+    }
+
+    return res;
   }
 }

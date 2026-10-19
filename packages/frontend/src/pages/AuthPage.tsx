@@ -11,7 +11,14 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
     const form = new FormData(event.currentTarget);
     const username = String(form.get('username') || ''); const password = String(form.get('password') || '');
     try {
-      const response = await fetch(`/api/v1/auth/${mode}`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password, ...(mode === 'register' ? { password_confirmation: form.get('password_confirmation') } : {}) }) });
+      const csrfRes = await fetch('/api/v1/auth/csrf', { credentials: 'include' });
+      const csrfData = csrfRes.ok ? await csrfRes.json() : null;
+      const csrfToken = csrfData?.csrf_token;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+      };
+      const response = await fetch(`/api/v1/auth/${mode}`, { method: 'POST', credentials: 'include', headers, body: JSON.stringify({ username, password, ...(mode === 'register' ? { password_confirmation: form.get('password_confirmation') } : {}) }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.detail || 'Unable to authenticate.');
       acceptSession(result.user, result.csrf_token); navigate('/');

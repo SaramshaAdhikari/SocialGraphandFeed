@@ -14,6 +14,7 @@ import { reconcileCommunityMemberCounts } from '../src/db/membershipIntegrity.js
 import { promoteExistingAlexAdmin } from '../src/db/bootstrap-admin.js';
 import { AuthService, verifyPassword } from '../src/services/AuthService.js';
 import { buildApp } from '../src/app.js';
+import { connectRedis } from '../src/cache/redis.js';
 
 describe('Real MongoDB Integration Suite (Local Database)', () => {
   let db: Db;
@@ -27,6 +28,10 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
     // This suite drops its database after execution; never fall back to a developer DB.
     const conn = await connectMongo(requiredTestServiceUrl('MONGODB_TEST_URI'), 'socialgraph_integration_test');
     db = conn.db;
+    const redis = connectRedis();
+    if (redis.status === 'wait') await redis.connect().catch(() => {});
+    await redis.flushdb().catch(() => {});
+
     feedService = new FeedService();
     postService = new PostService();
     userService = new UserService();
@@ -43,6 +48,8 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
     if (db) {
       await db.dropDatabase();
     }
+    const redis = connectRedis();
+    await redis.flushdb().catch(() => {});
     await disconnectMongo();
   });
 
@@ -120,7 +127,7 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
       const expired = await app.inject({ method: 'GET', url: '/api/v1/auth/session', headers: { cookie: `sg_session=${session.token}` } });
       expect(expired.statusCode).toBe(401);
       expect(expired.headers['set-cookie']).toContain('Max-Age=0');
-      for (let attempt = 0; attempt < 10; attempt += 1) {
+      for (let attempt = 0; attempt < 5; attempt += 1) {
         const rejected = await app.inject({ method: 'POST', url: '/api/v1/auth/login', remoteAddress: '198.51.100.23', payload: { username: 'absent_user', password: 'incorrect' } });
         expect(rejected.statusCode).toBe(401);
       }
