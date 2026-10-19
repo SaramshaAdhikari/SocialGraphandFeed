@@ -13,13 +13,16 @@ import { SettingsAppearancePage } from './pages/SettingsAppearancePage';
 import { DiagnosticsView } from './components/common/DiagnosticsView';
 import { PlaceholderPage } from './components/common/PlaceholderPage';
 import { ThemeProvider } from './theme';
+import { AuthPage } from './pages/AuthPage';
+import { AuthGate } from './pages/AuthGate';
+import { AuthProvider } from './auth/AuthContext';
 
 export function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
         <RouterProvider>
-          <AppLayout>
+          <AuthProvider><AppLayout>
             <Routes
               fallback={
                 <PlaceholderPage
@@ -32,6 +35,8 @@ export function App() {
               }
             >
               {/* Screen 1: Home Feed */}
+              <Route path="/login" element={<AuthPage mode="login" />} />
+              <Route path="/register" element={<AuthPage mode="register" />} />
               <Route path="/" element={<HomePage />} />
 
               {/* Screen 2: Discover */}
@@ -50,10 +55,10 @@ export function App() {
               <Route path="/search" element={<SearchPage />} />
 
               {/* Screen 7: Create Post Composer */}
-              <Route path="/create" element={<CreatePostPage />} />
+              <Route path="/create" element={<AuthGate><CreatePostPage /></AuthGate>} />
 
               {/* Supporting Surface: Saved Collections */}
-              <Route path="/saved" element={<SavedCollectionsPage />} />
+              <Route path="/saved" element={<AuthGate><SavedCollectionsPage /></AuthGate>} />
 
               {/* Supporting Surface: Community Directory */}
             <Route
@@ -76,7 +81,7 @@ export function App() {
             {/* Repurposed Milestone 1 Diagnostics */}
             <Route path="/diagnostics" element={<DiagnosticsView />} />
           </Routes>
-        </AppLayout>
+          </AppLayout></AuthProvider>
       </RouterProvider>
     </ThemeProvider>
   </ErrorBoundary>

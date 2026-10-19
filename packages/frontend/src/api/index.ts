@@ -16,12 +16,8 @@ function resolveDataSource(): DataSourceType {
   if (envDataSource === 'live') return 'live';
   if (envDataSource === 'mock') return 'mock';
 
-  // In production builds, default to live backend; in dev default to mock fixtures
-  const isProd = typeof import.meta !== 'undefined' && import.meta.env
-    ? import.meta.env.PROD
-    : false;
-
-  return isProd ? 'live' : 'mock';
+  // Use the real API by default in both modes. Fixtures remain available by explicit opt-in.
+  return 'live';
 }
 
 const activeDataSource = resolveDataSource();

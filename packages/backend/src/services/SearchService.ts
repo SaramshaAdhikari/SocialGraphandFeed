@@ -262,14 +262,24 @@ export class SearchService {
         );
       });
 
+      const idsForCounts = filtered.map((u) => u._id);
+      const [incomingCounts, outgoingCounts, postCounts] = idsForCounts.length ? await Promise.all([
+        followsCol.aggregate<{ _id: string; count: number }>([{ $match: { target_user_id: { $in: idsForCounts } } }, { $group: { _id: '$target_user_id', count: { $sum: 1 } } }]).toArray(),
+        followsCol.aggregate<{ _id: string; count: number }>([{ $match: { follower_id: { $in: idsForCounts } } }, { $group: { _id: '$follower_id', count: { $sum: 1 } } }]).toArray(),
+        postsCol.aggregate<{ _id: string; count: number }>([{ $match: { author_id: { $in: idsForCounts } } }, { $group: { _id: '$author_id', count: { $sum: 1 } } }]).toArray(),
+      ]) : [[], [], []];
+      const followerCount = new Map(incomingCounts.map((c) => [c._id, c.count]));
+      const followingCount = new Map(outgoingCounts.map((c) => [c._id, c.count]));
+      const postCount = new Map(postCounts.map((c) => [c._id, c.count]));
+
       if (sort === 'relevance') {
         filtered.sort((a, b) => {
           const relA = calculateRelevance(a.username, `${a.display_name} ${a.bio || ''}`);
           const relB = calculateRelevance(b.username, `${b.display_name} ${b.bio || ''}`);
-          return relB !== relA ? relB - relA : (b.followers_count || 0) - (a.followers_count || 0);
+          return relB !== relA ? relB - relA : (followerCount.get(b._id) ?? 0) - (followerCount.get(a._id) ?? 0);
         });
       } else if (sort === 'top') {
-        filtered.sort((a, b) => (b.followers_count || 0) - (a.followers_count || 0));
+        filtered.sort((a, b) => (followerCount.get(b._id) ?? 0) - (followerCount.get(a._id) ?? 0));
       } else if (sort === 'new') {
         filtered.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
       }
@@ -285,7 +295,7 @@ export class SearchService {
         followingSet = new Set(follows.map((f) => f.target_user_id));
       }
 
-      matchingUsers = paged.map((u) => toUserProfile(u, followingSet.has(u._id)));
+      matchingUsers = paged.map((u) => ({ ...toUserProfile(u, followingSet.has(u._id)), followers_count: followerCount.get(u._id) ?? 0, following_count: followingCount.get(u._id) ?? 0, posts_count: postCount.get(u._id) ?? 0 }));
     }
 
     const total_count =

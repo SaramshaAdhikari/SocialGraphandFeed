@@ -4,13 +4,16 @@ import { useRouter, Link } from '../../router/Router';
 import { SearchBar, Avatar } from '../ui';
 import { useTheme } from '../../theme';
 import type { AppearanceMode } from '../../theme/types';
+import { useAuth } from '../../auth/AuthContext';
 
 export function TopHeader() {
-  const { navigate, query } = useRouter();
+  const { navigate, query, currentPath } = useRouter();
   const [searchVal, setSearchVal] = useState(query.q || '');
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const { resolvedTheme, setMode } = useTheme();
+  const { user, status, logout, logoutError } = useAuth();
+  const isAuthPage = currentPath === '/login' || currentPath === '/register';
 
   const handleSearchSubmit = (val: string) => {
     if (val.trim()) {
@@ -22,6 +25,8 @@ export function TopHeader() {
     const nextMode: AppearanceMode = resolvedTheme === 'dark' ? 'light' : 'dark';
     setMode(nextMode);
   };
+
+  const handleLogout = async () => { if (await logout()) { setProfileMenuOpen(false); navigate('/login', { replace: true }); } else setProfileMenuOpen(true); };
 
   // Sync search input with router query if URL query changes
   useEffect(() => {
@@ -97,19 +102,19 @@ export function TopHeader() {
           )}
         </button>
 
-        {/* User Account / Profile Menu */}
-        <div className="relative" ref={profileMenuRef}>
+        {/* Account controls are rendered only after the backend confirms a session. */}
+        {status === 'authenticated' && user && !isAuthPage ? <div className="relative" ref={profileMenuRef}>
           <button
             type="button"
             onClick={() => setProfileMenuOpen((prev) => !prev)}
-            aria-label="User account menu for Alex Rivera"
+            aria-label={`User account menu for ${user.display_name}`}
             aria-haspopup="menu"
             aria-expanded={profileMenuOpen}
             className="flex items-center gap-2 p-1 sm:p-1.5 rounded-full hover:bg-[#F4F4F5] dark:hover:bg-[#262B36] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            <Avatar src="/avatars/alex-dev.svg" alt="Alex Rivera" size="sm" />
+            <Avatar src={user.avatar_url} alt={user.display_name} size="sm" />
             <span className="hidden xl:inline-block text-xs font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
-              u/alex_dev
+              u/{user.username}
             </span>
             <ChevronDown
               size={14}
@@ -128,13 +133,14 @@ export function TopHeader() {
             >
               {/* User Identity Header */}
               <div className="px-3 py-2.5 border-b border-[#F1F5F9] dark:border-[#262B36] mb-1">
-                <p className="text-xs font-bold text-[#0F172A] dark:text-[#F8FAFC]">Alex Rivera</p>
-                <p className="text-[11px] text-[#94A3B8]">u/alex_dev</p>
+                <p className="text-xs font-bold text-[#0F172A] dark:text-[#F8FAFC]">{user.display_name}</p>
+                <p className="text-[11px] text-[#94A3B8]">u/{user.username}</p>
               </div>
+              {logoutError && <p role="alert" className="px-3 py-2 text-xs text-red-600">{logoutError}</p>}
 
               {/* Menu Links */}
               <Link
-                to="/u/alex_dev"
+                to={`/u/${user.username}`}
                 role="menuitem"
                 onClick={() => setProfileMenuOpen(false)}
                 className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#475569] dark:text-[#CBD5E1] hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F4F4F5] dark:hover:bg-[#262B36] transition-colors"
@@ -174,9 +180,17 @@ export function TopHeader() {
                 <Settings size={15} className="text-[#64748B] dark:text-[#94A3B8]" />
                 <span>Settings</span>
               </Link>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => void handleLogout()}
+                className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#475569] dark:text-[#CBD5E1] hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F4F4F5] dark:hover:bg-[#262B36] transition-colors"
+              >
+                Sign out
+              </button>
             </div>
           )}
-        </div>
+        </div> : status === 'unauthenticated' ? <div className="flex items-center gap-3 text-sm"><Link to="/login" className="text-indigo-700">Sign in</Link><Link to="/register" className="rounded-lg bg-indigo-600 px-3 py-2 text-white">Sign up</Link></div> : status === 'loading' ? <span role="status" className="text-xs text-slate-500">Checking session…</span> : isAuthPage ? <Link to="/" className="text-sm text-indigo-700">Continue to app</Link> : null}
       </div>
     </header>
   );

@@ -13,7 +13,8 @@
     "test:foundation": "vitest run test/foundation.test.ts",
     "test:services:up": "docker compose -f ../../docker-compose.test.yml up -d --wait",
     "test:services:down": "docker compose -f ../../docker-compose.test.yml down",
-    "seed": "tsx src/db/seed.ts"
+    "seed": "tsx src/db/seed.ts",
+    "auth:bootstrap-admin": "tsx src/db/bootstrap-admin.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.2",
@@ -21,6 +22,7 @@
     "@fastify/type-provider-typebox": "^5.1.0",
     "@sinclair/typebox": "^0.34.28",
     "@socialgraph/shared": "*",
+    "bcryptjs": "^3.0.3",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.1",
     "ioredis": "^5.5.0",

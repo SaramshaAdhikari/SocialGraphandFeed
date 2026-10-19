@@ -13,6 +13,8 @@ export interface AppConfig {
   MONGODB_DB_NAME: string;
   REDIS_URL: string;
   DEV_USER_BYPASS: boolean;
+  SESSION_SECRET: string;
+  WEB_ORIGIN: string;
   LOG_LEVEL: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 }
 
@@ -26,6 +28,10 @@ export function parseEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new Error('NODE_ENV must be development, test, or production.');
   }
   const nodeEnv = rawNodeEnv as AppConfig['NODE_ENV'];
+  if (nodeEnv === 'production' && (env.DEV_ADMIN_BOOTSTRAP?.toLowerCase() === 'true' || env.DEV_ADMIN_PASSWORD === 'admin')) {
+    throw new Error('Development administrator bootstrap/default credentials cannot be configured in production.');
+  }
+  if (nodeEnv === 'production' && (!env.SESSION_SECRET || env.SESSION_SECRET.length < 32 || /^(change-me|admin|development)/i.test(env.SESSION_SECRET))) throw new Error('SESSION_SECRET must be a unique secret of at least 32 characters in production.');
   if (nodeEnv === 'production') {
     for (const name of ['MONGODB_URI', 'MONGODB_DB_NAME', 'REDIS_URL'] as const) {
       if (!env[name]?.trim()) throw new Error(`${name} is required when NODE_ENV=production.`);
@@ -33,6 +39,7 @@ export function parseEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
     if (env.DEV_USER_BYPASS?.toLowerCase() === 'true') {
       throw new Error('DEV_USER_BYPASS cannot be enabled when NODE_ENV=production.');
     }
+    if (!env.WEB_ORIGIN || !env.WEB_ORIGIN.startsWith('https://')) throw new Error('WEB_ORIGIN must be an HTTPS origin in production.');
   }
 
   const port = Number(env.PORT || 4000);
@@ -58,6 +65,8 @@ export function parseEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
     MONGODB_DB_NAME: env.MONGODB_DB_NAME || (nodeEnv === 'test' ? 'socialgraph_test' : 'socialgraph'),
     REDIS_URL: redisUrl,
     DEV_USER_BYPASS: env.DEV_USER_BYPASS === 'true' && nodeEnv !== 'production',
+    SESSION_SECRET: env.SESSION_SECRET || 'development-only-session-secret-change-me',
+    WEB_ORIGIN: env.WEB_ORIGIN || 'http://localhost:3000',
     LOG_LEVEL: (env.LOG_LEVEL || (nodeEnv === 'test' ? 'error' : 'info')) as AppConfig['LOG_LEVEL'],
   };
 }

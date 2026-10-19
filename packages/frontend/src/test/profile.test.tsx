@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import { MockAdapter } from '../api/mock/MockAdapter';
 import { ApiClientError } from '../api/client';
@@ -13,6 +13,7 @@ import { RouterProvider } from '../router/Router';
 import { TopHeader } from '../components/layout/TopHeader';
 import { SidebarNav } from '../components/layout/SidebarNav';
 import { ThemeProvider } from '../theme/ThemeContext';
+import { LiveClient, setCsrfToken } from '../api/LiveClient';
 
 describe('Screen 4 — User Profile: Mock Data & API Contract', () => {
   let adapter: MockAdapter;
@@ -74,6 +75,33 @@ describe('Screen 4 — User Profile: Mock Data & API Contract', () => {
     );
   });
 
+  it('uses the scoped follow-list endpoints and sends a desired follow state to the live API', async () => {
+    const originalFetch = globalThis.fetch;
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [], total_count: 0, has_more: false, next_cursor: null }),
+    });
+    globalThis.fetch = fetchMock as typeof fetch;
+    setCsrfToken('test-csrf');
+    try {
+      const client = new LiveClient();
+      await client.getFollowers('alex_dev');
+      await client.getFollowing('lucas_t');
+      await client.toggleFollow('usr_2', true);
+
+      expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/users/alex_dev/followers?limit=20');
+      expect(fetchMock.mock.calls[1][0]).toBe('/api/v1/users/lucas_t/following?limit=20');
+      expect(fetchMock.mock.calls[2][0]).toBe('/api/v1/users/usr_2/follow');
+      expect(fetchMock.mock.calls[2][1]).toMatchObject({
+        method: 'PUT',
+        body: JSON.stringify({ is_following: true }),
+      });
+    } finally {
+      setCsrfToken(undefined);
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   it('ensures all seeded users use safe, local vector avatars and internal demo sites', () => {
     for (const user of Object.values(mockUsers)) {
       // Must use local vector avatar
@@ -107,6 +135,9 @@ describe('Screen 4 — User Profile: Header & Tabs UI Components', () => {
     expect(html).toContain('Distributed systems researcher');
     expect(html).toContain('Followers');
     expect(html).toContain('Following');
+    expect(html).toContain('data-testid="profile-stat-followers"');
+    expect(html).toContain('data-testid="profile-stat-following"');
+    expect(html).toContain('<button');
     expect(html).toContain('Posts');
     expect(html).toContain('Following'); // Lucas is_following: true in mock fixtures
   });
@@ -223,7 +254,7 @@ describe('Application-Wide Identity Navigation Audit', () => {
     expect(html).toContain(pin.author.display_name);
   });
 
-  it('TopHeader profile menu links directly to /u/alex_dev', () => {
+  it('TopHeader does not invent an authenticated identity before the backend confirms a session', () => {
     const html = renderToString(
       <ThemeProvider>
         <RouterProvider initialPath="/">
@@ -232,17 +263,19 @@ describe('Application-Wide Identity Navigation Audit', () => {
       </ThemeProvider>
     );
 
-    expect(html).toContain('u/alex_dev');
+    expect(html).toContain('Checking session');
+    expect(html).not.toContain('Alex Rivera');
+    expect(html).not.toContain('u/alex_dev');
   });
 
-  it('SidebarNav user profile link points to /u/alex_dev', () => {
+  it('SidebarNav does not invent a signed-in profile link without a confirmed session', () => {
     const html = renderToString(
       <RouterProvider initialPath="/">
         <SidebarNav />
       </RouterProvider>
     );
 
-    expect(html).toContain('href="/u/alex_dev"');
-    expect(html).toContain('Profile');
+    expect(html).not.toContain('href="/u/alex_dev"');
+    expect(html).not.toContain('>Profile<');
   });
 });

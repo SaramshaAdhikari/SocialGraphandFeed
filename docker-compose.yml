@@ -42,14 +42,16 @@ services:
     command: ["sh", "-c", "npm run build --workspace=packages/shared && npm run dev --workspace=packages/backend"]
     restart: unless-stopped
     environment:
-      NODE_ENV: development
+      NODE_ENV: ${NODE_ENV:-development}
       PORT: 4000
       HOST: 0.0.0.0
       LOG_LEVEL: ${LOG_LEVEL:-info}
       MONGODB_URI: mongodb://mongodb:27017/?replicaSet=rs0&directConnection=true
       MONGODB_DB_NAME: ${MONGODB_DB_NAME:-socialgraph}
       REDIS_URL: redis://redis:6379
-      DEV_USER_BYPASS: ${DEV_USER_BYPASS:-true}
+      DEV_USER_BYPASS: "false"
+      SESSION_SECRET: ${SESSION_SECRET:-development-only-session-secret-change-me}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
     ports:
       - "127.0.0.1:${BACKEND_HOST_PORT:-4000}:4000"
     volumes:
@@ -76,7 +78,6 @@ services:
     environment:
       VITE_API_PROXY_TARGET: http://backend:4000
       VITE_DATA_SOURCE: ${VITE_DATA_SOURCE:-live}
-      VITE_DEV_USER_ID: ${VITE_DEV_USER_ID:-usr_0}
     ports:
       - "127.0.0.1:${FRONTEND_HOST_PORT:-3000}:3000"
     volumes:

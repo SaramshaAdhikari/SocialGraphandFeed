@@ -85,7 +85,8 @@ describe('Screen 5 — Community Hub: API Contracts & Data Layer', () => {
     globalThis.fetch = fetchMock as unknown as typeof fetch;
     try {
       await new LiveClient().setCommunityMembership('systems', false);
-      const [, options] = fetchMock.mock.calls[0];
+      expect(String(fetchMock.mock.calls[0][0])).toContain('/api/v1/auth/session');
+      const [, options] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
       expect(options.method).toBe('DELETE');
       expect(options.body).toBeUndefined();
       expect((options.headers as Record<string, string>)['Content-Type']).toBeUndefined();

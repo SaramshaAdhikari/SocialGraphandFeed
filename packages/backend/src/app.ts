@@ -9,7 +9,7 @@ import { registerIdentityBoundary } from './routes/identity.js';
 
 export function buildApp(
   opts: FastifyServerOptions = {},
-  identityOptions: { devUserBypass?: boolean } = {}
+  _identityOptions: { devUserBypass?: boolean } = {}
 ): FastifyInstance {
   const app = Fastify({
     // Reject undeclared keys instead of silently stripping them from requests.
@@ -33,14 +33,14 @@ export function buildApp(
   // Register Core Fastify Plugins
   app.register(sensible);
   app.register(cors, {
-    origin: true,
+    origin: config.WEB_ORIGIN,
     credentials: true,
   });
 
   // Register RFC 7807 Error Handler Plugin
   app.register(errorHandlerPlugin);
 
-  registerIdentityBoundary(app, identityOptions);
+  registerIdentityBoundary(app);
 
   // Register API Routes under /api/v1
   app.register(apiRoutes, { prefix: '/api/v1' });

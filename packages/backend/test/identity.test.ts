@@ -1,36 +1,57 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
-import { requireIdentity } from '../src/routes/identity.js';
+import { requireAdmin, requireIdentity } from '../src/routes/identity.js';
 import { parseEnv } from '../src/config/env.js';
+import { hashPassword, resolveLoginUsername, verifyPassword } from '../src/services/AuthService.js';
+import { assertDevelopmentBootstrapAllowed } from '../src/db/bootstrap-admin.js';
 
-describe('request identity boundary', () => {
+describe('authentication security boundaries', () => {
   const previousNodeEnv = process.env.NODE_ENV;
-  const previousEnvironment = process.env.ENVIRONMENT;
+  afterEach(() => { if (previousNodeEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousNodeEnv; });
 
-  afterEach(() => {
-    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
-    else process.env.NODE_ENV = previousNodeEnv;
-    if (previousEnvironment === undefined) delete process.env.ENVIRONMENT;
-    else process.env.ENVIRONMENT = previousEnvironment;
-  });
-
-  it('requires explicit production database and cache configuration and refuses dev bypass', () => {
-    expect(() => parseEnv({ NODE_ENV: 'production' })).toThrow(/MONGODB_URI is required/);
-    const required = {
-      NODE_ENV: 'production',
-      MONGODB_URI: 'mongodb://db.example:27017/socialgraph',
-      MONGODB_DB_NAME: 'socialgraph',
-      REDIS_URL: 'rediss://cache.example:6380',
-    };
-    expect(parseEnv(required).DEV_USER_BYPASS).toBe(false);
+  it('requires database/cache and a strong session secret in production and rejects bypass', () => {
+    expect(() => parseEnv({ NODE_ENV: 'production' })).toThrow(/SESSION_SECRET/);
+    const required = { NODE_ENV: 'production', SESSION_SECRET: 'unique-production-secret-0123456789', WEB_ORIGIN: 'https://socialgraph.example', MONGODB_URI: 'mongodb://db.example:27017/socialgraph', MONGODB_DB_NAME: 'socialgraph', REDIS_URL: 'rediss://cache.example:6380' };
+    expect(() => parseEnv({ NODE_ENV: 'production', SESSION_SECRET: required.SESSION_SECRET })).toThrow(/MONGODB_URI is required/);
     expect(parseEnv({ ...required, NODE_ENV: 'development', ENVIRONMENT: 'production' }).NODE_ENV).toBe('production');
+    expect(parseEnv(required).DEV_USER_BYPASS).toBe(false);
     expect(() => parseEnv({ ...required, DEV_USER_BYPASS: 'true' })).toThrow(/cannot be enabled/);
     expect(() => parseEnv({ ...required, MONGODB_URI: 'not-a-database-url' })).toThrow(/valid MongoDB and Redis URLs/);
+    expect(() => parseEnv({ ...required, SESSION_SECRET: 'development-secret-that-is-long-enough' })).toThrow(/SESSION_SECRET/);
+    expect(() => parseEnv({ ...required, DEV_ADMIN_BOOTSTRAP: 'true' })).toThrow(/Development administrator/);
+    expect(() => parseEnv({ ...required, DEV_ADMIN_PASSWORD: 'admin' })).toThrow(/Development administrator/);
   });
 
-  it('rejects protected mutations without identity before the service can run', async () => {
+  it('hashes passwords and verifies only matching credentials', async () => {
+    const encoded = await hashPassword('a secure password');
+    expect(encoded).toMatch(/^\$2[aby]\$12\$/);
+    expect(encoded).not.toContain('a secure password');
+    expect(await verifyPassword('a secure password', encoded)).toBe(true);
+    expect(await verifyPassword('wrong password', encoded)).toBe(false);
+    expect(await verifyPassword('anything')).toBe(false);
+  });
+
+  it('maps the admin development login to alex_dev only in development', () => {
+    expect(resolveLoginUsername(' ADMIN ', 'development')).toBe('alex_dev');
+    expect(resolveLoginUsername('admin', 'production')).toBe('__development_admin_login_disabled__');
+    expect(resolveLoginUsername('ALEx_Dev', 'development')).toBe('alex_dev');
+  });
+
+  it('ignores forged development identity headers and protects mutations', async () => {
     process.env.NODE_ENV = 'test';
-    delete process.env.ENVIRONMENT;
+    const app = buildApp({}, { devUserBypass: true });
+    app.get('/__test/identity', async (request) => ({ userId: request.userId ?? null }));
+    app.post('/__test/protected', { preHandler: requireIdentity }, async () => ({ ok: true }));
+    await app.ready();
+    const forged = await app.inject({ method: 'GET', url: '/__test/identity', headers: { 'x-dev-user-id': 'usr_0', 'x-user-id': 'usr_0' } });
+    const mutation = await app.inject({ method: 'POST', url: '/__test/protected', headers: { 'x-dev-user-id': 'usr_0' } });
+    expect(forged.json()).toEqual({ userId: null });
+    expect(mutation.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('rejects protected mutations without a session across domain routes', async () => {
+    process.env.NODE_ENV = 'test';
     const app = buildApp();
     await app.ready();
     const mutations: Array<{ url: string; payload?: unknown }> = [
@@ -49,86 +70,48 @@ describe('request identity boundary', () => {
     await app.close();
   });
 
-  it('rejects malformed development identity values', async () => {
+  it('rejects malformed legacy identity headers instead of accepting them as credentials', async () => {
     process.env.NODE_ENV = 'test';
-    delete process.env.ENVIRONMENT;
     const app = buildApp({}, { devUserBypass: true });
     await app.ready();
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/v1/posts/p1/vote',
-      headers: { 'x-dev-user-id': '   ' },
-      payload: { direction: 1 },
-    });
-    expect(response.statusCode).toBe(400);
-    expect(response.json().code).toBe('BAD_REQUEST');
+    const response = await app.inject({ method: 'POST', url: '/api/v1/posts/p1/vote', headers: { 'x-dev-user-id': '   ' }, payload: { direction: 1 } });
+    expect(response.statusCode).toBe(401);
+    expect(response.json().code).toBe('UNAUTHORIZED');
     await app.close();
   });
 
-  it('accepts the dev identity header only when explicitly enabled outside production', async () => {
-    process.env.NODE_ENV = 'test';
-    delete process.env.ENVIRONMENT;
-    const app = buildApp({}, { devUserBypass: true });
-    app.get('/__test/identity', async (request) => ({ userId: (request as any).userId ?? null }));
+  it('keeps empty mutation body validation active without relying on the removed identity bypass', async () => {
+    const app = buildApp();
     await app.ready();
-    const response = await app.inject({
-      method: 'GET',
-      url: '/__test/identity',
-      headers: { 'x-dev-user-id': 'usr_test' },
-    });
-    expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ userId: 'usr_test' });
-    await app.close();
-  });
-
-  it('continues a protected route when a valid identity is present', async () => {
-    process.env.NODE_ENV = 'test';
-    delete process.env.ENVIRONMENT;
-    const app = buildApp({}, { devUserBypass: true });
-    app.post('/__test/protected', { preHandler: requireIdentity }, async (request) => ({ userId: (request as any).userId }));
-    await app.ready();
-    const response = await app.inject({ method: 'POST', url: '/__test/protected', headers: { 'x-dev-user-id': 'usr_test' } });
-    expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ userId: 'usr_test' });
-    await app.close();
-  });
-
-  it('rejects unexpected fields on empty mutation bodies', async () => {
-    process.env.NODE_ENV = 'test';
-    delete process.env.ENVIRONMENT;
-    const app = buildApp({}, { devUserBypass: true });
-    await app.ready();
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/v1/posts/p1/save',
-      headers: { 'x-dev-user-id': 'usr_test' },
-      payload: { $where: 'true' },
-    });
+    const response = await app.inject({ method: 'POST', url: '/api/v1/posts/p1/save', headers: { 'x-dev-user-id': 'usr_0' }, payload: { $where: 'true' } });
     expect(response.statusCode).toBe(400);
     await app.close();
   });
 
-  it('rejects the dev identity header in production and keeps public routes public', async () => {
+  it('does not authenticate forged identity headers in production mode', async () => {
     process.env.NODE_ENV = 'production';
     const app = buildApp({}, { devUserBypass: true });
+    app.get('/__test/identity', async (request) => ({ userId: request.userId ?? null }));
     await app.ready();
-    const rejected = await app.inject({
-      method: 'GET',
-      url: '/api/v1/metrics',
-      headers: { 'x-dev-user-id': 'usr_attacker' },
-    });
-    const forgedMembership = await app.inject({
-      method: 'POST',
-      url: '/api/v1/communities/systems/join',
-      headers: { 'x-dev-user-id': 'usr_attacker' },
-      payload: {},
-    });
-    const publicResponse = await app.inject({ method: 'GET', url: '/api/v1/metrics' });
-    expect(rejected.statusCode).toBe(403);
-    expect(rejected.json().code).toBe('FORBIDDEN');
-    expect(forgedMembership.statusCode).toBe(403);
-    expect(forgedMembership.json().code).toBe('FORBIDDEN');
-    expect(publicResponse.statusCode).toBe(200);
+    const response = await app.inject({ method: 'GET', url: '/__test/identity', headers: { 'x-dev-user-id': 'usr_attacker', 'x-user-id': 'usr_attacker' } });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ userId: null });
     await app.close();
+  });
+
+  it('requires authenticated admin role and does not trust client role headers', async () => {
+    const app = buildApp();
+    app.get('/__test/admin', { preHandler: requireAdmin }, async () => ({ ok: true }));
+    await app.ready();
+    const response = await app.inject({ method: 'GET', url: '/__test/admin', headers: { 'x-user-role': 'admin', 'x-user-id': 'usr_0' } });
+    expect(response.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('allows admin bootstrap only with explicit development settings', () => {
+    expect(() => assertDevelopmentBootstrapAllowed({ NODE_ENV: 'production', DEV_ADMIN_BOOTSTRAP: 'true' })).toThrow(/development-only/);
+    expect(() => assertDevelopmentBootstrapAllowed({ NODE_ENV: 'development' })).toThrow(/explicitly/);
+    expect(() => assertDevelopmentBootstrapAllowed({ NODE_ENV: 'development', DEV_ADMIN_BOOTSTRAP: 'true' })).not.toThrow();
+    expect(() => assertDevelopmentBootstrapAllowed({ NODE_ENV: 'development', ENVIRONMENT: 'production', DEV_ADMIN_BOOTSTRAP: 'true' })).toThrow(/development-only/);
   });
 });

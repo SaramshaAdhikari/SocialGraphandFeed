@@ -1,5 +1,6 @@
 import { Home, Compass, Users, Search, Bookmark, User, Activity, Palette, PlusCircle } from 'lucide-react';
 import { Link, useRouter } from '../../router/Router';
+import { useAuth } from '../../auth/AuthContext';
 
 interface NavItem {
   label: string;
@@ -15,13 +16,14 @@ const navItems: NavItem[] = [
   { label: 'Communities', to: '/communities', icon: Users },
   { label: 'Search', to: '/search', icon: Search },
   { label: 'Saved', to: '/saved', icon: Bookmark },
-  { label: 'Profile', to: '/u/alex_dev', icon: User },
   { label: 'Appearance', to: '/settings/appearance', icon: Palette },
   { label: 'Diagnostics', to: '/diagnostics', icon: Activity },
 ];
 
 export function SidebarNav() {
   const { currentPath } = useRouter();
+  const { user, status } = useAuth();
+  const items = user && status === 'authenticated' ? [...navItems, { label: 'Profile', to: `/u/${user.username}`, icon: User }] : navItems;
 
   return (
     <aside
@@ -42,7 +44,7 @@ export function SidebarNav() {
 
       {/* Navigation Links */}
       <nav className="flex-1 py-4 px-2 lg:px-3 space-y-1">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const Icon = item.icon;
           const isActive = item.exact
             ? currentPath === item.to

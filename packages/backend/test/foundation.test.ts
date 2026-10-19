@@ -45,7 +45,7 @@ describe('Milestone 1 — Foundation & Contract Baseline Integration Tests', () 
       expect(payload.type).toContain('not-found');
     });
 
-    it('enforces production security guard against X-Dev-User-Id header', async () => {
+    it('ignores X-Dev-User-Id and X-User-Id headers in production', async () => {
       // Temporarily simulate production environment
       const prevEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'production';
@@ -61,10 +61,9 @@ describe('Milestone 1 — Foundation & Contract Baseline Integration Tests', () 
         },
       });
 
-      expect(response.statusCode).toBe(403);
-      const payload = response.json();
-      expect(payload.code).toBe('FORBIDDEN');
-      expect(payload.detail).toContain('strictly disabled in production');
+      expect(response.statusCode).toBe(200);
+      const forged = await prodApp.inject({ method: 'GET', url: '/api/v1/auth/me', headers: { 'x-dev-user-id': 'usr_attacker', 'x-user-id': 'usr_attacker' } });
+      expect(forged.statusCode).toBe(401);
 
       await prodApp.close();
       process.env.NODE_ENV = prevEnv;

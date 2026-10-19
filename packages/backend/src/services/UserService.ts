@@ -5,6 +5,7 @@ import {
   type FeedQuery,
   type FeedResponse,
   type FollowToggleResponse,
+  type FollowListResponse,
 } from '@socialgraph/shared';
 import { getDb } from '../db/mongo.js';
 import { runInTransaction } from '../db/transaction.js';
@@ -36,7 +37,12 @@ export class UserService {
       isFollowing = Boolean(follow);
     }
 
-    return toUserProfile(user, isFollowing);
+    const [followersCount, followingCount, postsCount] = await Promise.all([
+      followsCol.countDocuments({ target_user_id: user._id }),
+      followsCol.countDocuments({ follower_id: user._id }),
+      this.db.collection<PostDoc>(COLLECTIONS.POSTS).countDocuments({ author_id: user._id }),
+    ]);
+    return { ...toUserProfile(user, isFollowing), followers_count: followersCount, following_count: followingCount, posts_count: postsCount };
   }
 
   public async getUserPosts(
@@ -137,25 +143,54 @@ export class UserService {
 
       const filter = { follower_id: currentUserId, target_user_id: targetUserId };
       const existing = await followsCol.findOne(filter, { session });
-      if (existing) {
-        const deleted = await followsCol.deleteOne({ ...filter, _id: existing._id }, { session });
-        if (deleted.deletedCount) {
-          await usersCol.updateOne({ _id: targetUserId }, { $inc: { followers_count: -1 } }, { session });
-          await usersCol.updateOne({ _id: currentUserId }, { $inc: { following_count: -1 } }, { session });
-        }
-        const updated = await usersCol.findOne({ _id: targetUserId }, { session });
-        return { target_user_id: targetUserId, is_following: false, followers_count: Math.max(updated?.followers_count ?? 0, 0) };
+      if (existing) await followsCol.deleteOne(filter, { session });
+      else {
+        try { await followsCol.insertOne({ _id: `flw_${currentUserId}_${targetUserId}`, ...filter, created_at: new Date() }, { session }); }
+        catch (error: any) { if (error?.code !== 11000) throw error; }
       }
-
-      await followsCol.insertOne({
-        _id: `flw_${currentUserId}_${targetUserId}`,
-        ...filter,
-        created_at: new Date(),
-      }, { session });
-      await usersCol.updateOne({ _id: targetUserId }, { $inc: { followers_count: 1 } }, { session });
-      await usersCol.updateOne({ _id: currentUserId }, { $inc: { following_count: 1 } }, { session });
-      const updated = await usersCol.findOne({ _id: targetUserId }, { session });
-      return { target_user_id: targetUserId, is_following: true, followers_count: updated?.followers_count ?? targetUser.followers_count + 1 };
+      return { target_user_id: targetUserId, is_following: !existing, followers_count: await followsCol.countDocuments({ target_user_id: targetUserId }, { session }) };
     });
+  }
+
+  public async setFollow(targetUserId: string, currentUserId: string, isFollowing: boolean): Promise<FollowToggleResponse> {
+    if (targetUserId === currentUserId) throw AppError.badRequest('Users cannot follow themselves');
+    const usersCol = this.db.collection<UserDoc>(COLLECTIONS.USERS);
+    const followsCol = this.db.collection<FollowDoc>(COLLECTIONS.FOLLOWS);
+    const [target, current] = await Promise.all([usersCol.findOne({ _id: targetUserId }), usersCol.findOne({ _id: currentUserId })]);
+    if (!target) throw AppError.notFound(`Target user ${targetUserId} not found`);
+    if (!current) throw AppError.notFound(`Current user ${currentUserId} not found`);
+    const filter = { follower_id: currentUserId, target_user_id: targetUserId };
+    if (isFollowing) {
+      try { await followsCol.insertOne({ _id: `flw_${currentUserId}_${targetUserId}`, ...filter, created_at: new Date() }); }
+      catch (error: any) { if (error?.code !== 11000) throw error; }
+    } else await followsCol.deleteOne(filter);
+    return { target_user_id: targetUserId, is_following: isFollowing, followers_count: await followsCol.countDocuments({ target_user_id: targetUserId }) };
+  }
+
+  public async getFollowList(username: string, direction: 'followers' | 'following', currentUserId?: string, cursor?: string | null, requestedLimit = 20): Promise<FollowListResponse> {
+    const users = this.db.collection<UserDoc>(COLLECTIONS.USERS);
+    const follows = this.db.collection<FollowDoc>(COLLECTIONS.FOLLOWS);
+    const target = await users.findOne({ username });
+    if (!target) throw AppError.notFound(`User with username '${username}' not found`);
+    const limit = Math.min(Math.max(requestedLimit, 1), 50);
+    const filter: any = direction === 'followers' ? { target_user_id: target._id } : { follower_id: target._id };
+    if (cursor) {
+      try { const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString()) as { created_at: string; id: string };
+        const date = new Date(decoded.created_at);
+        if (!Number.isFinite(date.getTime()) || !decoded.id) throw new Error();
+        filter.$or = [{ created_at: { $lt: date } }, { created_at: date, _id: { $lt: decoded.id } }];
+      } catch { throw AppError.badRequest('Invalid follow-list cursor'); }
+    }
+    const [total, edges] = await Promise.all([follows.countDocuments(direction === 'followers' ? { target_user_id: target._id } : { follower_id: target._id }), follows.find(filter).sort({ created_at: -1, _id: -1 }).limit(limit + 1).toArray()]);
+    const hasMore = edges.length > limit;
+    const page = hasMore ? edges.slice(0, limit) : edges;
+    const ids = page.map((edge) => direction === 'followers' ? edge.follower_id : edge.target_user_id);
+    const docs = ids.length ? await users.find({ _id: { $in: ids } }).toArray() : [];
+    const byId = new Map(docs.map((doc) => [doc._id, doc]));
+    const viewerEdges = currentUserId && ids.length ? await follows.find({ follower_id: currentUserId, target_user_id: { $in: ids } }).toArray() : [];
+    const viewerFollowing = new Set(viewerEdges.map((edge) => edge.target_user_id));
+    const data = ids.flatMap((id) => { const user = byId.get(id); return user ? [{ ...toUserSummary(user), is_following: viewerFollowing.has(id) }] : []; });
+    const last = page[page.length - 1];
+    return { data, total_count: total, has_more: hasMore, next_cursor: hasMore && last ? Buffer.from(JSON.stringify({ created_at: last.created_at.toISOString(), id: last._id })).toString('base64url') : null };
   }
 }

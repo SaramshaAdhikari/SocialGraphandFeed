@@ -20,11 +20,13 @@ import { Badge } from '../components/ui/Badge';
 import { VoteControl } from '../components/ui/VoteControl';
 import { CommentTree, PostDetailSkeleton } from '../components/post';
 import { formatRelativeTime } from '../utils/date';
+import { useAuth } from '../auth/AuthContext';
 
 export function PostDetailPage() {
   const { params, currentPath, navigate } = useRouter();
   const [copied, setCopied] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const { user } = useAuth();
 
   // Extract postId from route params with regex fallback
   const postId = useMemo(() => {
@@ -48,7 +50,7 @@ export function PostDetailPage() {
     toggleFollowAuthor,
     addComment,
     voteComment,
-  } = usePostDetail(postId);
+  } = usePostDetail(postId, { currentViewer: user ? { id: user.id, username: user.username, display_name: user.display_name, avatar_url: '', is_verified: false } : undefined });
 
   // Reliable Back navigation with sensible fallback
   const handleBack = () => {
