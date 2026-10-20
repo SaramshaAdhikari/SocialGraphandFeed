@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { connectMongo, disconnectMongo, getDb } from '../src/db/mongo.js';
@@ -29,6 +29,11 @@ describe('Production Distributed Login Rate Limiting (Multi-Instance Redis Enfor
     appInstance1 = buildApp({}, { devUserBypass: false });
     appInstance2 = buildApp({}, { devUserBypass: false });
     await Promise.all([appInstance1.ready(), appInstance2.ready()]);
+  });
+
+  beforeEach(async () => {
+    // Flush Redis rate-limit keys between tests to guarantee complete isolation
+    await redis.flushdb().catch(() => {});
   });
 
   afterAll(async () => {
@@ -92,7 +97,7 @@ describe('Production Distributed Login Rate Limiting (Multi-Instance Redis Enfor
 
   describe('2. Concurrent Burst Protection & Atomic Lua Execution', () => {
     it('prevents concurrent race conditions from bypassing the configured rate limit', async () => {
-      const clientIp = `198.51.100.${Math.floor(Math.random() * 150 + 50)}`;
+      const clientIp = '198.51.100.20';
       const targetUser = `burst_user_${Date.now()}`;
 
       // Fire 15 concurrent login requests split across both backend instances simultaneously
@@ -195,7 +200,7 @@ describe('Production Distributed Login Rate Limiting (Multi-Instance Redis Enfor
 
   describe('5. Counter Reset on Successful Authentication', () => {
     it('resets login rate limit counter upon successful authentication across all dimensions', async () => {
-      const testIp = `198.51.100.${Math.floor(Math.random() * 150 + 50)}`;
+      const testIp = '198.51.100.50';
       const username = `success_user_${Date.now()}`;
       await authService.register(username, 'correctPassword123');
 
@@ -314,14 +319,14 @@ describe('Production Distributed Login Rate Limiting (Multi-Instance Redis Enfor
       const resExist = await appInstance1.inject({
         method: 'POST',
         url: '/api/v1/auth/login',
-        remoteAddress: '198.51.100.88',
+        remoteAddress: '198.51.100.70',
         payload: { username: existingUser, password: 'wrongPassword' },
       });
 
       const resAbsent = await appInstance2.inject({
         method: 'POST',
         url: '/api/v1/auth/login',
-        remoteAddress: '198.51.100.89',
+        remoteAddress: '198.51.100.71',
         payload: { username: absentUser, password: 'wrongPassword' },
       });
 
