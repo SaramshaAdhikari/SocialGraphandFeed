@@ -90,3 +90,18 @@ export const VoteInputSchema = Type.Object({
 }, { additionalProperties: false });
 
 export type VoteInput = Static<typeof VoteInputSchema>;
+
+
+export const SavedPostsQuerySchema = Type.Object({
+  cursor: Type.Optional(Type.String({ maxLength: 2048 })),
+  limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100, default: 20 })),
+  sort: Type.Optional(Type.Union([Type.Literal('new'), Type.Literal('top'), Type.Literal('comments')])),
+  type: Type.Optional(Type.Union([Type.Literal('all'), Type.Literal('discussions'), Type.Literal('visual')])),
+  communitySlug: Type.Optional(Type.String({ maxLength: 80 })),
+  community: Type.Optional(Type.String({ maxLength: 80 })),
+  topic: Type.Optional(Type.String({ maxLength: 80 })),
+  query: Type.Optional(Type.String({ maxLength: 200 })),
+  q: Type.Optional(Type.String({ maxLength: 200 })),
+}, { additionalProperties: false });
+
+export type SavedPostsQuery = Static<typeof SavedPostsQuerySchema>;

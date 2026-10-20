@@ -1,10 +1,12 @@
-import type { Db } from 'mongodb';
+import type { Db, Filter, Sort } from 'mongodb';
 import {
   AppError,
   type CreatePostInput,
   type PostCard,
   type CommentNode,
   type CreateCommentInput,
+  type SavedPostsQuery,
+  type FeedResponse,
 } from '@socialgraph/shared';
 import { getDb } from '../db/mongo.js';
 import { runInTransaction } from '../db/transaction.js';
@@ -342,5 +344,158 @@ export class PostService {
 
     await this.invalidatePostCache(postId);
     return res;
+  }
+
+  public async getSavedPosts(userId: string, query: SavedPostsQuery = {}): Promise<FeedResponse> {
+    const start = performance.now();
+    const {
+      type = 'all',
+      communitySlug,
+      community,
+      topic,
+      query: searchQuery,
+      q,
+      sort = 'new',
+      cursor,
+      limit = 20,
+    } = query;
+
+    const actualLimit = Math.min(Math.max(limit ?? 20, 1), 100);
+    const targetCommunity = community || communitySlug;
+    const searchPattern = (q || searchQuery || '').trim().toLowerCase();
+
+    const savesCol = this.db.collection<PostSaveDoc>(COLLECTIONS.POST_SAVES);
+    const postsCol = this.db.collection<PostDoc>(COLLECTIONS.POSTS);
+    const usersCol = this.db.collection<UserDoc>(COLLECTIONS.USERS);
+    const votesCol = this.db.collection<PostVoteDoc>(COLLECTIONS.POST_VOTES);
+
+    const saves = await savesCol.find({ user_id: userId }).sort({ created_at: -1 }).toArray();
+    if (saves.length === 0) {
+      return {
+        success: true,
+        data: [],
+        next_cursor: null,
+        has_more: false,
+        meta: { count: 0, server_execution_time_ms: Number((performance.now() - start).toFixed(2)) },
+      };
+    }
+
+    const savedPostIds = saves.map((item) => item.post_id);
+    const filter: Filter<PostDoc> = { _id: { $in: savedPostIds } };
+
+    if (type === 'discussions') {
+      filter.post_type = 'discussion';
+    } else if (type === 'visual') {
+      filter.post_type = 'visual';
+    }
+
+    if (targetCommunity && targetCommunity !== 'all') {
+      const cleanSlug = targetCommunity.replace(/^c\//, '').toLowerCase();
+      filter.$or = [
+        { community_slug: cleanSlug },
+        { community_id: cleanSlug },
+      ];
+    }
+
+    if (topic && topic !== 'all') {
+      const cleanTopic = topic.replace(/^#/, '').toLowerCase();
+      const topicFilter = [
+        { community_slug: cleanTopic },
+        { tags: cleanTopic },
+        { flair: cleanTopic },
+      ];
+      if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, { $or: topicFilter }];
+        delete filter.$or;
+      } else {
+        filter.$or = topicFilter;
+      }
+    }
+
+    let sortSpec: Sort = { created_at: -1, _id: -1 };
+    if (sort === 'top') {
+      sortSpec = { score: -1, created_at: -1, _id: -1 };
+    } else if (sort === 'comments') {
+      sortSpec = { comments_count: -1, created_at: -1, _id: -1 };
+    }
+
+    const matchingPosts = await postsCol.find(filter).sort(sortSpec).toArray();
+
+    let filteredPosts = matchingPosts;
+    if (searchPattern) {
+      const terms = searchPattern.split(/\s+/).filter(Boolean);
+      filteredPosts = matchingPosts.filter((post) => {
+        const text = [
+          post.title,
+          post.content,
+          post.caption,
+          post.flair,
+          post.community_slug,
+          ...(post.tags || []),
+        ].filter(Boolean).join(' ').toLowerCase();
+        return terms.every((t) => text.includes(t));
+      });
+    }
+
+    let startIndex = 0;
+    if (cursor) {
+      const foundIdx = filteredPosts.findIndex((p) => p._id === cursor);
+      if (foundIdx >= 0) {
+        startIndex = foundIdx + 1;
+      } else {
+        // Unknown or deleted cursor boundary: fail-safe return empty to avoid infinite pagination loops
+        return {
+          success: true,
+          data: [],
+          next_cursor: null,
+          has_more: false,
+          meta: { count: 0, server_execution_time_ms: Number((performance.now() - start).toFixed(2)) },
+        };
+      }
+    }
+
+    const pageDocs = filteredPosts.slice(startIndex, startIndex + actualLimit);
+    const hasMore = startIndex + actualLimit < filteredPosts.length;
+    const nextCursor = hasMore && pageDocs.length > 0 ? pageDocs[pageDocs.length - 1]._id : null;
+
+    if (pageDocs.length === 0) {
+      return {
+        success: true,
+        data: [],
+        next_cursor: null,
+        has_more: false,
+        meta: { count: 0, server_execution_time_ms: Number((performance.now() - start).toFixed(2)) },
+      };
+    }
+
+    const authorIds = [...new Set(pageDocs.map((p) => p.author_id))];
+    const authors = await usersCol.find({ _id: { $in: authorIds } }).toArray();
+    const authorMap = new Map(authors.map((u) => [u._id, toUserSummary(u)]));
+
+    const postIds = pageDocs.map((p) => p._id);
+    const votes = await votesCol.find({ user_id: userId, post_id: { $in: postIds } }).toArray();
+    const voteMap = new Map(votes.map((v) => [v.post_id, v.direction]));
+
+    const data = pageDocs.map((p) => {
+      const author = authorMap.get(p.author_id) || {
+        id: p.author_id,
+        username: 'unknown',
+        display_name: 'Unknown User',
+        avatar_url: '/avatars/alex-dev.svg',
+        is_verified: false,
+      };
+      return toPostCard(p, author, voteMap.get(p._id) ?? 0, true);
+    });
+
+    return {
+      success: true,
+      data,
+      next_cursor: nextCursor,
+      has_more: hasMore,
+      meta: {
+        count: data.length,
+        server_execution_time_ms: Number((performance.now() - start).toFixed(2)),
+      },
+    };
   }
 }

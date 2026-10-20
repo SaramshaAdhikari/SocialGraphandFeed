@@ -4,6 +4,9 @@ import {
   PostCardSchema,
   CreatePostInputSchema,
   VoteInputSchema,
+  SavedPostsQuerySchema,
+  FeedResponseSchema,
+  type SavedPostsQuery,
   CommentNodeSchema,
   CreateCommentInputSchema,
   type CreatePostInput,
@@ -22,6 +25,24 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
   const postService = new PostService();
   const rateLimitService = new RateLimitService();
   const idempotencyService = new IdempotencyService();
+
+  
+  fastify.get<{ Querystring: SavedPostsQuery }>(
+    '/posts/saved',
+    {
+      preHandler: requireIdentity,
+      schema: {
+        querystring: SavedPostsQuerySchema,
+        response: {
+          200: FeedResponseSchema,
+        },
+      },
+    },
+    async (request) => {
+      const userId = getRequestUserId(request)!;
+      return postService.getSavedPosts(userId, request.query);
+    }
+  );
 
   fastify.get<{ Params: { postId: string } }>(
     '/posts/:postId',

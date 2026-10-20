@@ -53,8 +53,10 @@ export async function ensureIndexes(db: Db): Promise<void> {
 
     // Post Votes: unique user vote per post
     votes.createIndex({ post_id: 1, user_id: 1 }, { unique: true, name: 'uniq_post_vote' }),
+    votes.createIndex({ user_id: 1, post_id: 1 }, { name: 'idx_votes_user_post' }),
 
     // Post Saves: unique user bookmark per post
     saves.createIndex({ post_id: 1, user_id: 1 }, { unique: true, name: 'uniq_post_save' }),
+    saves.createIndex({ user_id: 1, created_at: -1 }, { name: 'idx_saves_user_created_at' }),
   ]);
 }
