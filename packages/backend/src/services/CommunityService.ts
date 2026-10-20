@@ -13,14 +13,35 @@ import type {
 } from '../db/types.js';
 import { toCommunity, toUserSummary, toPostCard } from '../db/serialization.js';
 import { buildCursorFilter, encodePostCursor } from '../utils/pagination.js';
-import { getRedisClient } from '../cache/redis.js';
+import { getCached, setCachedWithTag, invalidateCachePattern } from '../cache/redis.js';
 
 export class CommunityService {
   private get db(): Db {
     return getDb();
   }
 
+  public async invalidateCommunityCache(communitySlug?: string): Promise<void> {
+    const tasks: Promise<void>[] = [
+      invalidateCachePattern('cache:communities:_keys', 'cache:communities:*'),
+    ];
+    if (communitySlug) {
+      const normalized = communitySlug.toLowerCase();
+      tasks.push(
+        invalidateCachePattern(
+          `cache:community:${normalized}:_keys`,
+          `cache:community:${normalized}:*`
+        )
+      );
+    }
+    await Promise.all(tasks);
+  }
+
   public async getCommunity(communitySlug: string, currentUserId?: string): Promise<Community> {
+    const normalizedSlug = communitySlug.toLowerCase();
+    const cacheKey = `cache:community:${normalizedSlug}:${currentUserId ? `u:${currentUserId}` : 'anon'}`;
+    const cached = await getCached<Community>(cacheKey);
+    if (cached) return cached;
+
     const commsCol = this.db.collection<CommunityDoc>(COLLECTIONS.COMMUNITIES);
     const membershipsCol = this.db.collection<CommunityMembershipDoc>(
       COLLECTIONS.COMMUNITY_MEMBERSHIPS
@@ -41,7 +62,16 @@ export class CommunityService {
     }
 
     const membersCount = await membershipsCol.countDocuments({ community_id: comm._id });
-    return toCommunity({ ...comm, members_count: membersCount }, isMember);
+    const result = toCommunity({ ...comm, members_count: membersCount }, isMember);
+
+    await setCachedWithTag(
+      cacheKey,
+      `cache:community:${normalizedSlug}:_keys`,
+      result,
+      30
+    );
+
+    return result;
   }
 
   public async getCommunityFeed(
@@ -135,19 +165,15 @@ export class CommunityService {
   }
 
   public async getCommunities(currentUserId?: string): Promise<Community[]> {
-    const redis = getRedisClient();
     const cacheKey = `cache:communities:${currentUserId || 'anon'}`;
-    if (redis) {
-      try {
-        const hit = await redis.get(cacheKey);
-        if (hit) return JSON.parse(hit) as Community[];
-      } catch {}
-    }
+    const cached = await getCached<Community[]>(cacheKey);
+    if (cached) return cached;
 
     const commsCol = this.db.collection<CommunityDoc>(COLLECTIONS.COMMUNITIES);
     const membershipsCol = this.db.collection<CommunityMembershipDoc>(
       COLLECTIONS.COMMUNITY_MEMBERSHIPS
     );
+
     const comms = await commsCol.find({}).toArray();
     if (comms.length === 0) {
       return [];
@@ -172,9 +198,12 @@ export class CommunityService {
     }
 
     const result = communitiesWithCounts.map((comm) => toCommunity(comm, memberCommIds.has(comm._id)));
-    if (redis) {
-      await redis.set(cacheKey, JSON.stringify(result), 'EX', 30).catch(() => {});
-    }
+    await setCachedWithTag(
+      cacheKey,
+      'cache:communities:_keys',
+      result,
+      30
+    );
     return result;
   }
 
@@ -218,18 +247,10 @@ export class CommunityService {
         { $set: { members_count: membersCount } },
         { session }
       );
-      return { community_id: comm._id, is_member: isMember, members_count: membersCount };
+      return { community_id: comm._id, is_member: isMember, members_count: membersCount, slug: comm.slug };
     });
 
-    // Invalidate community cache across users
-    const redis = getRedisClient();
-    if (redis) {
-      try {
-        const keys = await redis.keys('cache:communities:*');
-        if (keys.length > 0) await redis.del(...keys);
-      } catch {}
-    }
-
-    return res;
+    await this.invalidateCommunityCache(res.slug);
+    return { community_id: res.community_id, is_member: res.is_member, members_count: res.members_count };
   }
 }

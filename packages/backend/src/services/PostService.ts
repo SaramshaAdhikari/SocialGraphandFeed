@@ -21,7 +21,9 @@ import type {
 } from '../db/types.js';
 import { toUserSummary, toPostCard, buildCommentTree } from '../db/serialization.js';
 import { calculateHotScore } from '../utils/pagination.js';
-import { getRedisClient } from '../cache/redis.js';
+import { getCached, setCachedWithTag, invalidateCachePattern } from '../cache/redis.js';
+import { NotificationService } from './NotificationService.js';
+import { UserService } from './UserService.js';
 
 export interface VoteResult {
   post_id: string;
@@ -30,32 +32,21 @@ export interface VoteResult {
   user_vote: 1 | -1 | 0;
 }
 
-import { NotificationService } from './NotificationService.js';
-
 export class PostService {
   private notificationService = new NotificationService();
+  private userService = new UserService();
   private get db(): Db {
     return getDb();
   }
 
-  private async invalidatePostCache(postId: string): Promise<void> {
-    const redis = getRedisClient();
-    if (!redis) return;
-    try {
-      const keys = await redis.keys(`cache:post:${postId}:*`);
-      if (keys.length > 0) await redis.del(...keys);
-    } catch {}
+  public async invalidatePostCache(postId: string): Promise<void> {
+    await invalidateCachePattern(`cache:post:${postId}:_keys`, `cache:post:${postId}:*`);
   }
 
   public async getPost(postId: string, currentUserId?: string): Promise<PostCard> {
-    const redis = getRedisClient();
     const cacheKey = currentUserId ? `cache:post:${postId}:u:${currentUserId}` : `cache:post:${postId}:anon`;
-    if (redis) {
-      try {
-        const hit = await redis.get(cacheKey);
-        if (hit) return JSON.parse(hit) as PostCard;
-      } catch {}
-    }
+    const cached = await getCached<PostCard>(cacheKey);
+    if (cached) return cached;
 
     const postsCol = this.db.collection<PostDoc>(COLLECTIONS.POSTS);
     const usersCol = this.db.collection<UserDoc>(COLLECTIONS.USERS);
@@ -89,9 +80,7 @@ export class PostService {
     }
 
     const result = toPostCard(post, author, userVote, isSaved);
-    if (redis) {
-      await redis.set(cacheKey, JSON.stringify(result), 'EX', 30).catch(() => {});
-    }
+    await setCachedWithTag(cacheKey, `cache:post:${postId}:_keys`, result, 30);
     return result;
   }
 
@@ -108,7 +97,7 @@ export class PostService {
       }
     }
 
-    return runInTransaction(async (session) => {
+    const { card, authorUsername } = await runInTransaction(async (session) => {
       const author = await usersCol.findOne({ _id: authorId }, { session });
       if (!author) throw AppError.notFound(`Author user ${authorId} not found`);
 
@@ -147,14 +136,28 @@ export class PostService {
       } catch (err: any) {
         if (err?.code === 11000 && idempotencyKey) {
           const dup = await postsCol.findOne({ author_id: authorId, idempotency_key: idempotencyKey }, { session });
-          if (dup) return toPostCard(dup, toUserSummary(author), 0, false);
+          if (dup) {
+            return {
+              card: toPostCard(dup, toUserSummary(author), 0, false),
+              authorUsername: null,
+            };
+          }
         }
         throw err;
       }
 
       await usersCol.updateOne({ _id: authorId }, { $inc: { posts_count: 1 } }, { session });
-      return toPostCard(postDoc, toUserSummary(author), 0, false);
+      return {
+        card: toPostCard(postDoc, toUserSummary(author), 0, false),
+        authorUsername: author.username,
+      };
     });
+
+    if (authorUsername) {
+      await this.userService.invalidateUserProfileCache(authorUsername);
+    }
+
+    return card;
   }
 
   public async votePost(postId: string, userId: string, direction: 1 | -1 | 0): Promise<VoteResult> {

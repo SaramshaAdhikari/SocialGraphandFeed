@@ -13,7 +13,7 @@ import { COLLECTIONS } from '../db/collections.js';
 import type { UserDoc, PostDoc, FollowDoc, PostVoteDoc, PostSaveDoc } from '../db/types.js';
 import { toUserSummary, toUserProfile, toPostCard } from '../db/serialization.js';
 import { buildCursorFilter, encodePostCursor } from '../utils/pagination.js';
-
+import { getCached, setCachedWithTag, invalidateCachePattern } from '../cache/redis.js';
 import { NotificationService } from './NotificationService.js';
 
 export class UserService {
@@ -22,11 +22,26 @@ export class UserService {
     return getDb();
   }
 
+  public async invalidateUserProfileCache(username: string): Promise<void> {
+    const normalized = username.trim().toLowerCase();
+    await invalidateCachePattern(
+      `cache:user:profile:${normalized}:_keys`,
+      `cache:user:profile:${normalized}:*`
+    );
+  }
+
   public async getUserProfile(username: string, currentUserId?: string): Promise<UserProfile> {
+    const normalizedUsername = username.trim().toLowerCase();
+    const cacheKey = `cache:user:profile:${normalizedUsername}:${currentUserId ? `u:${currentUserId}` : 'anon'}`;
+    const cached = await getCached<UserProfile>(cacheKey);
+    if (cached) return cached;
+
     const usersCol = this.db.collection<UserDoc>(COLLECTIONS.USERS);
     const followsCol = this.db.collection<FollowDoc>(COLLECTIONS.FOLLOWS);
 
-    const user = await usersCol.findOne({ username });
+    const user = await usersCol.findOne({
+      $or: [{ username: normalizedUsername }, { username }],
+    });
     if (!user) {
       throw AppError.notFound(`User with username '${username}' not found`);
     }
@@ -45,7 +60,22 @@ export class UserService {
       followsCol.countDocuments({ follower_id: user._id }),
       this.db.collection<PostDoc>(COLLECTIONS.POSTS).countDocuments({ author_id: user._id }),
     ]);
-    return { ...toUserProfile(user, isFollowing), followers_count: followersCount, following_count: followingCount, posts_count: postsCount };
+
+    const profile: UserProfile = {
+      ...toUserProfile(user, isFollowing),
+      followers_count: followersCount,
+      following_count: followingCount,
+      posts_count: postsCount,
+    };
+
+    await setCachedWithTag(
+      cacheKey,
+      `cache:user:profile:${user.username.toLowerCase()}:_keys`,
+      profile,
+      30
+    );
+
+    return profile;
   }
 
   public async getUserPosts(
@@ -138,7 +168,7 @@ export class UserService {
     const usersCol = this.db.collection<UserDoc>(COLLECTIONS.USERS);
     const followsCol = this.db.collection<FollowDoc>(COLLECTIONS.FOLLOWS);
 
-    return runInTransaction(async (session) => {
+    const res = await runInTransaction(async (session) => {
       const targetUser = await usersCol.findOne({ _id: targetUserId }, { session });
       const currentUser = await usersCol.findOne({ _id: currentUserId }, { session });
       if (!targetUser) throw AppError.notFound(`Target user ${targetUserId} not found`);
@@ -146,8 +176,9 @@ export class UserService {
 
       const filter = { follower_id: currentUserId, target_user_id: targetUserId };
       const existing = await followsCol.findOne(filter, { session });
-      if (existing) await followsCol.deleteOne(filter, { session });
-      else {
+      if (existing) {
+        await followsCol.deleteOne(filter, { session });
+      } else {
         try {
           await followsCol.insertOne({ _id: `flw_${currentUserId}_${targetUserId}`, ...filter, created_at: new Date() }, { session });
           await this.notificationService.createNotification({
@@ -159,8 +190,26 @@ export class UserService {
         }
         catch (error: any) { if (error?.code !== 11000) throw error; }
       }
-      return { target_user_id: targetUserId, is_following: !existing, followers_count: await followsCol.countDocuments({ target_user_id: targetUserId }, { session }) };
+      const followersCount = await followsCol.countDocuments({ target_user_id: targetUserId }, { session });
+      return {
+        target_user_id: targetUserId,
+        is_following: !existing,
+        followers_count: followersCount,
+        target_username: targetUser.username,
+        current_username: currentUser.username,
+      };
     });
+
+    await Promise.all([
+      this.invalidateUserProfileCache(res.target_username),
+      this.invalidateUserProfileCache(res.current_username),
+    ]);
+
+    return {
+      target_user_id: res.target_user_id,
+      is_following: res.is_following,
+      followers_count: res.followers_count,
+    };
   }
 
   public async setFollow(targetUserId: string, currentUserId: string, isFollowing: boolean): Promise<FollowToggleResponse> {
@@ -181,8 +230,17 @@ export class UserService {
         });
       }
       catch (error: any) { if (error?.code !== 11000) throw error; }
-    } else await followsCol.deleteOne(filter);
-    return { target_user_id: targetUserId, is_following: isFollowing, followers_count: await followsCol.countDocuments({ target_user_id: targetUserId }) };
+    } else {
+      await followsCol.deleteOne(filter);
+    }
+    const followersCount = await followsCol.countDocuments({ target_user_id: targetUserId });
+
+    await Promise.all([
+      this.invalidateUserProfileCache(target.username),
+      this.invalidateUserProfileCache(current.username),
+    ]);
+
+    return { target_user_id: targetUserId, is_following: isFollowing, followers_count: followersCount };
   }
 
   public async getFollowList(username: string, direction: 'followers' | 'following', currentUserId?: string, cursor?: string | null, requestedLimit = 20): Promise<FollowListResponse> {
