@@ -1,4 +1,4 @@
-import type { MediaAttachment, CommunityRule } from '@socialgraph/shared';
+import type { MediaAttachment, CommunityRule, NotificationType } from '@socialgraph/shared';
 
 export interface UserDoc {
   _id: string;
@@ -103,5 +103,19 @@ export interface PostSaveDoc {
   _id: string;
   post_id: string;
   user_id: string;
+  created_at: Date;
+}
+
+export type { NotificationType };
+
+export interface NotificationDoc {
+  _id: string;
+  recipient_id: string;
+  actor_id: string;
+  type: NotificationType;
+  post_id?: string;
+  comment_id?: string;
+  read: boolean;
+  read_at?: Date;
   created_at: Date;
 }

@@ -7,8 +7,9 @@ import type {
   CommentNode,
   Community,
   MediaAttachment,
+  NotificationItem,
 } from '@socialgraph/shared';
-import type { UserDoc, PostDoc, CommentDoc, CommunityDoc } from './types.js';
+import type { UserDoc, PostDoc, CommentDoc, CommunityDoc, NotificationDoc } from './types.js';
 
 export function toUserSummary(user: UserDoc): UserSummary {
   return {
@@ -154,4 +155,19 @@ export function buildCommentTree(
   }
 
   return rootNodes;
+}
+
+export function toNotificationItem(doc: NotificationDoc, actor?: UserSummary): NotificationItem {
+  return {
+    id: doc._id,
+    recipient_id: doc.recipient_id,
+    actor_id: doc.actor_id,
+    actor,
+    type: doc.type,
+    post_id: doc.post_id ?? undefined,
+    comment_id: doc.comment_id ?? undefined,
+    read: doc.read,
+    read_at: doc.read_at ? doc.read_at.toISOString() : undefined,
+    created_at: doc.created_at.toISOString(),
+  };
 }

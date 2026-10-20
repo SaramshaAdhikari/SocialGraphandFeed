@@ -30,7 +30,10 @@ export interface VoteResult {
   user_vote: 1 | -1 | 0;
 }
 
+import { NotificationService } from './NotificationService.js';
+
 export class PostService {
+  private notificationService = new NotificationService();
   private get db(): Db {
     return getDb();
   }
@@ -283,10 +286,12 @@ export class PostService {
       if (!author) throw AppError.notFound(`Commenter user ${userId} not found`);
 
       let depth = 0;
+      let parentAuthorId: string | null = null;
       if (input.parent_id) {
         const parent = await commentsCol.findOne({ _id: input.parent_id, post_id: postId }, { session });
         if (!parent) throw AppError.badRequest(`Parent comment ${input.parent_id} not found on this post`);
         depth = Math.min((parent.depth || 0) + 1, 10);
+        parentAuthorId = parent.author_id;
       }
       const now = new Date();
       const commentDoc: CommentDoc = {
@@ -327,6 +332,26 @@ export class PostService {
       }
 
       await postsCol.updateOne({ _id: postId }, { $inc: { comments_count: 1 }, $set: { updated_at: now } }, { session });
+
+      if (parentAuthorId) {
+        await this.notificationService.createNotification({
+          recipient_id: parentAuthorId,
+          actor_id: userId,
+          type: 'reply',
+          post_id: postId,
+          comment_id: commentDoc._id,
+          session,
+        });
+      } else {
+        await this.notificationService.createNotification({
+          recipient_id: post.author_id,
+          actor_id: userId,
+          type: 'comment',
+          post_id: postId,
+          comment_id: commentDoc._id,
+          session,
+        });
+      }
       return {
         id: commentDoc._id,
         post_id: postId,

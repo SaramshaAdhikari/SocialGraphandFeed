@@ -6,6 +6,7 @@ import usersRoutes from './users.js';
 import communitiesRoutes from './communities.js';
 import searchRoutes from './search.js';
 import authRoutes from './auth.js';
+import notificationsRoutes from './notifications.js';
 
 const apiRoutes: FastifyPluginAsync = async (fastify) => {
   await fastify.register(healthRoutes);
@@ -15,6 +16,7 @@ const apiRoutes: FastifyPluginAsync = async (fastify) => {
   await fastify.register(usersRoutes);
   await fastify.register(communitiesRoutes);
   await fastify.register(searchRoutes);
+  await fastify.register(notificationsRoutes);
 };
 
 export default apiRoutes;

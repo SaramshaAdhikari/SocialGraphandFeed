@@ -14,7 +14,10 @@ import type { UserDoc, PostDoc, FollowDoc, PostVoteDoc, PostSaveDoc } from '../d
 import { toUserSummary, toUserProfile, toPostCard } from '../db/serialization.js';
 import { buildCursorFilter, encodePostCursor } from '../utils/pagination.js';
 
+import { NotificationService } from './NotificationService.js';
+
 export class UserService {
+  private notificationService = new NotificationService();
   private get db(): Db {
     return getDb();
   }
@@ -145,7 +148,15 @@ export class UserService {
       const existing = await followsCol.findOne(filter, { session });
       if (existing) await followsCol.deleteOne(filter, { session });
       else {
-        try { await followsCol.insertOne({ _id: `flw_${currentUserId}_${targetUserId}`, ...filter, created_at: new Date() }, { session }); }
+        try {
+          await followsCol.insertOne({ _id: `flw_${currentUserId}_${targetUserId}`, ...filter, created_at: new Date() }, { session });
+          await this.notificationService.createNotification({
+            recipient_id: targetUserId,
+            actor_id: currentUserId,
+            type: 'follow',
+            session,
+          });
+        }
         catch (error: any) { if (error?.code !== 11000) throw error; }
       }
       return { target_user_id: targetUserId, is_following: !existing, followers_count: await followsCol.countDocuments({ target_user_id: targetUserId }, { session }) };
@@ -161,7 +172,14 @@ export class UserService {
     if (!current) throw AppError.notFound(`Current user ${currentUserId} not found`);
     const filter = { follower_id: currentUserId, target_user_id: targetUserId };
     if (isFollowing) {
-      try { await followsCol.insertOne({ _id: `flw_${currentUserId}_${targetUserId}`, ...filter, created_at: new Date() }); }
+      try {
+        await followsCol.insertOne({ _id: `flw_${currentUserId}_${targetUserId}`, ...filter, created_at: new Date() });
+        await this.notificationService.createNotification({
+          recipient_id: targetUserId,
+          actor_id: currentUserId,
+          type: 'follow',
+        });
+      }
       catch (error: any) { if (error?.code !== 11000) throw error; }
     } else await followsCol.deleteOne(filter);
     return { target_user_id: targetUserId, is_following: isFollowing, followers_count: await followsCol.countDocuments({ target_user_id: targetUserId }) };

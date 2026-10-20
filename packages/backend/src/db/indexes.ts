@@ -11,6 +11,7 @@ export async function ensureIndexes(db: Db): Promise<void> {
   const memberships = db.collection(COLLECTIONS.COMMUNITY_MEMBERSHIPS);
   const votes = db.collection(COLLECTIONS.POST_VOTES);
   const saves = db.collection(COLLECTIONS.POST_SAVES);
+  const notifications = db.collection(COLLECTIONS.NOTIFICATIONS);
 
   await Promise.all([
     // Users: unique username
@@ -61,5 +62,15 @@ export async function ensureIndexes(db: Db): Promise<void> {
     // Post Saves: unique user bookmark per post
     saves.createIndex({ post_id: 1, user_id: 1 }, { unique: true, name: 'uniq_post_save' }),
     saves.createIndex({ user_id: 1, created_at: -1 }, { name: 'idx_saves_user_created_at' }),
+
+    // Notifications: recipient-based reverse-chronological cursor pagination and unread counts
+    notifications.createIndex(
+      { recipient_id: 1, created_at: -1, _id: -1 },
+      { name: 'idx_notifications_recipient_created_at_id' }
+    ),
+    notifications.createIndex(
+      { recipient_id: 1, read: 1 },
+      { name: 'idx_notifications_recipient_read' }
+    ),
   ]);
 }
