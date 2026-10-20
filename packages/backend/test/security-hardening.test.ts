@@ -330,7 +330,9 @@ describe('Adversarial Security Audit & Hardening Verification Suite', () => {
       // Verify counter was deleted in Redis
       const redis = connectRedis();
       const ipCount = await redis.get(`rl:login:ip:${testIp}`);
-      expect(ipCount).toBeNull();
+      const userCount = await redis.get(`rl:login:user:${u}`);
+      expect(userCount).toBeNull();
+      expect(ipCount).not.toBeNull();
     });
 
     it('fails closed with 503 Service Unavailable when rate limiter cannot reach Redis', async () => {

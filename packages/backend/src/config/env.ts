@@ -18,6 +18,10 @@ export interface AppConfig {
   API_ORIGIN?: string;
   TRUST_PROXY: boolean | string | string[];
   LOG_LEVEL: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+  RATE_LIMIT_LOGIN_MAX: number;
+  RATE_LIMIT_LOGIN_WINDOW_SEC: number;
+  RATE_LIMIT_REGISTER_MAX: number;
+  RATE_LIMIT_REGISTER_WINDOW_SEC: number;
 }
 
 export function parseEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -74,6 +78,16 @@ export function parseEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
     }
   }
 
+  const loginMax = Number(env.RATE_LIMIT_LOGIN_MAX || 5);
+  const loginWindowSec = Number(env.RATE_LIMIT_LOGIN_WINDOW_SEC || 60);
+  const registerMax = Number(env.RATE_LIMIT_REGISTER_MAX || 3);
+  const registerWindowSec = Number(env.RATE_LIMIT_REGISTER_WINDOW_SEC || 60);
+
+  if (!Number.isInteger(loginMax) || loginMax < 1) throw new Error('RATE_LIMIT_LOGIN_MAX must be a positive integer.');
+  if (!Number.isInteger(loginWindowSec) || loginWindowSec < 1) throw new Error('RATE_LIMIT_LOGIN_WINDOW_SEC must be a positive integer.');
+  if (!Number.isInteger(registerMax) || registerMax < 1) throw new Error('RATE_LIMIT_REGISTER_MAX must be a positive integer.');
+  if (!Number.isInteger(registerWindowSec) || registerWindowSec < 1) throw new Error('RATE_LIMIT_REGISTER_WINDOW_SEC must be a positive integer.');
+
   return {
     NODE_ENV: nodeEnv,
     PORT: port,
@@ -87,6 +101,10 @@ export function parseEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
     API_ORIGIN: env.API_ORIGIN,
     TRUST_PROXY: trustProxy,
     LOG_LEVEL: (env.LOG_LEVEL || (nodeEnv === 'test' ? 'error' : 'info')) as AppConfig['LOG_LEVEL'],
+    RATE_LIMIT_LOGIN_MAX: loginMax,
+    RATE_LIMIT_LOGIN_WINDOW_SEC: loginWindowSec,
+    RATE_LIMIT_REGISTER_MAX: registerMax,
+    RATE_LIMIT_REGISTER_WINDOW_SEC: registerWindowSec,
   };
 }
 

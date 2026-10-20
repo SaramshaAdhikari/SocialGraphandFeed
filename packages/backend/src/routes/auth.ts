@@ -5,7 +5,7 @@ import { clearSessionCookie, getRequestUserId, requireAdmin, requireIdentity, se
 import { AppError } from '@socialgraph/shared';
 import { RateLimitService } from '../services/RateLimitService.js';
 import { securityLogger } from '../utils/security-logger.js';
-import { getRedisClient } from '../cache/redis.js';
+import { config } from '../config/env.js';
 
 const authRoutes: FastifyPluginAsync = async (app) => {
   const service = new AuthService();
@@ -24,12 +24,12 @@ const authRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post('/auth/register', { schema: { body: registerBody } }, async (req, reply) => {
-    // Signup rate limiting: 3 per minute per IP per security contract Section 10
+    // Signup rate limiting: configurable with default 3 per minute per IP per security contract Section 10
     await rateLimitService.checkOrThrow({
       action: 'register',
       ip: req.ip,
-      limit: 3,
-      windowSeconds: 60,
+      limit: config.RATE_LIMIT_REGISTER_MAX,
+      windowSeconds: config.RATE_LIMIT_REGISTER_WINDOW_SEC,
       requestId: req.id,
     });
 
@@ -46,25 +46,20 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     const body = req.body as { username: string; password: string };
     const normalizedUsername = body.username ? body.username.trim().toLowerCase() : undefined;
 
-    // Strict contract enforcement: 5 login attempts per minute per IP AND per username
+    // Strict contract enforcement: configurable with default 5 login attempts per minute per IP AND per username
     await rateLimitService.checkOrThrow({
       action: 'login',
       ip: req.ip,
       userId: normalizedUsername,
-      limit: 5,
-      windowSeconds: 60,
+      limit: config.RATE_LIMIT_LOGIN_MAX,
+      windowSeconds: config.RATE_LIMIT_LOGIN_WINDOW_SEC,
       requestId: req.id,
     });
 
     try {
       const result = await service.login(body.username, body.password, req.sessionToken);
-      // Reset failed attempts upon successful authentication
-      const redis = getRedisClient();
-      if (redis) {
-        const keysToDelete = [`rl:login:ip:${req.ip}`];
-        if (normalizedUsername) keysToDelete.push(`rl:login:user:${normalizedUsername}`);
-        await redis.del(...keysToDelete).catch(() => {});
-      }
+      // Reset failed attempts upon successful authentication across dimensions
+      await rateLimitService.reset('login', req.ip, normalizedUsername);
       reply.header('set-cookie', sessionCookie(result.session.token));
       return { user: result.user, csrf_token: result.session.csrf };
     } catch (error) {
