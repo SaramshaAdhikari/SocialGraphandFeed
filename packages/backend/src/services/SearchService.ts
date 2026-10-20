@@ -88,20 +88,46 @@ export class SearchService {
     const votesCol = this.db.collection<PostVoteDoc>(COLLECTIONS.POST_VOTES);
     const savesCol = this.db.collection<PostSaveDoc>(COLLECTIONS.POST_SAVES);
 
+    // Pre-resolve authors whose username or display_name match terms to enable indexed post author searches
+    const matchingAuthors = await usersCol
+      .find(
+        {
+          $or: [
+            { username: { $regex: searchRegex } },
+            { display_name: { $regex: searchRegex } },
+          ],
+        },
+        { projection: { _id: 1, username: 1, display_name: 1 } }
+      )
+      .limit(50)
+      .toArray();
+    const matchingAuthorIds = matchingAuthors.map((u) => u._id);
+
     // 1. Discussions (bounded query with limit 200)
     let matchingDiscussions: DiscussionPostCard[] = [];
     if (category === 'all' || category === 'discussions') {
+      const discOrConditions: any[] = [
+        { title: { $regex: searchRegex } },
+        { content: { $regex: searchRegex } },
+        { flair: { $regex: searchRegex } },
+        { community_slug: { $regex: searchRegex } },
+        { tags: { $in: terms } },
+      ];
+      if (matchingAuthorIds.length > 0) {
+        discOrConditions.push({ author_id: { $in: matchingAuthorIds } });
+      }
+
+      let discSort: any = { created_at: -1, _id: -1 };
+      if (sort === 'top') {
+        discSort = { score: -1, created_at: -1, _id: -1 };
+      }
+
       const discussionDocs = await postsCol
         .find({
           post_type: 'discussion',
-          $or: [
-            { title: { $regex: searchRegex } },
-            { content: { $regex: searchRegex } },
-            { flair: { $regex: searchRegex } },
-            { community_slug: { $regex: searchRegex } },
-            { tags: { $in: terms } },
-          ],
+          $or: discOrConditions,
         })
+        .sort(discSort)
         .limit(200)
         .toArray();
 
@@ -167,17 +193,29 @@ export class SearchService {
     // 2. Visuals (bounded query with limit 200)
     let matchingVisuals: VisualPinCard[] = [];
     if (category === 'all' || category === 'visual') {
+      const visualOrConditions: any[] = [
+        { title: { $regex: searchRegex } },
+        { caption: { $regex: searchRegex } },
+        { content: { $regex: searchRegex } },
+        { community_slug: { $regex: searchRegex } },
+        { 'media.alt_text': { $regex: searchRegex } },
+        { tags: { $in: terms } },
+      ];
+      if (matchingAuthorIds.length > 0) {
+        visualOrConditions.push({ author_id: { $in: matchingAuthorIds } });
+      }
+
+      let visualSort: any = { created_at: -1, _id: -1 };
+      if (sort === 'top') {
+        visualSort = { score: -1, created_at: -1, _id: -1 };
+      }
+
       const visualDocs = await postsCol
         .find({
           post_type: 'visual',
-          $or: [
-            { title: { $regex: searchRegex } },
-            { caption: { $regex: searchRegex } },
-            { content: { $regex: searchRegex } },
-            { community_slug: { $regex: searchRegex } },
-            { tags: { $in: terms } },
-          ],
+          $or: visualOrConditions,
         })
+        .sort(visualSort)
         .limit(200)
         .toArray();
 
@@ -247,6 +285,11 @@ export class SearchService {
     // 3. Communities (bounded query with limit 100)
     let matchingCommunities: Community[] = [];
     if (category === 'all' || category === 'communities') {
+      let commSort: any = { created_at: -1 };
+      if (sort === 'top') {
+        commSort = { members_count: -1, created_at: -1 };
+      }
+
       const commDocs = await commsCol
         .find({
           $or: [
@@ -255,6 +298,7 @@ export class SearchService {
             { description: { $regex: searchRegex } },
           ],
         })
+        .sort(commSort)
         .limit(100)
         .toArray();
 
@@ -307,6 +351,11 @@ export class SearchService {
     // 4. Users (People) (bounded query with limit 100)
     let matchingUsers: UserProfile[] = [];
     if (category === 'all' || category === 'people') {
+      let userSort: any = { created_at: -1 };
+      if (sort === 'top') {
+        userSort = { followers_count: -1, created_at: -1 };
+      }
+
       const userDocs = await usersCol
         .find({
           $or: [
@@ -315,6 +364,7 @@ export class SearchService {
             { bio: { $regex: searchRegex } },
           ],
         })
+        .sort(userSort)
         .limit(100)
         .toArray();
 

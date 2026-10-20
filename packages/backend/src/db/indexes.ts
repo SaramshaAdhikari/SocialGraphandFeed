@@ -15,12 +15,14 @@ export async function ensureIndexes(db: Db): Promise<void> {
   await Promise.all([
     // Users: unique username
     users.createIndex({ username: 1 }, { unique: true, name: 'uniq_username' }),
+    users.createIndex({ display_name: 1 }, { name: 'idx_users_display_name' }),
     sessions.createIndex({ expires_at:  1 }, { expireAfterSeconds: 0, name: 'ttl_sessions' }),
 
     // Posts: reverse-chronological, top score, and hot score cursor pagination
     posts.createIndex({ created_at: -1, _id: -1 }, { name: 'idx_posts_created_at_id' }),
     posts.createIndex({ score: -1, created_at: -1, _id: -1 }, { name: 'idx_posts_score_created_at_id' }),
     posts.createIndex({ hot_score: -1, created_at: -1, _id: -1 }, { name: 'idx_posts_hot_created_at_id' }),
+    posts.createIndex({ tags: 1 }, { name: 'idx_posts_tags' }),
     posts.createIndex({ author_id: 1, created_at: -1 }, { name: 'idx_posts_author_created_at' }),
     posts.createIndex({ community_id: 1, created_at: -1 }, { name: 'idx_posts_community_created_at' }),
     posts.createIndex({ community_slug: 1, created_at: -1 }, { name: 'idx_posts_community_slug_created_at' }),
@@ -46,6 +48,7 @@ export async function ensureIndexes(db: Db): Promise<void> {
 
     // Communities: unique slug
     communities.createIndex({ slug: 1 }, { unique: true, name: 'uniq_slug' }),
+    communities.createIndex({ name: 1 }, { name: 'idx_communities_name' }),
 
     // Community Memberships: unique user-community pair
     memberships.createIndex({ user_id: 1, community_id: 1 }, { unique: true, name: 'uniq_user_community' }),

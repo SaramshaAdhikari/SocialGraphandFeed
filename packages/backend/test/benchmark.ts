@@ -1,6 +1,7 @@
 import { connectMongo, disconnectMongo, getDb } from '../src/db/mongo.js';
 import { connectRedis, disconnectRedis } from '../src/cache/redis.js';
 import { PostService } from '../src/services/PostService.js';
+import { SearchService } from '../src/services/SearchService.js';
 import { seedDatabase } from '../src/db/seed.js';
 
 interface LatencyStats {
@@ -58,6 +59,7 @@ async function runBenchmark() {
   console.log('  - Warm Read Samples: 100 iterations (pre-warmed Redis cache hit)');
   console.log('  - Saved Posts Samples: 50 iterations (indexed query with { user_id: 1, created_at: -1 })');
   console.log('  - Vote Mutation Samples: 30 iterations (replica-set ACID transaction + cache invalidation)');
+  console.log('  - Universal Search Samples: 50 iterations (multi-entity query across posts, users, communities)');
   console.log('--------------------------------------------------------------------------------\n');
 
   await connectMongo(mongoUri, 'socialgraph_benchmark_test');
@@ -68,6 +70,7 @@ async function runBenchmark() {
   await seedDatabase(db);
 
   const postService = new PostService();
+  const searchService = new SearchService();
   const testPostId = 'post_101';
   const testUserId = 'usr_0';
   const cacheKey = `cache:post:${testPostId}:u:${testUserId}`;
@@ -133,6 +136,20 @@ async function runBenchmark() {
   }
   const voteStats = calculateStats(voteSamples);
 
+  // 6. Universal Search Latency (50 samples across all entity types)
+  console.log('Sampling Universal Search (Multi-entity query across discussions, users, communities)...');
+  // Warm-up search query path
+  for (let i = 0; i < 5; i++) {
+    await searchService.search({ q: 'systems', category: 'all', sort: 'relevance', limit: 20 }, testUserId);
+  }
+  const searchSamples: number[] = [];
+  for (let i = 0; i < 50; i++) {
+    const t0 = performance.now();
+    await searchService.search({ q: 'systems', category: 'all', sort: 'relevance', limit: 20 }, testUserId);
+    searchSamples.push(performance.now() - t0);
+  }
+  const searchStats = calculateStats(searchSamples);
+
   // Format tabular report
   console.log('\n================================================================================');
   console.log('                              BENCHMARK RESULTS                                 ');
@@ -173,6 +190,15 @@ async function runBenchmark() {
       'p95 (ms)': voteStats.p95,
       'p99 (ms)': voteStats.p99,
       'Max (ms)': voteStats.max,
+    },
+    'Universal Search (Indexed)': {
+      Samples: searchStats.count,
+      'Min (ms)': searchStats.min,
+      'Mean (ms)': searchStats.mean,
+      'p50 (ms)': searchStats.p50,
+      'p95 (ms)': searchStats.p95,
+      'p99 (ms)': searchStats.p99,
+      'Max (ms)': searchStats.max,
     },
   });
 
