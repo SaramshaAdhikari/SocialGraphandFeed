@@ -20,13 +20,13 @@ import { IdempotencyService } from '../services/IdempotencyService.js';
 import { AppError, type PostCard, type CommentNode } from '@socialgraph/shared';
 
 const postIdSchema = Type.String({ minLength: 1, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$' });
+const commentIdSchema = Type.String({ minLength: 1, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$' });
 
 const postsRoutes: FastifyPluginAsync = async (fastify) => {
   const postService = new PostService();
   const rateLimitService = new RateLimitService();
   const idempotencyService = new IdempotencyService();
 
-  
   fastify.get<{ Querystring: SavedPostsQuery }>(
     '/posts/saved',
     {
@@ -268,6 +268,58 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
       );
       reply.status(201);
       return comment;
+    }
+  );
+
+  fastify.delete<{ Params: { postId: string } }>(
+    '/posts/:postId',
+    {
+      preHandler: requireIdentity,
+      schema: {
+        params: Type.Object({
+          postId: postIdSchema,
+        }),
+        response: {
+          200: Type.Object({
+            success: Type.Boolean(),
+            post_id: Type.String(),
+          }),
+        },
+      },
+    },
+    async (request) => {
+      const userId = getRequestUserId(request)!;
+      const isAdmin = request.userRole === 'admin';
+      return postService.deletePost(request.params.postId, userId, isAdmin);
+    }
+  );
+
+  fastify.delete<{ Params: { postId: string; commentId: string } }>(
+    '/posts/:postId/comments/:commentId',
+    {
+      preHandler: requireIdentity,
+      schema: {
+        params: Type.Object({
+          postId: postIdSchema,
+          commentId: commentIdSchema,
+        }),
+        response: {
+          200: Type.Object({
+            success: Type.Boolean(),
+            comment_id: Type.String(),
+          }),
+        },
+      },
+    },
+    async (request) => {
+      const userId = getRequestUserId(request)!;
+      const isAdmin = request.userRole === 'admin';
+      return postService.deleteComment(
+        request.params.postId,
+        request.params.commentId,
+        userId,
+        isAdmin
+      );
     }
   );
 };

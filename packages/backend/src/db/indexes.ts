@@ -12,6 +12,7 @@ export async function ensureIndexes(db: Db): Promise<void> {
   const votes = db.collection(COLLECTIONS.POST_VOTES);
   const saves = db.collection(COLLECTIONS.POST_SAVES);
   const notifications = db.collection(COLLECTIONS.NOTIFICATIONS);
+  const reports = db.collection(COLLECTIONS.REPORTS);
 
   await Promise.all([
     // Users: unique username
@@ -63,7 +64,7 @@ export async function ensureIndexes(db: Db): Promise<void> {
     saves.createIndex({ post_id: 1, user_id: 1 }, { unique: true, name: 'uniq_post_save' }),
     saves.createIndex({ user_id: 1, created_at: -1 }, { name: 'idx_saves_user_created_at' }),
 
-    // Notifications: recipient-based reverse-chronological cursor pagination and unread counts
+    // Notifications: recipient-based reverse-chronological cursor pagination, unread counts, and deletion cascade cleanup
     notifications.createIndex(
       { recipient_id: 1, created_at: -1, _id: -1 },
       { name: 'idx_notifications_recipient_created_at_id' }
@@ -71,6 +72,32 @@ export async function ensureIndexes(db: Db): Promise<void> {
     notifications.createIndex(
       { recipient_id: 1, read: 1 },
       { name: 'idx_notifications_recipient_read' }
+    ),
+    notifications.createIndex(
+      { post_id: 1 },
+      { name: 'idx_notifications_post_id', sparse: true }
+    ),
+    notifications.createIndex(
+      { comment_id: 1 },
+      { name: 'idx_notifications_comment_id', sparse: true }
+    ),
+
+    // Reports: unique reporter per target, status-based moderation queue, compound target cleanup, and queue filtering
+    reports.createIndex(
+      { reporter_id: 1, target_type: 1, target_id: 1 },
+      { unique: true, name: 'uniq_reporter_target' }
+    ),
+    reports.createIndex(
+      { status: 1, created_at: -1, _id: -1 },
+      { name: 'idx_reports_status_created_at_id' }
+    ),
+    reports.createIndex(
+      { status: 1, target_type: 1, created_at: -1, _id: -1 },
+      { name: 'idx_reports_status_target_type_created_at_id' }
+    ),
+    reports.createIndex(
+      { target_type: 1, target_id: 1, status: 1 },
+      { name: 'idx_reports_target_status' }
     ),
   ]);
 }

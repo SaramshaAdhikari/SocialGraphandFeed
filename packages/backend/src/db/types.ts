@@ -1,4 +1,11 @@
-import type { MediaAttachment, CommunityRule, NotificationType } from '@socialgraph/shared';
+import type {
+  MediaAttachment,
+  CommunityRule,
+  NotificationType,
+  ReportReason,
+  ReportTargetType,
+  ReportStatus,
+} from '@socialgraph/shared';
 
 export interface UserDoc {
   _id: string;
@@ -118,4 +125,19 @@ export interface NotificationDoc {
   read: boolean;
   read_at?: Date;
   created_at: Date;
+}
+
+export interface ReportDoc {
+  _id: string;
+  reporter_id: string;
+  target_type: ReportTargetType;
+  target_id: string;
+  reason: ReportReason;
+  description?: string;
+  status: ReportStatus;
+  action_taken?: 'none' | 'removed' | 'dismissed';
+  resolved_by?: string;
+  resolved_at?: Date;
+  created_at: Date;
+  updated_at: Date;
 }

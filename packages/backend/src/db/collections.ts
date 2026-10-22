@@ -9,6 +9,7 @@ export const COLLECTIONS = {
   POST_VOTES: 'post_votes',
   POST_SAVES: 'post_saves',
   NOTIFICATIONS: 'notifications',
+  REPORTS: 'reports',
 } as const;
 
 export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];

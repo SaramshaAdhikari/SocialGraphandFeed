@@ -1,4 +1,4 @@
-import type { Db, Filter, Sort } from 'mongodb';
+import type { Db, Filter, Sort, ClientSession } from 'mongodb';
 import {
   AppError,
   type CreatePostInput,
@@ -41,6 +41,10 @@ export class PostService {
 
   public async invalidatePostCache(postId: string): Promise<void> {
     await invalidateCachePattern(`cache:post:${postId}:_keys`, `cache:post:${postId}:*`);
+  }
+
+  public async invalidateAuthorCache(username: string): Promise<void> {
+    await this.userService.invalidateUserProfileCache(username);
   }
 
   public async getPost(postId: string, currentUserId?: string): Promise<PostCard> {
@@ -525,5 +529,181 @@ export class PostService {
         server_execution_time_ms: Number((performance.now() - start).toFixed(2)),
       },
     };
+  }
+
+  public async deletePost(
+    postId: string,
+    requestingUserId: string,
+    isAdmin = false,
+    externalSession?: ClientSession
+  ): Promise<{ success: boolean; post_id: string; author_username?: string }> {
+    const postsCol = this.db.collection<PostDoc>(COLLECTIONS.POSTS);
+    const usersCol = this.db.collection<UserDoc>(COLLECTIONS.USERS);
+    const commentsCol = this.db.collection<CommentDoc>(COLLECTIONS.COMMENTS);
+    const votesCol = this.db.collection<PostVoteDoc>(COLLECTIONS.POST_VOTES);
+    const savesCol = this.db.collection<PostSaveDoc>(COLLECTIONS.POST_SAVES);
+    const notifsCol = this.db.collection(COLLECTIONS.NOTIFICATIONS);
+    const reportsCol = this.db.collection(COLLECTIONS.REPORTS);
+
+    const post = await postsCol.findOne({ _id: postId }, externalSession ? { session: externalSession } : undefined);
+    if (!post) {
+      throw AppError.notFound(`Post with ID ${postId} was not found`);
+    }
+
+    if (post.author_id !== requestingUserId && !isAdmin) {
+      throw AppError.forbidden('You do not have permission to delete this post');
+    }
+
+    const author = await usersCol.findOne({ _id: post.author_id }, externalSession ? { session: externalSession } : undefined);
+
+    const executeWork = async (session: ClientSession) => {
+      // 1. Delete the post (atomic concurrency guard: abort if already deleted)
+      const deleteRes = await postsCol.deleteOne({ _id: postId }, { session });
+      if (deleteRes.deletedCount === 0) {
+        throw AppError.notFound(`Post with ID ${postId} was not found`);
+      }
+
+      // Collect all comment IDs belonging to this post so their reports can also be resolved
+      const postComments = await commentsCol.find({ post_id: postId }, { projection: { _id: 1 }, session }).toArray();
+      const commentIds = postComments.map((c) => c._id);
+
+      // 2. Decrement author's posts_count
+      await usersCol.updateOne(
+        { _id: post.author_id },
+        { $inc: { posts_count: -1 } },
+        { session }
+      );
+
+      // 3. Cascade delete comments, votes, saves, and notifications
+      await commentsCol.deleteMany({ post_id: postId }, { session });
+      await votesCol.deleteMany({ post_id: postId }, { session });
+      await savesCol.deleteMany({ post_id: postId }, { session });
+      await notifsCol.deleteMany({ post_id: postId }, { session });
+
+      // 4. Resolve any pending reports for this post AND its associated comments
+      const reportTargetFilters: any[] = [{ target_type: 'post', target_id: postId, status: 'pending' }];
+      if (commentIds.length > 0) {
+        reportTargetFilters.push({ target_type: 'comment', target_id: { $in: commentIds }, status: 'pending' });
+      }
+      await reportsCol.updateMany(
+        { $or: reportTargetFilters },
+        {
+          $set: {
+            status: 'resolved',
+            action_taken: 'removed',
+            resolved_by: requestingUserId,
+            resolved_at: new Date(),
+            updated_at: new Date(),
+          },
+        },
+        { session }
+      );
+    };
+
+    if (externalSession) {
+      await executeWork(externalSession);
+    } else {
+      await runInTransaction(executeWork);
+      // Post-commit cache invalidation
+      await this.invalidatePostCache(postId);
+      if (author) {
+        await this.userService.invalidateUserProfileCache(author.username);
+      }
+    }
+
+    return { success: true, post_id: postId, author_username: author?.username };
+  }
+
+  public async deleteComment(
+    postId: string,
+    commentId: string,
+    requestingUserId: string,
+    isAdmin = false,
+    externalSession?: ClientSession
+  ): Promise<{ success: boolean; comment_id: string }> {
+    const postsCol = this.db.collection<PostDoc>(COLLECTIONS.POSTS);
+    const commentsCol = this.db.collection<CommentDoc>(COLLECTIONS.COMMENTS);
+    const notifsCol = this.db.collection(COLLECTIONS.NOTIFICATIONS);
+    const reportsCol = this.db.collection(COLLECTIONS.REPORTS);
+
+    const post = await postsCol.findOne({ _id: postId }, externalSession ? { session: externalSession } : undefined);
+    if (!post) {
+      throw AppError.notFound(`Post with ID ${postId} was not found`);
+    }
+
+    const comment = await commentsCol.findOne({ _id: commentId }, externalSession ? { session: externalSession } : undefined);
+    if (!comment || comment.post_id !== postId) {
+      throw AppError.notFound(`Comment with ID ${commentId} was not found on this post`);
+    }
+
+    if (comment.author_id !== requestingUserId && !isAdmin) {
+      throw AppError.forbidden('You do not have permission to delete this comment');
+    }
+
+    const executeWork = async (session: ClientSession) => {
+      // 1. Re-verify comment exists within session under snapshot isolation
+      const commentInTx = await commentsCol.findOne({ _id: commentId, post_id: postId }, { session });
+      if (!commentInTx) {
+        throw AppError.notFound(`Comment with ID ${commentId} was not found on this post`);
+      }
+
+      // Identify all descendant comments within session snapshot to cascade delete the thread tree
+      const allPostComments = await commentsCol.find({ post_id: postId }, { session }).toArray();
+      const toDeleteIds = new Set<string>([commentId]);
+
+      let added = true;
+      while (added) {
+        added = false;
+        for (const c of allPostComments) {
+          if (c.parent_id && toDeleteIds.has(c.parent_id) && !toDeleteIds.has(c._id)) {
+            toDeleteIds.add(c._id);
+            added = true;
+          }
+        }
+      }
+
+      const deleteIdArray = Array.from(toDeleteIds);
+
+      // 2. Delete comments (atomic concurrency guard: abort if already deleted)
+      const deleteRes = await commentsCol.deleteMany({ _id: { $in: deleteIdArray } }, { session });
+      if (deleteRes.deletedCount === 0) {
+        throw AppError.notFound(`Comment with ID ${commentId} was not found on this post`);
+      }
+
+      // 3. Decrement post's comments_count by exactly the number of documents deleted
+      await postsCol.updateOne(
+        { _id: postId },
+        { $inc: { comments_count: -deleteRes.deletedCount } },
+        { session }
+      );
+
+      // 4. Cascade delete notifications for these comments
+      await notifsCol.deleteMany({ comment_id: { $in: deleteIdArray } }, { session });
+
+      // 5. Resolve any pending reports for these comments
+      await reportsCol.updateMany(
+        { target_type: 'comment', target_id: { $in: deleteIdArray }, status: 'pending' },
+        {
+          $set: {
+            status: 'resolved',
+            action_taken: 'removed',
+            resolved_by: requestingUserId,
+            resolved_at: new Date(),
+            updated_at: new Date(),
+          },
+        },
+        { session }
+      );
+    };
+
+    if (externalSession) {
+      await executeWork(externalSession);
+    } else {
+      await runInTransaction(executeWork);
+      // Post-commit cache invalidation
+      await this.invalidatePostCache(postId);
+    }
+
+    return { success: true, comment_id: commentId };
   }
 }
