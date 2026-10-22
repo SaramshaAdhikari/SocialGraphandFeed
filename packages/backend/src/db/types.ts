@@ -141,3 +141,15 @@ export interface ReportDoc {
   created_at: Date;
   updated_at: Date;
 }
+
+
+export interface FeedInboxDoc {
+  _id: string;
+  user_id: string;
+  post_id: string;
+  author_id: string;
+  post_type: 'discussion' | 'visual';
+  created_at: Date;
+  score: number;
+  hot_score: number;
+}

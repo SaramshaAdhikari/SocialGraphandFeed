@@ -22,6 +22,7 @@ export interface AppConfig {
   RATE_LIMIT_LOGIN_WINDOW_SEC: number;
   RATE_LIMIT_REGISTER_MAX: number;
   RATE_LIMIT_REGISTER_WINDOW_SEC: number;
+  FOOW_MAX_FOLLOWERS_THRESHOLD: number;
 }
 
 export function parseEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -82,11 +83,13 @@ export function parseEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const loginWindowSec = Number(env.RATE_LIMIT_LOGIN_WINDOW_SEC || 60);
   const registerMax = Number(env.RATE_LIMIT_REGISTER_MAX || 3);
   const registerWindowSec = Number(env.RATE_LIMIT_REGISTER_WINDOW_SEC || 60);
+  const foowThreshold = Number(env.FOOW_MAX_FOLLOWERS_THRESHOLD || 500);
 
   if (!Number.isInteger(loginMax) || loginMax < 1) throw new Error('RATE_LIMIT_LOGIN_MAX must be a positive integer.');
   if (!Number.isInteger(loginWindowSec) || loginWindowSec < 1) throw new Error('RATE_LIMIT_LOGIN_WINDOW_SEC must be a positive integer.');
   if (!Number.isInteger(registerMax) || registerMax < 1) throw new Error('RATE_LIMIT_REGISTER_MAX must be a positive integer.');
   if (!Number.isInteger(registerWindowSec) || registerWindowSec < 1) throw new Error('RATE_LIMIT_REGISTER_WINDOW_SEC must be a positive integer.');
+  if (!Number.isInteger(foowThreshold) || foowThreshold < 1) throw new Error('FOOW_MAX_FOLLOWERS_THRESHOLD must be a positive integer.');
 
   return {
     NODE_ENV: nodeEnv,
@@ -105,6 +108,7 @@ export function parseEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
     RATE_LIMIT_LOGIN_WINDOW_SEC: loginWindowSec,
     RATE_LIMIT_REGISTER_MAX: registerMax,
     RATE_LIMIT_REGISTER_WINDOW_SEC: registerWindowSec,
+    FOOW_MAX_FOLLOWERS_THRESHOLD: foowThreshold,
   };
 }
 

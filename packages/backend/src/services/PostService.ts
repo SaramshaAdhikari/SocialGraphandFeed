@@ -18,11 +18,14 @@ import type {
   PostVoteDoc,
   PostSaveDoc,
   CommunityDoc,
+  FollowDoc,
+  FeedInboxDoc,
 } from '../db/types.js';
 import { toUserSummary, toPostCard, buildCommentTree } from '../db/serialization.js';
 import { calculateHotScore } from '../utils/pagination.js';
 import { getCached, setCachedWithTag, invalidateCachePattern } from '../cache/redis.js';
 import { NotificationService } from './NotificationService.js';
+import { config } from '../config/env.js';
 import { UserService } from './UserService.js';
 
 export interface VoteResult {
@@ -33,6 +36,11 @@ export interface VoteResult {
 }
 
 export class PostService {
+  private foowThreshold: number;
+
+  constructor(foowThreshold?: number) {
+    this.foowThreshold = foowThreshold ?? config.FOOW_MAX_FOLLOWERS_THRESHOLD ?? 500;
+  }
   private notificationService = new NotificationService();
   private userService = new UserService();
   private get db(): Db {
@@ -151,6 +159,28 @@ export class PostService {
       }
 
       await usersCol.updateOne({ _id: authorId }, { $inc: { posts_count: 1 } }, { session });
+
+      // Fan-Out-on-Write timeline delivery (Section 7.3 & Section 3.2 of experiment proposal)
+      const followsCol = this.db.collection<FollowDoc>(COLLECTIONS.FOLLOWS);
+      const followers = await followsCol
+        .find({ target_user_id: authorId }, { projection: { follower_id: 1 }, session })
+        .toArray();
+
+      // Configurable hybrid threshold (Section 4.2): standard creators <= 500 followers fan out on write
+      if (followers.length > 0 && followers.length <= this.foowThreshold) {
+        const inboxesCol = this.db.collection<FeedInboxDoc>(COLLECTIONS.FEED_INBOXES);
+        const inboxDocs: FeedInboxDoc[] = followers.map((f) => ({
+          _id: `inbox_${f.follower_id}_${postDoc._id}`,
+          user_id: f.follower_id,
+          post_id: postDoc._id,
+          author_id: authorId,
+          post_type: postDoc.post_type,
+          created_at: postDoc.created_at,
+          score: postDoc.score,
+          hot_score: postDoc.hot_score,
+        }));
+        await inboxesCol.insertMany(inboxDocs, { ordered: false, session });
+      }
       return {
         card: toPostCard(postDoc, toUserSummary(author), 0, false),
         authorUsername: author.username,
@@ -194,9 +224,16 @@ export class PostService {
 
       const score = post.score + direction - prevDirection;
       if (score !== post.score) {
+        const hotScore = calculateHotScore(score, post.created_at);
         await postsCol.updateOne(
           { _id: postId },
-          { $set: { score, hot_score: calculateHotScore(score, post.created_at), updated_at: now } },
+          { $set: { score, hot_score: hotScore, updated_at: now } },
+          { session }
+        );
+        const inboxesCol = this.db.collection<FeedInboxDoc>(COLLECTIONS.FEED_INBOXES);
+        await inboxesCol.updateMany(
+          { post_id: postId },
+          { $set: { score, hot_score: hotScore } },
           { session }
         );
       }
@@ -574,11 +611,13 @@ export class PostService {
         { session }
       );
 
-      // 3. Cascade delete comments, votes, saves, and notifications
+      // 3. Cascade delete comments, votes, saves, notifications, and timeline deliveries
+      const inboxesCol = this.db.collection(COLLECTIONS.FEED_INBOXES);
       await commentsCol.deleteMany({ post_id: postId }, { session });
       await votesCol.deleteMany({ post_id: postId }, { session });
       await savesCol.deleteMany({ post_id: postId }, { session });
       await notifsCol.deleteMany({ post_id: postId }, { session });
+      await inboxesCol.deleteMany({ post_id: postId }, { session });
 
       // 4. Resolve any pending reports for this post AND its associated comments
       const reportTargetFilters: any[] = [{ target_type: 'post', target_id: postId, status: 'pending' }];

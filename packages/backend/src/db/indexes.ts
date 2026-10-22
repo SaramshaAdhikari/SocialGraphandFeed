@@ -13,6 +13,7 @@ export async function ensureIndexes(db: Db): Promise<void> {
   const saves = db.collection(COLLECTIONS.POST_SAVES);
   const notifications = db.collection(COLLECTIONS.NOTIFICATIONS);
   const reports = db.collection(COLLECTIONS.REPORTS);
+  const inboxes = db.collection(COLLECTIONS.FEED_INBOXES);
 
   await Promise.all([
     // Users: unique username
@@ -98,6 +99,32 @@ export async function ensureIndexes(db: Db): Promise<void> {
     reports.createIndex(
       { target_type: 1, target_id: 1, status: 1 },
       { name: 'idx_reports_target_status' }
+    ),
+
+    // Feed Inboxes (Fan-Out-on-Write timeline): user timelines sorted by date, score, hot_score with post_id tie-breaking, unique delivery, and cascade cleanup
+    inboxes.createIndex(
+      { user_id: 1, created_at: -1, post_id: -1 },
+      { name: 'idx_feed_inboxes_user_created_at_id' }
+    ),
+    inboxes.createIndex(
+      { user_id: 1, hot_score: -1, created_at: -1, post_id: -1 },
+      { name: 'idx_feed_inboxes_user_hot_score_id' }
+    ),
+    inboxes.createIndex(
+      { user_id: 1, score: -1, created_at: -1, post_id: -1 },
+      { name: 'idx_feed_inboxes_user_score_id' }
+    ),
+    inboxes.createIndex(
+      { user_id: 1, post_id: 1 },
+      { unique: true, name: 'uniq_feed_inbox_user_post' }
+    ),
+    inboxes.createIndex(
+      { post_id: 1 },
+      { name: 'idx_feed_inboxes_post_id' }
+    ),
+    inboxes.createIndex(
+      { user_id: 1, author_id: 1 },
+      { name: 'idx_feed_inboxes_user_author' }
     ),
   ]);
 }

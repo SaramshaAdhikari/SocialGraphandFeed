@@ -10,14 +10,20 @@ import {
 import { getDb } from '../db/mongo.js';
 import { runInTransaction } from '../db/transaction.js';
 import { COLLECTIONS } from '../db/collections.js';
-import type { UserDoc, PostDoc, FollowDoc, PostVoteDoc, PostSaveDoc } from '../db/types.js';
+import type { UserDoc, PostDoc, FollowDoc, PostVoteDoc, PostSaveDoc, FeedInboxDoc } from '../db/types.js';
 import { toUserSummary, toUserProfile, toPostCard } from '../db/serialization.js';
 import { buildCursorFilter, encodePostCursor } from '../utils/pagination.js';
 import { getCached, setCachedWithTag, invalidateCachePattern } from '../cache/redis.js';
 import { NotificationService } from './NotificationService.js';
+import { config } from '../config/env.js';
 
 export class UserService {
   private notificationService = new NotificationService();
+  private foowThreshold: number;
+
+  constructor(foowThreshold?: number) {
+    this.foowThreshold = foowThreshold ?? config.FOOW_MAX_FOLLOWERS_THRESHOLD ?? 500;
+  }
   private get db(): Db {
     return getDb();
   }
@@ -175,9 +181,12 @@ export class UserService {
       if (!currentUser) throw AppError.notFound(`Current user ${currentUserId} not found`);
 
       const filter = { follower_id: currentUserId, target_user_id: targetUserId };
+      const inboxesCol = this.db.collection<FeedInboxDoc>(COLLECTIONS.FEED_INBOXES);
+      const postsCol = this.db.collection<PostDoc>(COLLECTIONS.POSTS);
       const existing = await followsCol.findOne(filter, { session });
       if (existing) {
         await followsCol.deleteOne(filter, { session });
+        await inboxesCol.deleteMany({ user_id: currentUserId, author_id: targetUserId }, { session });
       } else {
         try {
           await followsCol.insertOne({ _id: `flw_${currentUserId}_${targetUserId}`, ...filter, created_at: new Date() }, { session });
@@ -187,6 +196,23 @@ export class UserService {
             type: 'follow',
             session,
           });
+          const targetFollowersCount = await followsCol.countDocuments({ target_user_id: targetUserId }, { session });
+          if (targetFollowersCount <= this.foowThreshold) {
+            const authorPosts = await postsCol.find({ author_id: targetUserId }, { session }).toArray();
+            if (authorPosts.length > 0) {
+              const inboxDocs: FeedInboxDoc[] = authorPosts.map((p) => ({
+                _id: `inbox_${currentUserId}_${p._id}`,
+                user_id: currentUserId,
+                post_id: p._id,
+                author_id: targetUserId,
+                post_type: p.post_type,
+                created_at: p.created_at,
+                score: p.score,
+                hot_score: p.hot_score,
+              }));
+              await inboxesCol.insertMany(inboxDocs, { ordered: false, session });
+            }
+          }
         }
         catch (error: any) { if (error?.code !== 11000) throw error; }
       }
@@ -220,6 +246,8 @@ export class UserService {
     if (!target) throw AppError.notFound(`Target user ${targetUserId} not found`);
     if (!current) throw AppError.notFound(`Current user ${currentUserId} not found`);
     const filter = { follower_id: currentUserId, target_user_id: targetUserId };
+    const inboxesCol = this.db.collection<FeedInboxDoc>(COLLECTIONS.FEED_INBOXES);
+    const postsCol = this.db.collection<PostDoc>(COLLECTIONS.POSTS);
     if (isFollowing) {
       try {
         await followsCol.insertOne({ _id: `flw_${currentUserId}_${targetUserId}`, ...filter, created_at: new Date() });
@@ -228,10 +256,28 @@ export class UserService {
           actor_id: currentUserId,
           type: 'follow',
         });
+        const targetFollowersCount = await followsCol.countDocuments({ target_user_id: targetUserId });
+        if (targetFollowersCount <= this.foowThreshold) {
+          const authorPosts = await postsCol.find({ author_id: targetUserId }).toArray();
+          if (authorPosts.length > 0) {
+            const inboxDocs: FeedInboxDoc[] = authorPosts.map((p) => ({
+              _id: `inbox_${currentUserId}_${p._id}`,
+              user_id: currentUserId,
+              post_id: p._id,
+              author_id: targetUserId,
+              post_type: p.post_type,
+              created_at: p.created_at,
+              score: p.score,
+              hot_score: p.hot_score,
+            }));
+            await inboxesCol.insertMany(inboxDocs, { ordered: false });
+          }
+        }
       }
       catch (error: any) { if (error?.code !== 11000) throw error; }
     } else {
       await followsCol.deleteOne(filter);
+      await inboxesCol.deleteMany({ user_id: currentUserId, author_id: targetUserId });
     }
     const followersCount = await followsCol.countDocuments({ target_user_id: targetUserId });
 
