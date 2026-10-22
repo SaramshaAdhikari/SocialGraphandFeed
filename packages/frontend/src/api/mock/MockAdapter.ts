@@ -308,7 +308,7 @@ export class MockAdapter implements ISocialGraphApi {
     return this.comments[postId] || [];
   }
 
-  public async createPost(input: CreatePostInput): Promise<PostCard> {
+  public async createPost(input: CreatePostInput, _idempotencyKey?: string): Promise<PostCard> {
     await this.delay('/api/v1/posts');
 
     if (!input.title || input.title.trim().length === 0) {
@@ -390,8 +390,10 @@ export class MockAdapter implements ISocialGraphApi {
         is_saved: false,
         title: input.title.trim(),
         content: input.content?.trim() || '',
-        flair: input.flair || (input.tags && input.tags.length > 0 ? input.tags[0] : undefined),
-        tags: input.tags && input.tags.length > 0 ? input.tags : undefined,
+        flair: input.flair?.trim().replace(/^#+/, '') || (input.tags && input.tags.length > 0 ? input.tags[0].trim().replace(/^#+/, '').toLowerCase() : undefined),
+        tags: input.tags && input.tags.length > 0
+          ? Array.from(new Set(input.tags.map((t) => t.trim().replace(/^#+/, '').toLowerCase()).filter((t) => t.length > 0)))
+          : undefined,
         media: input.media,
       };
     } else {

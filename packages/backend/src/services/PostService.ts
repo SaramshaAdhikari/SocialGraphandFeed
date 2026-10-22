@@ -121,6 +121,26 @@ export class PostService {
       }
 
       const now = new Date();
+
+      // Normalize and sanitize tags: lowercase, strip leading #, deduplicate, filter valid slug pattern
+      const normalizedTags = input.tags
+        ? Array.from(
+            new Set(
+              input.tags
+                .map((t) => t.trim().replace(/^#+/, '').toLowerCase())
+                .filter((t) => t.length > 0 && /^[a-z0-9_-]+$/.test(t))
+            )
+          )
+        : undefined;
+      const finalTags = normalizedTags && normalizedTags.length > 0 ? normalizedTags : undefined;
+
+      // Normalize flair: strip leading # and whitespace
+      const finalFlair = input.flair
+        ? input.flair.trim().replace(/^#+/, '')
+        : finalTags && finalTags.length > 0
+        ? finalTags[0]
+        : undefined;
+
       const postDoc: PostDoc = {
         _id: `post_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         post_type: input.post_type,
@@ -132,8 +152,8 @@ export class PostService {
         community_slug: communitySlug,
         collection_id: input.collection_id,
         media: input.media,
-        flair: input.flair,
-        tags: input.tags,
+        flair: finalFlair,
+        tags: finalTags,
         destination_url: input.destination_url,
         score: 0,
         hot_score: calculateHotScore(0, now),

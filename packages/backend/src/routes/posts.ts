@@ -76,17 +76,7 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const userId = getRequestUserId(request)!;
 
-      // Rate limiting: capped posting per security contract Section 10
-      await rateLimitService.checkOrThrow({
-        action: 'post',
-        ip: request.ip,
-        userId,
-        limit: 10,
-        windowSeconds: 60,
-        requestId: request.id,
-      });
-
-      // Media / URL validation: ensure valid protocol and no credentials
+      // 1. Semantic Payload Validation: ensure valid protocol and no credentials before rate limiting
       const body = request.body;
       if (body.destination_url) {
         try {
@@ -114,7 +104,7 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
         }
       }
 
-      // Atomic Idempotency check
+      // 2. Atomic Idempotency check: cached replays do not consume rate limit quota
       const rawIdempKey = request.headers['idempotency-key'];
       const idempKey = typeof rawIdempKey === 'string' && rawIdempKey.trim() ? rawIdempKey.trim() : null;
 
@@ -126,6 +116,16 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
         }
 
         try {
+          // New execution requires rate limiting check
+          await rateLimitService.checkOrThrow({
+            action: 'post',
+            ip: request.ip,
+            userId,
+            limit: 10,
+            windowSeconds: 60,
+            requestId: request.id,
+          });
+
           const post = await postService.createPost(request.body, userId, idempKey);
           await idempotencyService.complete(userId, 'create_post', idempKey, 201, post);
           reply.status(201);
@@ -135,6 +135,16 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
           throw err;
         }
       }
+
+      // 3. Rate limiting for non-idempotent creations
+      await rateLimitService.checkOrThrow({
+        action: 'post',
+        ip: request.ip,
+        userId,
+        limit: 10,
+        windowSeconds: 60,
+        requestId: request.id,
+      });
 
       const post = await postService.createPost(request.body, userId);
       reply.status(201);

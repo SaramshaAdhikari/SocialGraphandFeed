@@ -7,6 +7,7 @@ export interface TagInputProps {
   onRemoveTag: (tag: string) => void;
   maxTags?: number;
   suggestions?: string[];
+  error?: string;
 }
 
 const DEFAULT_SUGGESTIONS = [
@@ -26,8 +27,19 @@ export function TagInput({
   onRemoveTag,
   maxTags = 5,
   suggestions = DEFAULT_SUGGESTIONS,
+  error,
 }: TagInputProps) {
   const [inputValue, setInputValue] = useState('');
+
+  const commitTag = () => {
+    const trimmed = inputValue.trim().replace(/^#+/, '').toLowerCase();
+    if (trimmed && /^[a-z0-9_-]+$/.test(trimmed) && !tags.includes(trimmed) && tags.length < maxTags) {
+      onAddTag(trimmed);
+      setInputValue('');
+    } else if (!trimmed || trimmed === '#') {
+      setInputValue('');
+    }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
@@ -35,14 +47,6 @@ export function TagInput({
       commitTag();
     } else if (e.key === 'Backspace' && !inputValue && tags.length > 0) {
       onRemoveTag(tags[tags.length - 1]);
-    }
-  };
-
-  const commitTag = () => {
-    const trimmed = inputValue.trim().replace(/^#/, '').toLowerCase();
-    if (trimmed && tags.length < maxTags) {
-      onAddTag(trimmed);
-      setInputValue('');
     }
   };
 
@@ -64,7 +68,9 @@ export function TagInput({
 
       {/* Main Tag Container */}
       <div
-        className="flex flex-wrap items-center gap-2 p-2 min-h-[44px] bg-white dark:bg-[#181B22] border border-[#E2E8F0] dark:border-[#2E3544] rounded-xl transition-all focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent"
+        className={`flex flex-wrap items-center gap-2 p-2 min-h-[44px] bg-white dark:bg-[#181B22] border rounded-xl transition-all focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent ${
+          error ? 'border-red-500' : 'border-[#E2E8F0] dark:border-[#2E3544]'
+        }`}
       >
         <div className="pl-1.5 text-[#94A3B8]">
           <TagIcon size={15} />
@@ -102,6 +108,12 @@ export function TagInput({
           />
         )}
       </div>
+
+      {error && (
+        <p role="alert" className="mt-1.5 text-xs text-red-500 font-medium">
+          {error}
+        </p>
+      )}
 
       {/* Popular Suggestions */}
       {unusedSuggestions.length > 0 && tags.length < maxTags && (

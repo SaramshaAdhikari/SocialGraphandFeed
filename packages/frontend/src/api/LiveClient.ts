@@ -160,7 +160,7 @@ export class LiveClient implements ISocialGraphApi {
     });
   }
 
-  public async createPost(input: CreatePostInput): Promise<PostCard> {
+  public async createPost(input: CreatePostInput, idempotencyKey?: string): Promise<PostCard> {
     if (input.media && input.media.some((m) => m.url.startsWith('blob:'))) {
       throw new ApiClientError({
         type: 'https://socialgraph.dev/errors/validation',
@@ -172,8 +172,14 @@ export class LiveClient implements ISocialGraphApi {
       });
     }
 
+    const headers: Record<string, string> = {};
+    if (idempotencyKey) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+
     return this.request<PostCard>('/api/v1/posts', {
       method: 'POST',
+      headers,
       body: JSON.stringify(input),
     });
   }

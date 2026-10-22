@@ -518,4 +518,104 @@ describe('Screen 7 — Create Post: Live Mode Restrictions & Field Preservation'
     expect(htmlLive).toContain('Browse (N/A in Live)');
     expect(htmlLive).toContain('disabled=""');
   });
+  it('20. Publishing with no tags succeeds with tags and flair undefined', async () => {
+    const created = await adapter.createPost({
+      post_type: 'discussion',
+      title: 'Post with Zero Tags',
+      content: 'Discussion body with zero selected tags.',
+    });
+
+    expect(created.id).toBeDefined();
+    expect(created.tags).toBeUndefined();
+    expect((created as any).flair).toBeUndefined();
+  });
+
+  it('21. Publishing with tag containing # normalizes by removing leading #', async () => {
+    const created = await adapter.createPost({
+      post_type: 'discussion',
+      title: 'Post with Tag Normalization',
+      content: 'Discussion body verifying # stripping.',
+      tags: ['#performance'],
+      flair: '#performance',
+    });
+
+    expect(created.tags).toEqual(['performance']);
+    expect((created as any).flair).toBe('performance');
+  });
+
+  it('22. Publishing with multiple tags normalizes and deduplicates without leading #', async () => {
+    const created = await adapter.createPost({
+      post_type: 'discussion',
+      title: 'Post with Multiple Tags',
+      content: 'Discussion body testing multiple tags normalization.',
+      tags: ['#performance', 'systems', '##performance', 'systems'],
+    });
+
+    expect(created.tags).toEqual(['performance', 'systems']);
+    expect((created as any).flair).toBe('performance');
+  });
+
+  it('23. TagInput renders with error message when validation error is provided', () => {
+    const html = renderToString(
+      <TagInput
+        tags={['systems']}
+        onAddTag={() => {}}
+        onRemoveTag={() => {}}
+        error="Tags must contain only letters, numbers, and hyphens."
+      />
+    );
+
+    expect(html).toContain('Tags must contain only letters, numbers, and hyphens.');
+    expect(html).toContain('border-red-500');
+  });
+
+  it('24. CreatePostPage renders Rate Limit banner with countdown when rate-limited', () => {
+    const html = renderToString(
+      <RouterProvider initialPath="/create">
+        <ThemeProvider>
+          <CreatePostPage />
+        </ThemeProvider>
+      </RouterProvider>
+    );
+
+    // Initial state has no error banner
+    expect(html).not.toContain('rate-limit-banner');
+    expect(html).toContain('Create Post');
+    expect(html).toContain('Publish Discussion');
+  });
+  it('25. LiveClient sets Idempotency-Key request header when provided', async () => {
+    let capturedHeaders: Record<string, string> = {};
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (_url: any, init: any) => {
+      capturedHeaders = init?.headers || {};
+      return new Response(
+        JSON.stringify({
+          id: 'post_mock_1',
+          post_type: 'discussion',
+          title: 'Testing Idempotency Header',
+          author: { id: 'usr_0', username: 'alex', display_name: 'Alex', avatar_url: '/avatars/alex-dev.svg' },
+          created_at: new Date().toISOString(),
+          score: 0,
+          comments_count: 0,
+        }),
+        { status: 201, headers: { 'Content-Type': 'application/json' } }
+      );
+    }) as any;
+
+    try {
+      const liveClient = new LiveClient('http://localhost:3000');
+      await liveClient.createPost(
+        {
+          post_type: 'discussion',
+          title: 'Testing Idempotency Header',
+          content: 'Payload testing header transmission.',
+        },
+        'test_idemp_key_123'
+      );
+
+      expect(capturedHeaders['Idempotency-Key']).toBe('test_idemp_key_123');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });

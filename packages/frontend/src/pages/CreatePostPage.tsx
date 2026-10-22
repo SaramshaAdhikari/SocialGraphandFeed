@@ -9,7 +9,7 @@ import {
   TagInput,
 } from '../components/composer';
 import { Input, Button } from '../components/ui';
-import { ArrowLeft, Send, AlertCircle, Info, Sparkles } from 'lucide-react';
+import { ArrowLeft, Send, AlertCircle, Info, Sparkles, Clock } from 'lucide-react';
 
 export function CreatePostPage() {
   const { navigate } = useRouter();
@@ -46,6 +46,7 @@ export function CreatePostPage() {
     setFieldError,
     submitting,
     submitError,
+    rateLimitSeconds,
     isDirty,
     isLiveMode,
     submitPost,
@@ -118,11 +119,17 @@ export function CreatePostPage() {
             variant="primary"
             size="sm"
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || Boolean(rateLimitSeconds && rateLimitSeconds > 0)}
             leftIcon={<Send size={14} />}
             className="font-semibold shadow-xs"
           >
-            {submitting ? 'Publishing...' : postType === 'discussion' ? 'Publish Discussion' : 'Publish Pin'}
+            {rateLimitSeconds && rateLimitSeconds > 0
+              ? `Rate limited (${rateLimitSeconds}s)`
+              : submitting
+              ? 'Publishing...'
+              : postType === 'discussion'
+              ? 'Publish Discussion'
+              : 'Publish Pin'}
           </Button>
         </div>
       </div>
@@ -188,7 +195,21 @@ export function CreatePostPage() {
         className="bg-white dark:bg-[#181B22] rounded-3xl border border-[#E2E8F0] dark:border-[#2E3544] p-5 sm:p-8 shadow-xs space-y-6 transition-colors"
       >
         {/* Error notification banner */}
-        {submitError && (
+        {rateLimitSeconds && rateLimitSeconds > 0 ? (
+          <div
+            role="alert"
+            data-testid="rate-limit-banner"
+            className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-200"
+          >
+            <Clock size={18} className="shrink-0 text-amber-500 mt-0.5" />
+            <div>
+              <p className="font-bold">Rate Limit Exceeded</p>
+              <p className="mt-0.5 leading-relaxed">
+                Posting frequency limit reached. Please wait {rateLimitSeconds} seconds before attempting to publish again. Your draft has been preserved.
+              </p>
+            </div>
+          </div>
+        ) : submitError ? (
           <div
             role="alert"
             data-testid="submit-error-banner"
@@ -200,7 +221,7 @@ export function CreatePostPage() {
               <p className="mt-0.5 leading-relaxed">{submitError}</p>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Community Destination Select */}
         <CommunitySelect
@@ -284,6 +305,7 @@ export function CreatePostPage() {
           tags={tags}
           onAddTag={addTag}
           onRemoveTag={removeTag}
+          error={errors.tags}
         />
 
         {/* Informational Persistence Notice */}
@@ -314,11 +336,17 @@ export function CreatePostPage() {
           <Button
             type="submit"
             variant="primary"
-            disabled={submitting}
-            leftIcon={submitting ? undefined : <Sparkles size={15} />}
+            disabled={submitting || Boolean(rateLimitSeconds && rateLimitSeconds > 0)}
+            leftIcon={submitting || (rateLimitSeconds && rateLimitSeconds > 0) ? undefined : <Sparkles size={15} />}
             className="w-full sm:w-auto min-w-[160px] font-semibold"
           >
-            {submitting ? 'Publishing...' : postType === 'discussion' ? 'Publish Discussion' : 'Publish Visual Pin'}
+            {rateLimitSeconds && rateLimitSeconds > 0
+              ? `Rate limited (${rateLimitSeconds}s)`
+              : submitting
+              ? 'Publishing...'
+              : postType === 'discussion'
+              ? 'Publish Discussion'
+              : 'Publish Visual Pin'}
           </Button>
         </div>
       </form>

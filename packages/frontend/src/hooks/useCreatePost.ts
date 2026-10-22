@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useApi } from '../api';
+import { ApiClientError } from '../api/client';
 import type { Community, PostCard, CreatePostInput } from '@socialgraph/shared';
 
 export type PostComposerType = 'discussion' | 'visual';
@@ -37,10 +38,12 @@ export interface UseCreatePostReturn {
   setFieldError: (field: string, error: string | null) => void;
   submitting: boolean;
   submitError: string | null;
+  rateLimitSeconds: number | null;
   submitSuccess: boolean;
   createdPost: PostCard | null;
   isDirty: boolean;
   isLiveMode: boolean;
+  idempotencyKey: string;
   submitPost: () => Promise<PostCard | null>;
   resetForm: () => void;
 }
@@ -76,8 +79,73 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [rateLimitSeconds, setRateLimitSeconds] = useState<number | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [createdPost, setCreatedPost] = useState<PostCard | null>(null);
+
+  // Durable draft submission key for server-side idempotency
+  const [idempotencyKey, setIdempotencyKey] = useState<string>(
+    () => `post_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+  );
+
+  const refreshIdempotencyKey = useCallback(() => {
+    setIdempotencyKey(`post_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
+  }, []);
+
+  const handleSetTitle = useCallback((val: string) => {
+    setTitle(val);
+    refreshIdempotencyKey();
+  }, [refreshIdempotencyKey]);
+
+  const handleSetContent = useCallback((val: string) => {
+    setContent(val);
+    refreshIdempotencyKey();
+  }, [refreshIdempotencyKey]);
+
+  const handleSetCommunityId = useCallback((val: string) => {
+    setCommunityId(val);
+    refreshIdempotencyKey();
+  }, [refreshIdempotencyKey]);
+
+  const handleSetPostType = useCallback((val: PostComposerType) => {
+    setPostType(val);
+    refreshIdempotencyKey();
+  }, [refreshIdempotencyKey]);
+
+  const handleSetImageUrl = useCallback((val: string) => {
+    setImageUrl(val);
+    refreshIdempotencyKey();
+  }, [refreshIdempotencyKey]);
+
+  const handleSetDestinationUrl = useCallback((val: string) => {
+    setDestinationUrl(val);
+    refreshIdempotencyKey();
+  }, [refreshIdempotencyKey]);
+
+  const handleSetImageAspectRatio = useCallback((val: number) => {
+    setImageAspectRatio(val);
+    refreshIdempotencyKey();
+  }, [refreshIdempotencyKey]);
+
+  const handleSetImageAlt = useCallback((val: string) => {
+    setImageAlt(val);
+    refreshIdempotencyKey();
+  }, [refreshIdempotencyKey]);
+
+  // Countdown timer for rate limiting
+  useEffect(() => {
+    if (rateLimitSeconds === null || rateLimitSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setRateLimitSeconds((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(timer);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [rateLimitSeconds]);
 
   // Fetch available communities on mount
   useEffect(() => {
@@ -120,6 +188,7 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
     const objectUrl = URL.createObjectURL(file);
     setImageUrl(objectUrl);
     setIsLocalFile(true);
+    refreshIdempotencyKey();
     setImageError(false);
     setImageLoaded(false);
 
@@ -150,19 +219,32 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
     setImageError(false);
     setImageLoaded(false);
     setImageAspectRatio(1.0);
-  }, []);
+    refreshIdempotencyKey();
+  }, [refreshIdempotencyKey]);
 
-  // Tag management
+  // Tag management: canonical normalization (lowercase, stripped leading #s, validated slug)
   const addTag = useCallback((rawTag: string) => {
-    const cleaned = rawTag.trim().replace(/^#/, '').toLowerCase();
-    if (cleaned && !tags.includes(cleaned) && tags.length < 5) {
+    const cleaned = rawTag.trim().replace(/^#+/, '').toLowerCase();
+    if (cleaned && /^[a-z0-9_-]+$/.test(cleaned) && !tags.includes(cleaned) && tags.length < 5) {
       setTags((prev) => [...prev, cleaned]);
+      refreshIdempotencyKey();
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.tags;
+        return next;
+      });
     }
-  }, [tags]);
+  }, [tags, refreshIdempotencyKey]);
 
   const removeTag = useCallback((tagToRemove: string) => {
     setTags((prev) => prev.filter((t) => t !== tagToRemove));
-  }, []);
+    refreshIdempotencyKey();
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.tags;
+      return next;
+    });
+  }, [refreshIdempotencyKey]);
 
   const setFieldError = useCallback((field: string, error: string | null) => {
     setErrors((prev) => {
@@ -238,7 +320,7 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
 
   // Submission handler
   const submitPost = useCallback(async (): Promise<PostCard | null> => {
-    if (submitting) return null;
+    if (submitting || (rateLimitSeconds !== null && rateLimitSeconds > 0)) return null;
 
     if (!validateForm()) {
       return null;
@@ -246,6 +328,14 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
 
     setSubmitting(true);
     setSubmitError(null);
+
+    // Canonical tag normalization: clean, unique, and strictly formatted
+    const cleanTags = tags
+      .map((t) => t.trim().replace(/^#+/, '').toLowerCase())
+      .filter((t) => t.length > 0 && /^[a-z0-9_-]+$/.test(t));
+    const uniqueTags = Array.from(new Set(cleanTags));
+    const finalTags = uniqueTags.length > 0 ? uniqueTags : undefined;
+    const finalFlair = uniqueTags.length > 0 ? uniqueTags[0] : undefined;
 
     try {
       let input: CreatePostInput;
@@ -256,8 +346,8 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
           title: title.trim(),
           content: content.trim(),
           community_id: communityId || undefined,
-          tags: tags.length > 0 ? tags : undefined,
-          flair: tags.length > 0 ? tags[0] : undefined,
+          tags: finalTags,
+          flair: finalFlair,
         };
       } else {
         input = {
@@ -267,7 +357,7 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
           content: content.trim() || undefined,
           community_id: communityId || undefined,
           destination_url: destinationUrl.trim() || undefined,
-          tags: tags.length > 0 ? tags : undefined,
+          tags: finalTags,
           media: [
             {
               id: `m_${Date.now()}`,
@@ -279,18 +369,54 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
         };
       }
 
-      const post = await api.createPost(input);
+      const post = await api.createPost(input, idempotencyKey);
       setCreatedPost(post);
       setSubmitSuccess(true);
+      // Advance idempotency key for subsequent post
+      setIdempotencyKey(`post_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
       return post;
     } catch (err: any) {
-      const msg = err.message || err.detail || 'Failed to publish post. Please check required fields and try again.';
-      setSubmitError(msg);
+      if (err instanceof ApiClientError || err.problem) {
+        const problem = err.problem || {};
+        if (problem.status === 429 || problem.code === 'RATE_LIMITED') {
+          const retrySec = problem.retry_after || 40;
+          setRateLimitSeconds(retrySec);
+          setSubmitError(`Rate limit exceeded for post. Please try again in ${retrySec} seconds.`);
+        } else if (problem.status === 400 && Array.isArray(problem.invalid_params)) {
+          for (const param of problem.invalid_params) {
+            if (param.name) {
+              setFieldError(param.name, param.reason);
+            }
+          }
+          setSubmitError(problem.detail || 'Request payload failed schema validation.');
+        } else {
+          setSubmitError(problem.detail || err.message || 'Failed to publish post. Please check required fields and try again.');
+        }
+      } else {
+        const msg = err.message || 'Failed to publish post. Please check required fields and try again.';
+        setSubmitError(msg);
+      }
       return null;
     } finally {
       setSubmitting(false);
     }
-  }, [submitting, validateForm, postType, title, content, communityId, tags, imageUrl, imageAspectRatio, imageAlt, destinationUrl, api]);
+  }, [
+    submitting,
+    rateLimitSeconds,
+    validateForm,
+    postType,
+    title,
+    content,
+    communityId,
+    tags,
+    imageUrl,
+    imageAspectRatio,
+    imageAlt,
+    destinationUrl,
+    api,
+    idempotencyKey,
+    setFieldError,
+  ]);
 
   const resetForm = useCallback(() => {
     setTitle('');
@@ -307,30 +433,32 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
     setErrors({});
     setSubmitting(false);
     setSubmitError(null);
+    setRateLimitSeconds(null);
     setSubmitSuccess(false);
     setCreatedPost(null);
+    setIdempotencyKey(`post_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
   }, []);
 
   return {
     postType,
-    setPostType,
+    setPostType: handleSetPostType,
     title,
-    setTitle,
+    setTitle: handleSetTitle,
     content,
-    setContent,
+    setContent: handleSetContent,
     communityId,
-    setCommunityId,
+    setCommunityId: handleSetCommunityId,
     tags,
     addTag,
     removeTag,
     imageUrl,
-    setImageUrl,
+    setImageUrl: handleSetImageUrl,
     imageAspectRatio,
-    setImageAspectRatio,
+    setImageAspectRatio: handleSetImageAspectRatio,
     imageAlt,
-    setImageAlt,
+    setImageAlt: handleSetImageAlt,
     destinationUrl,
-    setDestinationUrl,
+    setDestinationUrl: handleSetDestinationUrl,
     isLocalFile,
     handleLocalFileSelect,
     clearImage,
@@ -344,10 +472,12 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
     setFieldError,
     submitting,
     submitError,
+    rateLimitSeconds,
     submitSuccess,
     createdPost,
     isDirty,
     isLiveMode: api.dataSource === 'live',
+    idempotencyKey,
     submitPost,
     resetForm,
   };
