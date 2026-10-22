@@ -473,17 +473,20 @@ async function runFeedDeliveryBenchmark() {
     console.log('\n--- Phase 3: Mixed Concurrency Phase (80/20 Read/Write Ratio) ---');
     console.log('Workload: 400 feed reads + 100 post creations interleaved (500 ops total).');
 
+    // Capture database statistics immediately before mixed workload (dbStats API)
+    const dbStatsBefore = await db.stats();
+
     const tMixedStart = performance.now();
     for (let op = 0; op < 500; op++) {
       if (op % 5 === 0) {
-        // 20% Write
+        // 20% Write (100 operations)
         const authorId = `bench_user_${String(op % 25).padStart(2, '0')}`;
         await postService.createPost(
-          { post_type: 'discussion', title: `Mixed Post ${op}`, content: 'Mixed load' },
+          { post_type: 'discussion', title: `Mixed Post ${op}`, content: 'Mixed load payload' },
           authorId
         );
       } else {
-        // 80% Read
+        // 80% Read (400 operations)
         const viewerId = `bench_user_${String(op % 50).padStart(2, '0')}`;
         await feedService.getFeed(
           { scope: 'following', sort: 'hot', strategy: 'fanout_write', limit: 20 },
@@ -494,8 +497,40 @@ async function runFeedDeliveryBenchmark() {
     const tMixedDurationMs = performance.now() - tMixedStart;
     const throughputOpsSec = Number(((500 / tMixedDurationMs) * 1000).toFixed(2));
 
+    // Capture database statistics immediately after mixed workload (dbStats API)
+    const dbStatsAfter = await db.stats();
+
+    const dataSizeDelta = (dbStatsAfter.dataSize ?? 0) - (dbStatsBefore.dataSize ?? 0);
+    const storageSizeDelta = (dbStatsAfter.storageSize ?? 0) - (dbStatsBefore.storageSize ?? 0);
+    const objectsDelta = (dbStatsAfter.objects ?? 0) - (dbStatsBefore.objects ?? 0);
+
+    const formatBytes = (bytes: number): string => {
+      const sign = bytes >= 0 ? '+' : '';
+      return `${sign}${(bytes / 1024).toFixed(2)} KB (${sign}${bytes} B)`;
+    };
+
     console.log(`✓ Mixed workload completed in ${(tMixedDurationMs / 1000).toFixed(2)}s.`);
-    console.log(`✓ Aggregate Throughput: ${throughputOpsSec} ops/sec.\n`);
+    console.log(`✓ Aggregate Throughput: ${throughputOpsSec} ops/sec.`);
+    console.log('\nDatabase Size Metrics (MongoDB dbStats API):');
+    console.table({
+      'Data Size (Uncompressed BSON)': {
+        'Before (KB)': Number(((dbStatsBefore.dataSize ?? 0) / 1024).toFixed(2)),
+        'After (KB)': Number(((dbStatsAfter.dataSize ?? 0) / 1024).toFixed(2)),
+        Delta: formatBytes(dataSizeDelta),
+      },
+      'Storage Size (Allocated Extents)': {
+        'Before (KB)': Number(((dbStatsBefore.storageSize ?? 0) / 1024).toFixed(2)),
+        'After (KB)': Number(((dbStatsAfter.storageSize ?? 0) / 1024).toFixed(2)),
+        Delta: formatBytes(storageSizeDelta),
+      },
+      'Document Count (Objects)': {
+        Before: dbStatsBefore.objects ?? 0,
+        After: dbStatsAfter.objects ?? 0,
+        Delta: `${objectsDelta >= 0 ? '+' : ''}${objectsDelta} docs`,
+      },
+    });
+    console.log('NOTE: Database size metrics measure on-disk storage and uncompressed BSON object volume.');
+    console.log('They reflect physical MongoDB document allocation, not process RAM or WiredTiger internal cache size.\n');
 
     console.log('================================================================================');
     console.log('                     BENCHMARK SUMMARY & RECOMMENDATION                         ');
