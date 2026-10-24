@@ -77,7 +77,7 @@ export interface ISocialGraphApi {
   // Posts & Interactions
   getPost(postId: string): Promise<PostCard>;
   getComments(postId: string): Promise<CommentNode[]>;
-  createPost(input: CreatePostInput): Promise<PostCard>;
+  createPost(input: CreatePostInput, idempotencyKey?: string): Promise<PostCard>;
   votePost(postId: string, direction: 1 | -1 | 0): Promise<VoteResult>;
   toggleSavePost(postId: string): Promise<{ post_id: string; is_saved: boolean }>;
   createComment(postId: string, input: CreateCommentInput): Promise<CommentNode>;

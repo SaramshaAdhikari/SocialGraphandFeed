@@ -273,4 +273,168 @@ describe('Fastify Domain Route Validation & RFC 7807 Behavior', () => {
       expect(payload.discussions).toEqual([]);
     });
   });
+
+  describe('GET /api/v1/posts/saved route contract', () => {
+    it('rejects unauthenticated requests with 401 Unauthorized', async () => {
+      const response = await app!.inject({
+        method: 'GET',
+        url: '/api/v1/posts/saved',
+      });
+      expect(response.statusCode).toBe(401);
+    });
+
+    it('returns empty saved feed for user with no bookmarks and matches FeedResponseSchema', async () => {
+      const response = await app!.inject({
+        method: 'GET',
+        url: '/api/v1/posts/saved',
+        headers: authHeaders('usr_3'),
+      });
+      expect(response.statusCode).toBe(200);
+      const payload = response.json();
+      expect(Value.Check(FeedResponseSchema, payload)).toBe(true);
+      expect(payload.data).toEqual([]);
+      expect(payload.has_more).toBe(false);
+    });
+
+    it('returns saved posts after bookmarking and verifies route precedence over /posts/:postId', async () => {
+      // 1. Save a known discussion post
+      const saveRes = await app!.inject({
+        method: 'POST',
+        url: '/api/v1/posts/post_101/save',
+        headers: authHeaders('usr_0'),
+        payload: {},
+      });
+      expect(saveRes.statusCode).toBe(200);
+      expect(saveRes.json()).toEqual({ post_id: 'post_101', is_saved: true });
+
+      // 2. Fetch saved posts
+      const savedRes = await app!.inject({
+        method: 'GET',
+        url: '/api/v1/posts/saved',
+        headers: authHeaders('usr_0'),
+      });
+      expect(savedRes.statusCode).toBe(200);
+      const payload = savedRes.json();
+      expect(Value.Check(FeedResponseSchema, payload)).toBe(true);
+      expect(payload.data.length).toBeGreaterThanOrEqual(1);
+      const savedItem = payload.data.find((p: any) => p.id === 'post_101');
+      expect(savedItem).toBeDefined();
+      expect(savedItem.is_saved).toBe(true);
+
+      // 3. Filter by type
+      const discRes = await app!.inject({
+        method: 'GET',
+        url: '/api/v1/posts/saved?type=discussions',
+        headers: authHeaders('usr_0'),
+      });
+      expect(discRes.statusCode).toBe(200);
+      expect(discRes.json().data.some((p: any) => p.id === 'post_101')).toBe(true);
+
+      const visRes = await app!.inject({
+        method: 'GET',
+        url: '/api/v1/posts/saved?type=visual',
+        headers: authHeaders('usr_0'),
+      });
+      expect(visRes.statusCode).toBe(200);
+      expect(visRes.json().data.some((p: any) => p.id === 'post_101')).toBe(false);
+
+      // 4. Unsave and verify removal
+      const unsaveRes = await app!.inject({
+        method: 'POST',
+        url: '/api/v1/posts/post_101/save',
+        headers: authHeaders('usr_0'),
+        payload: {},
+      });
+      expect(unsaveRes.statusCode).toBe(200);
+      expect(unsaveRes.json()).toEqual({ post_id: 'post_101', is_saved: false });
+
+      const afterUnsave = await app!.inject({
+        method: 'GET',
+        url: '/api/v1/posts/saved',
+        headers: authHeaders('usr_0'),
+      });
+      expect(afterUnsave.statusCode).toBe(200);
+      expect(afterUnsave.json().data.some((p: any) => p.id === 'post_101')).toBe(false);
+    });
+
+    it('rejects undeclared query parameters and excessive limits with 400 Bad Request', async () => {
+      // 1. Undeclared query parameters
+      const undeclaredRes = await app!.inject({
+        method: 'GET',
+        url: '/api/v1/posts/saved?injected_param=exploit',
+        headers: authHeaders('usr_0'),
+      });
+      expect(undeclaredRes.statusCode).toBe(400);
+
+      // 2. Limit > 100
+      const limitRes = await app!.inject({
+        method: 'GET',
+        url: '/api/v1/posts/saved?limit=101',
+        headers: authHeaders('usr_0'),
+      });
+      expect(limitRes.statusCode).toBe(400);
+    });
+
+    it('gracefully returns empty result on unknown or stale pagination cursor without looping', async () => {
+      const response = await app!.inject({
+        method: 'GET',
+        url: '/api/v1/posts/saved?cursor=nonexistent_post_id_99999',
+        headers: authHeaders('usr_0'),
+      });
+      expect(response.statusCode).toBe(200);
+      const payload = response.json();
+      expect(payload.data).toEqual([]);
+      expect(payload.has_more).toBe(false);
+      expect(payload.next_cursor).toBeNull();
+    });
+
+    it('correctly filters saved posts by topic stripping hashtag prefix and supports top/comments sorting', async () => {
+      // Bookmark post_101 and post_102
+      await app!.inject({
+        method: 'POST',
+        url: '/api/v1/posts/post_101/save',
+        headers: authHeaders('usr_0'),
+        payload: {},
+      });
+      await app!.inject({
+        method: 'POST',
+        url: '/api/v1/posts/post_102/save',
+        headers: authHeaders('usr_0'),
+        payload: {},
+      });
+
+      // Filter by topic with # prefix
+      const topicRes = await app!.inject({
+        method: 'GET',
+        url: '/api/v1/posts/saved?topic=%23systems',
+        headers: authHeaders('usr_0'),
+      });
+      expect(topicRes.statusCode).toBe(200);
+
+      // Verify sorting by top (score)
+      const topRes = await app!.inject({
+        method: 'GET',
+        url: '/api/v1/posts/saved?sort=top',
+        headers: authHeaders('usr_0'),
+      });
+      expect(topRes.statusCode).toBe(200);
+      expect(Value.Check(FeedResponseSchema, topRes.json())).toBe(true);
+
+      // Clean up bookmark state
+      await app!.inject({
+        method: 'POST',
+        url: '/api/v1/posts/post_101/save',
+        headers: authHeaders('usr_0'),
+        payload: {},
+      });
+      await app!.inject({
+        method: 'POST',
+        url: '/api/v1/posts/post_102/save',
+        headers: authHeaders('usr_0'),
+        payload: {},
+      });
+    });
+
+  });
+
 });

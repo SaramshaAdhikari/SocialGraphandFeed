@@ -1,4 +1,11 @@
-import type { MediaAttachment, CommunityRule } from '@socialgraph/shared';
+import type {
+  MediaAttachment,
+  CommunityRule,
+  NotificationType,
+  ReportReason,
+  ReportTargetType,
+  ReportStatus,
+} from '@socialgraph/shared';
 
 export interface UserDoc {
   _id: string;
@@ -18,7 +25,14 @@ export interface UserDoc {
   role?: 'user' | 'admin';
 }
 
-export interface SessionDoc { _id: string; user_id: string; csrf_token: string; expires_at: Date; created_at: Date; }
+export interface SessionDoc {
+  _id: string;
+  user_id: string | null;
+  csrf_token: string;
+  expires_at: Date;
+  created_at: Date;
+  last_active_at?: Date;
+}
 
 export interface PostDoc {
   _id: string;
@@ -38,6 +52,7 @@ export interface PostDoc {
   score: number;
   hot_score: number;
   comments_count: number;
+  idempotency_key?: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -50,6 +65,7 @@ export interface CommentDoc {
   content: string;
   score: number;
   depth: number;
+  idempotency_key?: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -95,4 +111,45 @@ export interface PostSaveDoc {
   post_id: string;
   user_id: string;
   created_at: Date;
+}
+
+export type { NotificationType };
+
+export interface NotificationDoc {
+  _id: string;
+  recipient_id: string;
+  actor_id: string;
+  type: NotificationType;
+  post_id?: string;
+  comment_id?: string;
+  read: boolean;
+  read_at?: Date;
+  created_at: Date;
+}
+
+export interface ReportDoc {
+  _id: string;
+  reporter_id: string;
+  target_type: ReportTargetType;
+  target_id: string;
+  reason: ReportReason;
+  description?: string;
+  status: ReportStatus;
+  action_taken?: 'none' | 'removed' | 'dismissed';
+  resolved_by?: string;
+  resolved_at?: Date;
+  created_at: Date;
+  updated_at: Date;
+}
+
+
+export interface FeedInboxDoc {
+  _id: string;
+  user_id: string;
+  post_id: string;
+  author_id: string;
+  post_type: 'discussion' | 'visual';
+  created_at: Date;
+  score: number;
+  hot_score: number;
 }

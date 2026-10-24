@@ -65,10 +65,10 @@ export function AppearancePopover({ isOpen, onClose }: AppearancePopoverProps) {
     >
       <div
         ref={popoverRef}
-        className="w-full max-w-sm sm:max-w-md bg-white dark:bg-[#181B22] rounded-2xl border border-[#E2E8F0] dark:border-[#2E3544] shadow-2xl p-5 sm:p-6 space-y-6 text-[#0F172A] dark:text-[#F8FAFC] animate-scale-in"
+        className="w-full max-w-sm sm:max-w-md bg-surface-card rounded-2xl border border-border shadow-2xl p-5 sm:p-6 space-y-6 text-text-primary animate-scale-in"
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9] dark:border-[#262B36]">
+        <div className="flex items-center justify-between pb-3 border-b border-border">
           <div className="flex items-center gap-2">
             <Palette size={18} className="text-primary" />
             <h2 className="text-sm sm:text-base font-bold">Your appearance</h2>
@@ -77,7 +77,7 @@ export function AppearancePopover({ isOpen, onClose }: AppearancePopoverProps) {
             type="button"
             onClick={onClose}
             aria-label="Close appearance settings"
-            className="p-1 rounded-lg text-[#64748B] hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F1F5F9] dark:hover:bg-[#262B36] transition-colors cursor-pointer"
+            className="p-1 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-subtle transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>
@@ -85,13 +85,13 @@ export function AppearancePopover({ isOpen, onClose }: AppearancePopoverProps) {
 
         {/* Appearance Mode Selection */}
         <div>
-          <label className="block text-xs font-semibold text-[#64748B] dark:text-[#94A3B8] mb-2 uppercase tracking-wider">
+          <label className="block text-xs font-semibold text-text-muted mb-2 uppercase tracking-wider">
             Theme Mode
           </label>
           <div
             role="radiogroup"
             aria-label="Appearance Mode"
-            className="grid grid-cols-3 gap-1.5 p-1 bg-[#F4F4F5] dark:bg-[#12141A] rounded-xl border border-[#E2E8F0] dark:border-[#2E3544]"
+            className="grid grid-cols-3 gap-1.5 p-1 bg-surface-subtle rounded-xl border border-border"
           >
             {modes.map((m) => {
               const Icon = m.icon;
@@ -105,8 +105,8 @@ export function AppearancePopover({ isOpen, onClose }: AppearancePopoverProps) {
                   onClick={() => setMode(m.id)}
                   className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                     isSelected
-                      ? 'bg-white dark:bg-[#1E232E] text-[#0F172A] dark:text-white shadow-sm'
-                      : 'text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white'
+                      ? 'bg-surface-card text-text-primary shadow-xs border border-border/40'
+                      : 'text-text-muted hover:text-text-primary'
                   }`}
                 >
                   <Icon size={14} className={isSelected ? 'text-primary' : ''} />
@@ -120,7 +120,7 @@ export function AppearancePopover({ isOpen, onClose }: AppearancePopoverProps) {
         {/* Curated Color Palette Collection */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <label className="text-xs font-semibold text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider">
+            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
               Color Palette
             </label>
             <span className="text-xs font-medium text-primary">
@@ -151,7 +151,7 @@ export function AppearancePopover({ isOpen, onClose }: AppearancePopoverProps) {
                   <div
                     className={`relative w-full aspect-4/3 rounded-xl shadow-xs transition-all flex items-center justify-center border-2 ${
                       isSelected
-                        ? 'ring-2 ring-offset-2 ring-primary dark:ring-offset-[#181B22] border-white dark:border-[#181B22]'
+                        ? 'ring-2 ring-offset-2 ring-primary ring-offset-surface-card border-surface-card'
                         : 'border-transparent group-hover:ring-1 group-hover:ring-slate-300 dark:group-hover:ring-slate-600'
                     }`}
                     style={{ backgroundColor: p.swatchColor }}
@@ -168,7 +168,7 @@ export function AppearancePopover({ isOpen, onClose }: AppearancePopoverProps) {
                     className={`mt-1.5 text-[11px] leading-tight transition-colors line-clamp-1 ${
                       isSelected
                         ? 'font-bold text-primary'
-                        : 'font-medium text-[#475569] dark:text-[#94A3B8] group-hover:text-[#0F172A] dark:group-hover:text-white'
+                        : 'font-medium text-text-muted group-hover:text-text-primary'
                     }`}
                   >
                     {p.name}

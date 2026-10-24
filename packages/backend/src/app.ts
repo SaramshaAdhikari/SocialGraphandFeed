@@ -2,7 +2,9 @@ import Fastify, { type FastifyInstance, type FastifyServerOptions } from 'fastif
 import cors from '@fastify/cors';
 import sensible from '@fastify/sensible';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
+import { randomUUID } from 'node:crypto';
 import errorHandlerPlugin from './plugins/error-handler.js';
+import securityHeadersPlugin from './plugins/security-headers.js';
 import apiRoutes from './routes/index.js';
 import { config } from './config/env.js';
 import { registerIdentityBoundary } from './routes/identity.js';
@@ -14,6 +16,16 @@ export function buildApp(
   const app = Fastify({
     // Reject undeclared keys instead of silently stripping them from requests.
     ajv: { customOptions: { removeAdditional: false } },
+    bodyLimit: 1_048_576, // 1MB JSON body limit per security contract
+    requestIdHeader: 'x-request-id',
+    trustProxy: opts.trustProxy ?? config.TRUST_PROXY,
+    genReqId: (req) => {
+      const header = req.headers['x-request-id'];
+      if (typeof header === 'string' && header.trim().length > 0) {
+        return header.trim();
+      }
+      return randomUUID();
+    },
     logger: {
       level: config.LOG_LEVEL,
       transport:
@@ -36,6 +48,9 @@ export function buildApp(
     origin: config.WEB_ORIGIN,
     credentials: true,
   });
+
+  // Register Security Headers & CSP Plugin
+  app.register(securityHeadersPlugin);
 
   // Register RFC 7807 Error Handler Plugin
   app.register(errorHandlerPlugin);

@@ -46,12 +46,12 @@ export function HomePage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5 sm:space-y-6">
       {/* Interactive Toast Notification for Mutation Failures */}
       {toastMessage && (
         <div
           role="status"
-          className="fixed bottom-16 right-4 sm:bottom-6 sm:right-6 z-50 flex items-center gap-2 bg-[#0F172A] text-white px-4 py-2.5 rounded-lg shadow-lg text-xs animate-slide-up"
+          className="fixed bottom-16 right-4 sm:bottom-6 sm:right-6 z-50 flex items-center gap-2 bg-surface-card text-text-primary border border-border px-4 py-2.5 rounded-lg shadow-lg text-xs animate-slide-up"
         >
           <AlertCircle size={16} className="text-amber-400 shrink-0" />
           <span>{toastMessage}</span>

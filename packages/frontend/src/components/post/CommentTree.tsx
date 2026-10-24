@@ -30,11 +30,18 @@ export function CommentTree({
   return (
     <section aria-label="Discussion comments" className={`space-y-6 ${className}`}>
       {/* Top Header & Sort Selector */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#E2E8F0] dark:border-[#2E3544]">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border">
         <div className="flex items-center gap-2">
           <MessageSquare size={18} className="text-primary" />
-          <h3 className="text-base font-bold text-[#0F172A] dark:text-[#F8FAFC]">
-            Comments <span className="text-sm font-normal text-[#94A3B8]">({count})</span>
+          <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
+            <span>Comments</span>
+            <span className="text-sm font-normal text-text-muted">({count})</span>
+            <span
+              className="text-[10px] font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-full"
+              title="Comment votes are tracked in local session state pending backend persistence contract"
+            >
+              Votes: Session-Only
+            </span>
           </h3>
         </div>
 
@@ -119,7 +126,7 @@ export function CommentTree({
       ) : comments.length === 0 ? (
         <div
           data-testid="comments-empty-state"
-          className="text-center py-10 px-4 rounded-xl border border-dashed border-[#E2E8F0] dark:border-[#2E3544] bg-slate-50/50 dark:bg-slate-900/20"
+          className="text-center py-10 px-4 rounded-xl border border-dashed border-border bg-surface-subtle/50"
         >
           <MessageSquare size={32} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
           <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">

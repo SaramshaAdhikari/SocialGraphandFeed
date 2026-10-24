@@ -19,6 +19,15 @@ export const PostTypeSchema = Type.Union([
 
 export type PostType = Static<typeof PostTypeSchema>;
 
+export const TagSchema = Type.String({
+  minLength: 1,
+  maxLength: 50,
+  pattern: '^[A-Za-z0-9_-]+$',
+  description: 'Normalized topical tag slug without leading #',
+});
+
+export type Tag = Static<typeof TagSchema>;
+
 /**
  * Base post attributes shared across visual pins and discussions.
  */
@@ -47,7 +56,7 @@ export const VisualPinCardSchema = Type.Object({
   collection_id: Type.Optional(Type.String()),
   dominant_color: Type.Optional(Type.String()),
   destination_url: Type.Optional(Type.String()),
-  tags: Type.Optional(Type.Array(Type.String())),
+  tags: Type.Optional(Type.Array(TagSchema)),
 });
 
 export type VisualPinCard = Static<typeof VisualPinCardSchema>;
@@ -61,8 +70,8 @@ export const DiscussionPostCardSchema = Type.Object({
   title: Type.String({ minLength: 3, maxLength: 300 }),
   content: Type.String({ maxLength: 40000, description: 'Markdown prose body' }),
   media: Type.Optional(Type.Array(MediaAttachmentSchema)),
-  flair: Type.Optional(Type.String({ maxLength: 30 })),
-  tags: Type.Optional(Type.Array(Type.String())),
+  flair: Type.Optional(Type.String({ maxLength: 50 })),
+  tags: Type.Optional(Type.Array(TagSchema)),
 });
 
 export type DiscussionPostCard = Static<typeof DiscussionPostCardSchema>;
@@ -80,7 +89,7 @@ export const CreatePostInputSchema = Type.Object({
   flair: Type.Optional(Type.String({ maxLength: 50 })),
   caption: Type.Optional(Type.String({ maxLength: 1000 })),
   destination_url: Type.Optional(Type.String({ maxLength: 2048, pattern: '^https?://\\S+$' })),
-  tags: Type.Optional(Type.Array(Type.String({ minLength: 1, maxLength: 50 }), { maxItems: 20 })),
+  tags: Type.Optional(Type.Array(TagSchema, { maxItems: 20 })),
 }, { additionalProperties: false });
 
 export type CreatePostInput = Static<typeof CreatePostInputSchema>;
@@ -90,3 +99,18 @@ export const VoteInputSchema = Type.Object({
 }, { additionalProperties: false });
 
 export type VoteInput = Static<typeof VoteInputSchema>;
+
+
+export const SavedPostsQuerySchema = Type.Object({
+  cursor: Type.Optional(Type.String({ maxLength: 2048 })),
+  limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100, default: 20 })),
+  sort: Type.Optional(Type.Union([Type.Literal('new'), Type.Literal('top'), Type.Literal('comments')])),
+  type: Type.Optional(Type.Union([Type.Literal('all'), Type.Literal('discussions'), Type.Literal('visual')])),
+  communitySlug: Type.Optional(Type.String({ maxLength: 80 })),
+  community: Type.Optional(Type.String({ maxLength: 80 })),
+  topic: Type.Optional(Type.String({ maxLength: 80 })),
+  query: Type.Optional(Type.String({ maxLength: 200 })),
+  q: Type.Optional(Type.String({ maxLength: 200 })),
+}, { additionalProperties: false });
+
+export type SavedPostsQuery = Static<typeof SavedPostsQuerySchema>;

@@ -56,7 +56,7 @@ export function CommentNodeItem({
       ? 'ml-3 sm:ml-6'
       : depth === 3
       ? 'ml-3 sm:ml-8'
-      : 'ml-2 sm:ml-8'; // Capped on narrow viewports to avoid squeezing text
+      : 'ml-2 sm:ml-8';
 
   return (
     <div
@@ -70,6 +70,7 @@ export function CommentNodeItem({
             onClick={toggleCollapse}
             title={isCollapsed ? 'Expand thread' : 'Collapse thread'}
             aria-label={isCollapsed ? 'Expand thread' : 'Collapse thread'}
+            aria-expanded={!isCollapsed}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
@@ -78,27 +79,27 @@ export function CommentNodeItem({
                 toggleCollapse();
               }
             }}
-            className="w-4 shrink-0 flex justify-center cursor-pointer group/line focus:outline-none"
+            className="w-4 shrink-0 flex justify-center cursor-pointer group/line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
           >
-            <div className="w-[2px] h-full bg-slate-200 dark:bg-slate-700/60 rounded-full group-hover/line:bg-primary transition-colors" />
+            <div className="w-[2px] h-full bg-border-strong/40 rounded-full group-hover/line:bg-primary transition-colors" />
           </div>
         )}
 
         {/* Comment Body & Header Container */}
         <div className="flex-1 min-w-0 py-1.5">
           {/* Header Metadata Row */}
-          <div className="flex items-center gap-2 text-xs text-[#64748B] dark:text-[#94A3B8]">
+          <div className="flex items-center gap-2 text-xs text-text-muted">
             <Link
               to={`/u/${comment.author.username}`}
-              className="flex items-center gap-1.5 font-medium text-[#0F172A] dark:text-[#F8FAFC] hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded"
+              className="flex items-center gap-1.5 font-medium text-text-primary hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded"
             >
               <Avatar
                 src={comment.author.avatar_url}
                 alt={comment.author.display_name}
                 size="xs"
               />
-              <span className="font-semibold">{comment.author.display_name}</span>
-              <span className="text-[#94A3B8] font-normal">@{comment.author.username}</span>
+              <span className="font-bold text-text-primary">{comment.author.display_name}</span>
+              <span className="text-text-muted font-normal">@{comment.author.username}</span>
             </Link>
 
             {comment.author.is_verified && (
@@ -110,8 +111,8 @@ export function CommentNodeItem({
               </span>
             )}
 
-            <span className="text-[#CBD5E1] dark:text-[#475569]" aria-hidden="true">•</span>
-            <time dateTime={comment.created_at} className="text-[#94A3B8]">
+            <span className="text-border-strong" aria-hidden="true">•</span>
+            <time dateTime={comment.created_at} className="text-text-muted">
               {formatRelativeTime(comment.created_at)}
             </time>
 
@@ -120,7 +121,8 @@ export function CommentNodeItem({
               type="button"
               onClick={toggleCollapse}
               aria-label={isCollapsed ? 'Expand comment thread' : 'Collapse comment thread'}
-              className="ml-auto flex items-center gap-1 text-[11px] text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              aria-expanded={!isCollapsed}
+              className="ml-auto flex items-center gap-1 text-[11px] text-text-muted hover:text-text-primary p-1 rounded-lg hover:bg-surface-subtle transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
             >
               {isCollapsed ? (
                 <>
@@ -138,35 +140,39 @@ export function CommentNodeItem({
           {/* Comment Content (Hidden when collapsed) */}
           {!isCollapsed && (
             <>
-              <div className="mt-1 text-sm text-[#334155] dark:text-[#CBD5E1] leading-relaxed break-words whitespace-pre-wrap pl-6 sm:pl-7">
+              <div className="mt-1.5 text-sm text-text-secondary leading-relaxed break-words whitespace-pre-wrap pl-6 sm:pl-7">
                 {comment.content}
               </div>
 
               {/* Actions Row: Vote + Reply */}
-              <div className="mt-2 flex items-center gap-3 pl-6 sm:pl-7 text-xs text-[#64748B] dark:text-[#94A3B8]">
-                {/* Compact Vote Controls */}
-                <div className="flex items-center gap-0.5 rounded-full bg-slate-100 dark:bg-slate-800/80 px-1 py-0.5">
+              <div className="mt-2.5 flex items-center gap-3 pl-6 sm:pl-7 text-xs text-text-muted">
+                {/* Compact Vote Controls (Session-only pending backend contract) */}
+                <div
+                  className="flex items-center gap-0.5 rounded-full bg-surface-subtle border border-border/60 px-1.5 py-0.5"
+                  title="Comment voting is active in local session memory (backend persistence contract pending)"
+                >
                   <button
                     type="button"
                     onClick={handleUpvote}
                     aria-label="Upvote comment"
+                    title="Upvote comment (held in local session memory)"
                     aria-pressed={comment.user_vote === 1}
-                    className={`p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ${
-                      comment.user_vote === 1 ? 'text-[#F97316]' : 'text-slate-500 hover:text-[#F97316]'
+                    className={`p-1 rounded-full hover:bg-surface-card transition-colors cursor-pointer ${
+                      comment.user_vote === 1 ? 'text-upvote' : 'text-text-muted hover:text-upvote'
                     }`}
                   >
                     <ArrowBigUp
                       size={15}
-                      className={comment.user_vote === 1 ? 'fill-[#F97316]' : ''}
+                      className={comment.user_vote === 1 ? 'fill-current text-upvote' : ''}
                     />
                   </button>
                   <span
-                    className={`text-xs font-bold px-1 min-w-[1.2rem] text-center ${
+                    className={`text-xs font-mono font-bold px-1 min-w-[1.2rem] text-center ${
                       comment.user_vote === 1
-                        ? 'text-[#F97316]'
+                        ? 'text-upvote'
                         : comment.user_vote === -1
-                        ? 'text-indigo-600 dark:text-indigo-400'
-                        : 'text-slate-700 dark:text-slate-300'
+                        ? 'text-downvote'
+                        : 'text-text-primary'
                     }`}
                   >
                     {comment.score}
@@ -175,16 +181,17 @@ export function CommentNodeItem({
                     type="button"
                     onClick={handleDownvote}
                     aria-label="Downvote comment"
+                    title="Downvote comment (held in local session memory)"
                     aria-pressed={comment.user_vote === -1}
-                    className={`p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ${
+                    className={`p-1 rounded-full hover:bg-surface-card transition-colors cursor-pointer ${
                       comment.user_vote === -1
-                        ? 'text-indigo-600 dark:text-indigo-400'
-                        : 'text-slate-500 hover:text-indigo-600'
+                        ? 'text-downvote'
+                        : 'text-text-muted hover:text-downvote'
                     }`}
                   >
                     <ArrowBigDown
                       size={15}
-                      className={comment.user_vote === -1 ? 'fill-current' : ''}
+                      className={comment.user_vote === -1 ? 'fill-current text-downvote' : ''}
                     />
                   </button>
                 </div>
@@ -194,10 +201,10 @@ export function CommentNodeItem({
                   type="button"
                   onClick={() => setIsReplying(!isReplying)}
                   aria-expanded={isReplying}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-surface-subtle text-text-muted hover:text-text-primary transition-colors cursor-pointer"
                 >
                   <MessageSquare size={13} />
-                  <span>Reply</span>
+                  <span className="font-semibold">Reply</span>
                 </button>
               </div>
 
@@ -239,3 +246,4 @@ export function CommentNodeItem({
     </div>
   );
 }
+export default CommentNodeItem;

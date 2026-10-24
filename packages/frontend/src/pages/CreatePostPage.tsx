@@ -9,10 +9,12 @@ import {
   TagInput,
 } from '../components/composer';
 import { Input, Button } from '../components/ui';
-import { ArrowLeft, Send, AlertCircle, Info, Sparkles } from 'lucide-react';
+import { ArrowLeft, Send, AlertCircle, Info, Sparkles, Clock } from 'lucide-react';
+import { useAuth } from '../auth/AuthContext';
 
 export function CreatePostPage() {
   const { navigate } = useRouter();
+  const { user, status } = useAuth();
   const {
     postType,
     setPostType,
@@ -27,6 +29,11 @@ export function CreatePostPage() {
     removeTag,
     imageUrl,
     setImageUrl,
+    mediaList,
+    addMediaItem,
+    removeMediaItem,
+    reorderMediaItem,
+    setCoverMedia,
     imageAspectRatio,
     setImageAspectRatio,
     imageAlt,
@@ -46,6 +53,7 @@ export function CreatePostPage() {
     setFieldError,
     submitting,
     submitError,
+    rateLimitSeconds,
     isDirty,
     isLiveMode,
     submitPost,
@@ -82,21 +90,21 @@ export function CreatePostPage() {
       className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6"
     >
       {/* 1. Header & Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E2E8F0] dark:border-[#2E3544]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleBack}
             aria-label="Back to feed"
-            className="p-2 -ml-2 rounded-xl text-[#475569] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1E222B] transition-colors cursor-pointer"
+            className="p-2 -ml-2 rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-subtle transition-colors cursor-pointer"
           >
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#0F172A] dark:text-[#F8FAFC]">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-text-primary">
               Create Post
             </h1>
-            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
+            <p className="text-xs text-text-muted">
               Publish engineering RFCs, distributed systems analyses, or architectural photography.
             </p>
           </div>
@@ -118,11 +126,19 @@ export function CreatePostPage() {
             variant="primary"
             size="sm"
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || Boolean(rateLimitSeconds && rateLimitSeconds > 0) || (isLiveMode && status === 'unauthenticated')}
             leftIcon={<Send size={14} />}
             className="font-semibold shadow-xs"
           >
-            {submitting ? 'Publishing...' : postType === 'discussion' ? 'Publish Discussion' : 'Publish Pin'}
+            {rateLimitSeconds && rateLimitSeconds > 0
+              ? `Rate limited (${rateLimitSeconds}s)`
+              : submitting
+              ? 'Publishing...'
+              : (isLiveMode && status === 'unauthenticated')
+              ? 'Sign In to Publish'
+              : postType === 'discussion'
+              ? 'Publish Discussion'
+              : 'Publish Pin'}
           </Button>
         </div>
       </div>
@@ -135,15 +151,15 @@ export function CreatePostPage() {
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fade-in"
         >
-          <div className="w-full max-w-md bg-white dark:bg-[#181B22] rounded-2xl border border-[#E2E8F0] dark:border-[#2E3544] p-6 shadow-xl space-y-4">
+          <div className="w-full max-w-md bg-surface-card rounded-2xl border border-border p-6 shadow-xl space-y-4">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
               <AlertCircle size={22} />
             </div>
             <div>
-              <h3 id="discard-title" className="text-base font-bold text-[#0F172A] dark:text-[#F8FAFC]">
+              <h3 id="discard-title" className="text-base font-bold text-text-primary">
                 Discard unsaved changes?
               </h3>
-              <p className="text-xs text-[#64748B] dark:text-[#94A3B8] mt-1 leading-relaxed">
+              <p className="text-xs text-text-muted mt-1 leading-relaxed">
                 You have an active draft. Leaving this page will discard the content you authored.
               </p>
             </div>
@@ -185,10 +201,24 @@ export function CreatePostPage() {
       <form
         onSubmit={handleSubmit}
         data-testid="create-post-form"
-        className="bg-white dark:bg-[#181B22] rounded-3xl border border-[#E2E8F0] dark:border-[#2E3544] p-5 sm:p-8 shadow-xs space-y-6 transition-colors"
+        className="bg-surface-card rounded-3xl border border-border p-5 sm:p-8 shadow-xs space-y-6 transition-colors"
       >
         {/* Error notification banner */}
-        {submitError && (
+        {rateLimitSeconds && rateLimitSeconds > 0 ? (
+          <div
+            role="alert"
+            data-testid="rate-limit-banner"
+            className="flex items-start gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400"
+          >
+            <Clock size={18} className="shrink-0 text-amber-500 mt-0.5" />
+            <div>
+              <p className="font-bold">Rate Limit Exceeded</p>
+              <p className="mt-0.5 leading-relaxed">
+                Posting frequency limit reached. Please wait {rateLimitSeconds} seconds before attempting to publish again. Your draft has been preserved.
+              </p>
+            </div>
+          </div>
+        ) : submitError ? (
           <div
             role="alert"
             data-testid="submit-error-banner"
@@ -200,7 +230,7 @@ export function CreatePostPage() {
               <p className="mt-0.5 leading-relaxed">{submitError}</p>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Community Destination Select */}
         <CommunitySelect
@@ -228,7 +258,7 @@ export function CreatePostPage() {
               if (errors.title) setFieldError('title', null);
             }}
             error={errors.title}
-            disabled={submitting}
+            disabled={submitting || (isLiveMode && status === 'unauthenticated')}
             maxLength={postType === 'discussion' ? 300 : 150}
             helperText={`${title.length} / ${postType === 'discussion' ? 300 : 150} characters`}
           />
@@ -254,6 +284,11 @@ export function CreatePostPage() {
                 setImageUrl(url);
                 if (errors.imageUrl) setFieldError('imageUrl', null);
               }}
+              mediaList={mediaList}
+              onAddMediaItem={addMediaItem}
+              onRemoveMediaItem={removeMediaItem}
+              onReorderMediaItem={reorderMediaItem}
+              onSetCover={setCoverMedia}
               aspectRatio={imageAspectRatio}
               onAspectRatioChange={setImageAspectRatio}
               imageAlt={imageAlt}
@@ -287,20 +322,66 @@ export function CreatePostPage() {
         />
 
         {/* Informational Persistence Notice */}
-        <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-slate-50 dark:bg-[#14171E] border border-[#F1F5F9] dark:border-[#262B36] text-[11px] text-[#64748B] dark:text-[#94A3B8]">
-          <Info size={15} className="shrink-0 text-primary mt-0.5" />
-          <div className="space-y-0.5 leading-relaxed">
-            <p className="font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
-              In-Memory Demonstration Persistence
-            </p>
-            <p>
-              Your post will immediately be indexed in the client model, surfaced in your personal profile feed (<code className="text-primary font-mono">u/alex_dev</code>), aggregated into the selected community feed, and accessible at its dedicated post detail URL.
-            </p>
+        {isLiveMode && status === 'unauthenticated' ? (
+          <div
+            role="alert"
+            data-testid="create-post-auth-warning"
+            className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-300"
+          >
+            <AlertCircle size={18} className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <div className="space-y-1.5">
+              <p className="font-bold text-amber-900 dark:text-amber-200">
+                Sign-In Required for Live Mode
+              </p>
+              <p className="leading-relaxed">
+                You are currently browsing SocialGraph in live database mode as a guest. Please sign in or register to publish posts to the local MongoDB database.
+              </p>
+              <div className="pt-1 flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="primary"
+                  onClick={() => navigate('/login')}
+                  className="text-xs h-7 px-3 font-semibold"
+                >
+                  Sign In
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate('/register')}
+                  className="text-xs h-7 px-3 font-semibold"
+                >
+                  Register
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-surface-subtle border border-border text-[11px] text-text-muted">
+            <Info size={15} className="shrink-0 text-primary mt-0.5" />
+            <div className="space-y-0.5 leading-relaxed">
+              <p className="font-semibold text-text-primary">
+                {isLiveMode ? 'Live Database Persistence' : 'In-Memory Demonstration Persistence'}
+              </p>
+              <p>
+                {isLiveMode ? (
+                  <>
+                    Your post will be safely committed to the native MongoDB replica set under your author session (<code className="text-primary font-mono">u/{user?.username || 'user'}</code>) and immediately surfaced across feed queries.
+                  </>
+                ) : (
+                  <>
+                    Your post will immediately be indexed in the client model, surfaced in your personal profile feed (<code className="text-primary font-mono">u/{user?.username || 'alex_dev'}</code>), aggregated into the selected community feed, and accessible at its dedicated post detail URL.
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Bottom Actions Bar */}
-        <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-[#F1F5F9] dark:border-[#262B36]">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-border">
           <Button
             type="button"
             variant="ghost"
@@ -314,11 +395,19 @@ export function CreatePostPage() {
           <Button
             type="submit"
             variant="primary"
-            disabled={submitting}
-            leftIcon={submitting ? undefined : <Sparkles size={15} />}
+            disabled={submitting || Boolean(rateLimitSeconds && rateLimitSeconds > 0) || (isLiveMode && status === 'unauthenticated')}
+            leftIcon={submitting || (rateLimitSeconds && rateLimitSeconds > 0) ? undefined : <Sparkles size={15} />}
             className="w-full sm:w-auto min-w-[160px] font-semibold"
           >
-            {submitting ? 'Publishing...' : postType === 'discussion' ? 'Publish Discussion' : 'Publish Visual Pin'}
+            {rateLimitSeconds && rateLimitSeconds > 0
+              ? `Rate limited (${rateLimitSeconds}s)`
+              : submitting
+              ? 'Publishing...'
+              : (isLiveMode && status === 'unauthenticated')
+              ? 'Sign In to Publish'
+              : postType === 'discussion'
+              ? 'Publish Discussion'
+              : 'Publish Visual Pin'}
           </Button>
         </div>
       </form>

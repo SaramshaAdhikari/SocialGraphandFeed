@@ -9,6 +9,7 @@ import { CommunityPage } from './pages/CommunityPage';
 import { SearchPage } from './pages/SearchPage';
 import { CreatePostPage } from './pages/CreatePostPage';
 import { SavedCollectionsPage } from './pages/SavedCollectionsPage';
+import { CommunitiesPage } from './pages/CommunitiesPage';
 import { SettingsAppearancePage } from './pages/SettingsAppearancePage';
 import { DiagnosticsView } from './components/common/DiagnosticsView';
 import { PlaceholderPage } from './components/common/PlaceholderPage';
@@ -16,13 +17,16 @@ import { ThemeProvider } from './theme';
 import { AuthPage } from './pages/AuthPage';
 import { AuthGate } from './pages/AuthGate';
 import { AuthProvider } from './auth/AuthContext';
+import { PostModalProvider } from './context/PostModalContext';
 
 export function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
         <RouterProvider>
-          <AuthProvider><AppLayout>
+          <AuthProvider>
+            <PostModalProvider>
+              <AppLayout>
             <Routes
               fallback={
                 <PlaceholderPage
@@ -61,18 +65,7 @@ export function App() {
               <Route path="/saved" element={<AuthGate><SavedCollectionsPage /></AuthGate>} />
 
               {/* Supporting Surface: Community Directory */}
-            <Route
-              path="/communities"
-              element={
-                <PlaceholderPage
-                  title="Community Directory"
-                  personality="Utility & Management"
-                  milestone="Supporting Surface (Milestone 4)"
-                  reference="reddit_DESIGN.md"
-                  description="Curated catalog of topical communities across systems, algorithms, hardware, and design."
-                />
-              }
-            />
+              <Route path="/communities" element={<CommunitiesPage />} />
 
             {/* Settings & Appearance Personalization */}
             <Route path="/settings" element={<SettingsAppearancePage />} />
@@ -81,7 +74,9 @@ export function App() {
             {/* Repurposed Milestone 1 Diagnostics */}
             <Route path="/diagnostics" element={<DiagnosticsView />} />
           </Routes>
-          </AppLayout></AuthProvider>
+              </AppLayout>
+            </PostModalProvider>
+          </AuthProvider>
       </RouterProvider>
     </ThemeProvider>
   </ErrorBoundary>

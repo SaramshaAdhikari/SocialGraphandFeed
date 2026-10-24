@@ -7,16 +7,17 @@ import type {
   CommentNode,
   Community,
   MediaAttachment,
+  NotificationItem,
 } from '@socialgraph/shared';
-import type { UserDoc, PostDoc, CommentDoc, CommunityDoc } from './types.js';
+import type { UserDoc, PostDoc, CommentDoc, CommunityDoc, NotificationDoc } from './types.js';
 
 export function toUserSummary(user: UserDoc): UserSummary {
   return {
     id: user._id,
     username: user.username,
     display_name: user.display_name,
-    avatar_url: user.avatar_url,
-    is_verified: user.is_verified,
+    avatar_url: (user.avatar_url && user.avatar_url.trim()) ? user.avatar_url.trim() : '/avatars/alex-dev.svg',
+    is_verified: user.is_verified ?? false,
   };
 }
 
@@ -24,8 +25,8 @@ export function toUserProfile(user: UserDoc, isFollowing = false): UserProfile {
   return {
     ...toUserSummary(user),
     bio: user.bio || '',
-    banner_url: user.banner_url ?? undefined,
-    website: user.website ?? undefined,
+    banner_url: (user.banner_url && user.banner_url.trim()) ? user.banner_url.trim() : undefined,
+    website: (user.website && user.website.trim()) ? user.website.trim() : undefined,
     followers_count: user.followers_count || 0,
     following_count: user.following_count || 0,
     posts_count: user.posts_count || 0,
@@ -40,9 +41,14 @@ export function toPostCard(
   userVote: 1 | -1 | 0 = 0,
   isSaved = false
 ): PostCard {
+  const cleanAuthor: UserSummary = {
+    ...author,
+    avatar_url: (author.avatar_url && author.avatar_url.trim()) ? author.avatar_url.trim() : '/avatars/alex-dev.svg',
+  };
+
   const base = {
     id: post._id,
-    author,
+    author: cleanAuthor,
     community_id: post.community_id ?? undefined,
     community_slug: post.community_slug ?? undefined,
     created_at: post.created_at.toISOString(),
@@ -70,7 +76,7 @@ export function toPostCard(
       collection_id: post.collection_id ?? undefined,
       dominant_color: post.dominant_color ?? undefined,
       destination_url: post.destination_url ?? undefined,
-      tags: post.tags ?? undefined,
+      tags: post.tags && post.tags.length > 0 ? post.tags : undefined,
     };
     return visualPin;
   }
@@ -88,7 +94,7 @@ export function toPostCard(
     content: post.content || '',
     media: mediaArray,
     flair: post.flair ?? undefined,
-    tags: post.tags ?? undefined,
+    tags: post.tags && post.tags.length > 0 ? post.tags : undefined,
   };
   return discussion;
 }
@@ -99,8 +105,8 @@ export function toCommunity(comm: CommunityDoc, isMember = false): Community {
     name: comm.name,
     slug: comm.slug,
     description: comm.description,
-    banner_url: comm.banner_url,
-    avatar_url: comm.avatar_url,
+    banner_url: (comm.banner_url && comm.banner_url.trim()) ? comm.banner_url.trim() : undefined,
+    avatar_url: (comm.avatar_url && comm.avatar_url.trim()) ? comm.avatar_url.trim() : undefined,
     members_count: comm.members_count || 0,
     rules: comm.rules || [],
     is_member: isMember,
@@ -118,13 +124,19 @@ export function buildCommentTree(
 
   // Create node objects
   for (const c of comments) {
-    const author = authorMap.get(c.author_id) || {
-      id: c.author_id,
-      username: 'unknown',
-      display_name: 'Unknown User',
-      avatar_url: '/avatars/alex-dev.svg',
-      is_verified: false,
-    };
+    const rawAuthor = authorMap.get(c.author_id);
+    const author: UserSummary = rawAuthor
+      ? {
+          ...rawAuthor,
+          avatar_url: (rawAuthor.avatar_url && rawAuthor.avatar_url.trim()) ? rawAuthor.avatar_url.trim() : '/avatars/alex-dev.svg',
+        }
+      : {
+          id: c.author_id,
+          username: 'unknown',
+          display_name: 'Unknown User',
+          avatar_url: '/avatars/alex-dev.svg',
+          is_verified: false,
+        };
 
     const node: CommentNode = {
       id: c._id,
@@ -154,4 +166,26 @@ export function buildCommentTree(
   }
 
   return rootNodes;
+}
+
+export function toNotificationItem(doc: NotificationDoc, actor?: UserSummary): NotificationItem {
+  const cleanActor: UserSummary | undefined = actor
+    ? {
+        ...actor,
+        avatar_url: (actor.avatar_url && actor.avatar_url.trim()) ? actor.avatar_url.trim() : '/avatars/alex-dev.svg',
+      }
+    : undefined;
+
+  return {
+    id: doc._id,
+    recipient_id: doc.recipient_id,
+    actor_id: doc.actor_id,
+    actor: cleanActor,
+    type: doc.type,
+    post_id: doc.post_id ?? undefined,
+    comment_id: doc.comment_id ?? undefined,
+    read: doc.read,
+    read_at: doc.read_at ? doc.read_at.toISOString() : undefined,
+    created_at: doc.created_at.toISOString(),
+  };
 }

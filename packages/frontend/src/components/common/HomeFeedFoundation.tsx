@@ -77,7 +77,7 @@ export function HomeFeedFoundation() {
                 c/systems
               </Link>
               <span className="text-[#94A3B8]">•</span>
-              <span className="text-[#64748B]">Posted by u/alec</span>
+              <span className="text-[#64748B]">Posted by u/alec_m</span>
               <span className="text-[#94A3B8]">• 2h ago</span>
             </div>
 

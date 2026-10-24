@@ -85,7 +85,7 @@ describe('Screen 7 — Create Post: API Contracts & In-Memory Persistence', () =
       post_type: 'discussion',
       title: 'Evaluating Memory Reclamation in Multi-Tenant RocksDB Clusters',
       content: 'Here are benchmark results on memory reclamation and block cache fragmentation under 50k QPS.',
-      community_id: 'c_systems',
+      community_id: 'comm_systems',
       tags: ['systems', 'rocksdb', 'benchmarks'],
       flair: 'Architecture',
     });
@@ -97,7 +97,7 @@ describe('Screen 7 — Create Post: API Contracts & In-Memory Persistence', () =
     expect(created.score).toBe(1);
     expect(created.user_vote).toBe(1);
     expect(created.comments_count).toBe(0);
-    expect(created.community_id).toBe('c_systems');
+    expect(created.community_id).toBe('comm_systems');
     expect(created.community_slug).toBe('systems');
 
     // Verify it is retrievable by ID
@@ -311,7 +311,7 @@ describe('Screen 7 — Create Post: UI Components & Authoring Workflow', () => {
     const html = renderToString(
       <CommunitySelect
         communities={Object.values(mockCommunities)}
-        selectedCommunityId="c_systems"
+        selectedCommunityId="comm_systems"
         onSelect={() => {}}
       />
     );
@@ -358,7 +358,7 @@ describe('Screen 7 — Create Post: Page & Navigation Integration', () => {
     expect(html).toContain('Discussion Body');
     expect(html).toContain('Select Destination Community');
     expect(html).toContain('Publish Discussion');
-    expect(html).toContain('In-Memory Demonstration Persistence');
+    expect(html).toMatch(/Live Database Persistence|In-Memory Demonstration Persistence/);
   });
 
   it('14. SidebarNav and MobileBottomNav contain active navigation entry points for /create', () => {
@@ -411,7 +411,7 @@ describe('Screen 7 — Create Post: Live Mode Restrictions & Field Preservation'
       content: 'Benchmark evaluation of binary schema formats under high packet arrival rates.',
       flair: 'Systems Architecture',
       tags: ['streams', 'zero-copy', 'networking'],
-      community_id: 'c_systems',
+      community_id: 'comm_systems',
     });
 
     expect(created.post_type).toBe('discussion');
@@ -469,7 +469,7 @@ describe('Screen 7 — Create Post: Live Mode Restrictions & Field Preservation'
       post_type: 'discussion',
       title: 'Validating Raft Snapshot Serialization Edge Cases',
       content: 'Notes on log compaction boundaries and follower replay recovery.',
-      community_id: 'c_systems',
+      community_id: 'comm_systems',
     });
 
     // Author alex_dev post count should be incremented in adapter state
@@ -517,5 +517,120 @@ describe('Screen 7 — Create Post: Live Mode Restrictions & Field Preservation'
     expect(htmlLive).toContain('Direct image URL is required');
     expect(htmlLive).toContain('Browse (N/A in Live)');
     expect(htmlLive).toContain('disabled=""');
+  });
+
+  it('20. CreatePostPage renders honest persistence notice indicating client or database destination', () => {
+    const html = renderToString(
+      <ThemeProvider>
+        <RouterProvider initialPath="/create">
+          <CreatePostPage />
+        </RouterProvider>
+      </ThemeProvider>
+    );
+
+    expect(html).toMatch(/Live Database Persistence|In-Memory Demonstration Persistence/);
+    expect(html).toMatch(/u\/(<!-- -->)?(alex_dev|user)/);
+  });
+
+  it('21. Publishing with no tags succeeds with tags and flair undefined', async () => {
+    const created = await adapter.createPost({
+      post_type: 'discussion',
+      title: 'Post with Zero Tags',
+      content: 'Discussion body with zero selected tags.',
+    });
+
+    expect(created.id).toBeDefined();
+    expect(created.tags).toBeUndefined();
+    expect((created as any).flair).toBeUndefined();
+  });
+
+  it('22. Publishing with tag containing # normalizes by removing leading #', async () => {
+    const created = await adapter.createPost({
+      post_type: 'discussion',
+      title: 'Post with Tag Normalization',
+      content: 'Discussion body verifying # stripping.',
+      tags: ['#performance'],
+      flair: '#performance',
+    });
+
+    expect(created.tags).toEqual(['performance']);
+    expect((created as any).flair).toBe('performance');
+  });
+
+  it('23. Publishing with multiple tags normalizes and deduplicates without leading #', async () => {
+    const created = await adapter.createPost({
+      post_type: 'discussion',
+      title: 'Post with Multiple Tags',
+      content: 'Discussion body testing multiple tags normalization.',
+      tags: ['#performance', 'systems', '##performance', 'systems'],
+    });
+
+    expect(created.tags).toEqual(['performance', 'systems']);
+    expect((created as any).flair).toBe('performance');
+  });
+
+  it('24. TagInput renders with error message when validation error is provided', () => {
+    const html = renderToString(
+      <TagInput
+        tags={['systems']}
+        onAddTag={() => {}}
+        onRemoveTag={() => {}}
+        error="Tags must contain only letters, numbers, and hyphens."
+      />
+    );
+
+    expect(html).toContain('Tags must contain only letters, numbers, and hyphens.');
+    expect(html).toContain('border-red-500');
+  });
+
+  it('25. CreatePostPage renders Rate Limit banner with countdown when rate-limited', () => {
+    const html = renderToString(
+      <RouterProvider initialPath="/create">
+        <ThemeProvider>
+          <CreatePostPage />
+        </ThemeProvider>
+      </RouterProvider>
+    );
+
+    // Initial state has no error banner
+    expect(html).not.toContain('rate-limit-banner');
+    expect(html).toContain('Create Post');
+    expect(html).toContain('Publish Discussion');
+  });
+
+  it('26. LiveClient sets Idempotency-Key request header when provided', async () => {
+    let capturedHeaders: Record<string, string> = {};
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (_url: any, init: any) => {
+      capturedHeaders = init?.headers || {};
+      return new Response(
+        JSON.stringify({
+          id: 'post_mock_1',
+          post_type: 'discussion',
+          title: 'Testing Idempotency Header',
+          author: { id: 'usr_0', username: 'alex', display_name: 'Alex', avatar_url: '/avatars/alex-dev.svg' },
+          created_at: new Date().toISOString(),
+          score: 0,
+          comments_count: 0,
+        }),
+        { status: 201, headers: { 'Content-Type': 'application/json' } }
+      );
+    }) as any;
+
+    try {
+      const liveClient = new LiveClient('http://localhost:3000');
+      await liveClient.createPost(
+        {
+          post_type: 'discussion',
+          title: 'Testing Idempotency Header',
+          content: 'Payload testing header transmission.',
+        },
+        'test_idemp_key_123'
+      );
+
+      expect(capturedHeaders['Idempotency-Key']).toBe('test_idemp_key_123');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });

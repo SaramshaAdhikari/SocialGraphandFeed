@@ -76,7 +76,7 @@ export function DiscoverPage() {
       {toastMessage && (
         <div
           role="status"
-          className="fixed bottom-16 right-4 sm:bottom-6 sm:right-6 z-50 flex items-center gap-2 bg-[#0F172A] text-white px-4 py-2.5 rounded-lg shadow-lg text-xs animate-slide-up"
+          className="fixed bottom-16 right-4 sm:bottom-6 sm:right-6 z-50 flex items-center gap-2 bg-surface-card text-text-primary border border-border px-4 py-2.5 rounded-lg shadow-lg text-xs animate-slide-up"
         >
           <AlertCircle size={16} className="text-amber-400 shrink-0" />
           <span>{toastMessage}</span>
@@ -92,12 +92,12 @@ export function DiscoverPage() {
 
       {/* Screen 2 Header & Category Navigation */}
       <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[#E2E8F0] dark:border-[#2E3544]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-border">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#0F172A] dark:text-[#F8FAFC]">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-text-primary">
               Visual Discovery
             </h1>
-            <p className="text-xs sm:text-sm text-[#64748B] dark:text-[#94A3B8]">
+            <p className="text-xs sm:text-sm text-text-muted">
               High-density architectural masonry gallery preserving natural media aspect ratios.
             </p>
           </div>
@@ -117,16 +117,16 @@ export function DiscoverPage() {
       {error && pins.length === 0 && (
         <div
           role="alert"
-          className="bg-white dark:bg-[#181B22] rounded-2xl border border-red-200 dark:border-red-900/40 p-8 sm:p-12 text-center shadow-sm space-y-4"
+          className="bg-surface-card rounded-2xl border border-red-200 dark:border-red-900/40 p-8 sm:p-12 text-center shadow-sm space-y-4"
         >
           <div className="w-12 h-12 mx-auto rounded-full bg-red-50 dark:bg-red-950/40 flex items-center justify-center text-red-600 dark:text-red-400">
             <AlertCircle size={24} />
           </div>
           <div>
-            <h2 className="text-base font-bold text-[#0F172A] dark:text-[#F8FAFC] mb-1">
+            <h2 className="text-base font-bold text-text-primary mb-1">
               Failed to load discovery pins
             </h2>
-            <p className="text-sm text-[#64748B] dark:text-[#94A3B8] max-w-md mx-auto">
+            <p className="text-sm text-text-muted max-w-md mx-auto">
               {error.message || 'An error occurred while fetching visual inspiration.'}
             </p>
           </div>
@@ -143,15 +143,15 @@ export function DiscoverPage() {
 
       {/* Empty State */}
       {!loading && pins.length === 0 && !error && (
-        <div className="bg-white dark:bg-[#181B22] rounded-2xl border border-[#E2E8F0] dark:border-[#2E3544] p-10 sm:p-16 text-center shadow-sm space-y-4">
-          <div className="w-14 h-14 mx-auto rounded-full bg-[#F1F5F9] dark:bg-[#262B36] flex items-center justify-center text-[#64748B] dark:text-[#94A3B8]">
+        <div className="bg-surface-card rounded-2xl border border-border p-10 sm:p-16 text-center shadow-sm space-y-4">
+          <div className="w-14 h-14 mx-auto rounded-full bg-surface-subtle flex items-center justify-center text-text-muted">
             <Compass size={28} />
           </div>
           <div className="max-w-md mx-auto">
-            <h2 className="text-base sm:text-lg font-bold text-[#0F172A] dark:text-[#F8FAFC] mb-1">
+            <h2 className="text-base sm:text-lg font-bold text-text-primary mb-1">
               No pins found in this category
             </h2>
-            <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+            <p className="text-sm text-text-muted">
               There are no visual pins matching "{category}". Explore all inspirations or choose a different category.
             </p>
           </div>
@@ -204,15 +204,15 @@ export function DiscoverPage() {
           {!hasMore && (
             <div
               role="status"
-              className="py-10 px-4 text-center border-t border-[#E2E8F0] dark:border-[#2E3544] text-[#64748B] dark:text-[#94A3B8] space-y-1 transition-colors"
+              className="py-10 px-4 text-center border-t border-border text-text-muted space-y-1 transition-colors"
             >
               <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 mb-1">
                 <CheckCircle2 size={18} />
               </div>
-              <p className="text-sm font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
+              <p className="text-sm font-semibold text-text-primary">
                 You've reached the end of the gallery
               </p>
-              <p className="text-xs text-[#94A3B8]">
+              <p className="text-xs text-text-muted">
                 Check back soon or explore other topical categories.
               </p>
             </div>

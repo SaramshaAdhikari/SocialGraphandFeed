@@ -27,6 +27,8 @@ export const ApiErrorResponseSchema = Type.Object({
   detail: Type.String({ description: 'Human-readable explanation specific to this occurrence' }),
   instance: Type.Optional(Type.String({ description: 'URI reference identifying this specific problem occurrence' })),
   code: Type.String({ description: 'Machine-readable application error code (e.g. NOT_FOUND, VALIDATION_ERROR)' }),
+  request_id: Type.Optional(Type.String({ description: 'Unique request identifier for tracing' })),
+  retry_after: Type.Optional(Type.Integer({ description: 'Recommended seconds to wait before retrying' })),
   invalidParams: Type.Optional(
     Type.Array(
       Type.Object({

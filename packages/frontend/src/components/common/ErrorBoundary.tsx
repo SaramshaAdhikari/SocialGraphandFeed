@@ -33,12 +33,12 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="p-8 my-8 max-w-lg mx-auto bg-white rounded-2xl border border-red-200 shadow-sm text-center">
-          <div className="w-12 h-12 mx-auto rounded-full bg-red-50 text-red-600 flex items-center justify-center mb-4">
+        <div className="p-8 my-8 max-w-lg mx-auto bg-surface-card rounded-2xl border border-red-500/20 shadow-sm text-center">
+          <div className="w-12 h-12 mx-auto rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mb-4">
             <AlertCircle size={24} />
           </div>
-          <h2 className="text-lg font-bold text-[#0F172A] mb-2">Something went wrong</h2>
-          <p className="text-sm text-[#64748B] mb-6">
+          <h2 className="text-lg font-bold text-text-primary mb-2">Something went wrong</h2>
+          <p className="text-sm text-text-muted mb-6">
             {this.state.error?.message || 'An unexpected rendering error occurred.'}
           </p>
           <Button

@@ -14,6 +14,7 @@ import { reconcileCommunityMemberCounts } from '../src/db/membershipIntegrity.js
 import { promoteExistingAlexAdmin } from '../src/db/bootstrap-admin.js';
 import { AuthService, verifyPassword } from '../src/services/AuthService.js';
 import { buildApp } from '../src/app.js';
+import { connectRedis } from '../src/cache/redis.js';
 
 describe('Real MongoDB Integration Suite (Local Database)', () => {
   let db: Db;
@@ -27,6 +28,10 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
     // This suite drops its database after execution; never fall back to a developer DB.
     const conn = await connectMongo(requiredTestServiceUrl('MONGODB_TEST_URI'), 'socialgraph_integration_test');
     db = conn.db;
+    const redis = connectRedis();
+    if (redis.status === 'wait') await redis.connect().catch(() => {});
+    await redis.flushdb().catch(() => {});
+
     feedService = new FeedService();
     postService = new PostService();
     userService = new UserService();
@@ -43,6 +48,8 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
     if (db) {
       await db.dropDatabase();
     }
+    const redis = connectRedis();
+    await redis.flushdb().catch(() => {});
     await disconnectMongo();
   });
 
@@ -120,7 +127,7 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
       const expired = await app.inject({ method: 'GET', url: '/api/v1/auth/session', headers: { cookie: `sg_session=${session.token}` } });
       expect(expired.statusCode).toBe(401);
       expect(expired.headers['set-cookie']).toContain('Max-Age=0');
-      for (let attempt = 0; attempt < 10; attempt += 1) {
+      for (let attempt = 0; attempt < 5; attempt += 1) {
         const rejected = await app.inject({ method: 'POST', url: '/api/v1/auth/login', remoteAddress: '198.51.100.23', payload: { username: 'absent_user', password: 'incorrect' } });
         expect(rejected.statusCode).toBe(401);
       }
@@ -700,7 +707,7 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
       for (const community of communities) {
         expect(community.members_count).toBe(await db.collection(COLLECTIONS.COMMUNITY_MEMBERSHIPS).countDocuments({ community_id: community._id }));
       }
-      const posts = await db.collection(COLLECTIONS.POSTS).find({ _id: { $in: ['post_101', 'post_102', 'post_103', 'post_104', 'post_tie_301', 'post_tie_302'] } }).toArray();
+      const posts = await db.collection(COLLECTIONS.POSTS).find({ _id: { $in: ['post_101', 'post_102', 'post_103', 'post_104', 'post_105', 'post_106', 'post_107', 'post_108', 'post_109', 'post_110', 'post_111', 'post_112', 'post_113', 'post_114', 'post_tie_301', 'post_tie_302'] } }).toArray();
       for (const post of posts) {
         const votes = await db.collection(COLLECTIONS.POST_VOTES).find({ post_id: post._id }).toArray();
         expect(post.score).toBe(votes.reduce((score, vote) => score + vote.direction, 0));
@@ -711,9 +718,9 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
     it('re-executing seedDatabase is clean and deterministic', async () => {
       const stats = await seedDatabase(db);
       expect(stats.usersCount).toBe(20);
-      expect(stats.postsCount).toBe(6);
-      expect(stats.commentsCount).toBe(4);
-      expect(stats.followsCount).toBe(5);
+      expect(stats.postsCount).toBe(16);
+      expect(stats.commentsCount).toBe(10);
+      expect(stats.followsCount).toBe(24);
       expect(stats.communitiesCount).toBe(5);
     });
 

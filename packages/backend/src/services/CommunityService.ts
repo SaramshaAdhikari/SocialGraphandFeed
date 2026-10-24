@@ -13,13 +13,35 @@ import type {
 } from '../db/types.js';
 import { toCommunity, toUserSummary, toPostCard } from '../db/serialization.js';
 import { buildCursorFilter, encodePostCursor } from '../utils/pagination.js';
+import { getCached, setCachedWithTag, invalidateCachePattern } from '../cache/redis.js';
 
 export class CommunityService {
   private get db(): Db {
     return getDb();
   }
 
+  public async invalidateCommunityCache(communitySlug?: string): Promise<void> {
+    const tasks: Promise<void>[] = [
+      invalidateCachePattern('cache:communities:_keys', 'cache:communities:*'),
+    ];
+    if (communitySlug) {
+      const normalized = communitySlug.toLowerCase();
+      tasks.push(
+        invalidateCachePattern(
+          `cache:community:${normalized}:_keys`,
+          `cache:community:${normalized}:*`
+        )
+      );
+    }
+    await Promise.all(tasks);
+  }
+
   public async getCommunity(communitySlug: string, currentUserId?: string): Promise<Community> {
+    const normalizedSlug = communitySlug.toLowerCase();
+    const cacheKey = `cache:community:${normalizedSlug}:${currentUserId ? `u:${currentUserId}` : 'anon'}`;
+    const cached = await getCached<Community>(cacheKey);
+    if (cached) return cached;
+
     const commsCol = this.db.collection<CommunityDoc>(COLLECTIONS.COMMUNITIES);
     const membershipsCol = this.db.collection<CommunityMembershipDoc>(
       COLLECTIONS.COMMUNITY_MEMBERSHIPS
@@ -40,7 +62,16 @@ export class CommunityService {
     }
 
     const membersCount = await membershipsCol.countDocuments({ community_id: comm._id });
-    return toCommunity({ ...comm, members_count: membersCount }, isMember);
+    const result = toCommunity({ ...comm, members_count: membersCount }, isMember);
+
+    await setCachedWithTag(
+      cacheKey,
+      `cache:community:${normalizedSlug}:_keys`,
+      result,
+      30
+    );
+
+    return result;
   }
 
   public async getCommunityFeed(
@@ -134,10 +165,15 @@ export class CommunityService {
   }
 
   public async getCommunities(currentUserId?: string): Promise<Community[]> {
+    const cacheKey = `cache:communities:${currentUserId || 'anon'}`;
+    const cached = await getCached<Community[]>(cacheKey);
+    if (cached) return cached;
+
     const commsCol = this.db.collection<CommunityDoc>(COLLECTIONS.COMMUNITIES);
     const membershipsCol = this.db.collection<CommunityMembershipDoc>(
       COLLECTIONS.COMMUNITY_MEMBERSHIPS
     );
+
     const comms = await commsCol.find({}).toArray();
     if (comms.length === 0) {
       return [];
@@ -161,7 +197,14 @@ export class CommunityService {
       memberCommIds = new Set(memberships.map((m) => m.community_id));
     }
 
-    return communitiesWithCounts.map((comm) => toCommunity(comm, memberCommIds.has(comm._id)));
+    const result = communitiesWithCounts.map((comm) => toCommunity(comm, memberCommIds.has(comm._id)));
+    await setCachedWithTag(
+      cacheKey,
+      'cache:communities:_keys',
+      result,
+      30
+    );
+    return result;
   }
 
   /**
@@ -180,7 +223,7 @@ export class CommunityService {
     );
     const usersCol = this.db.collection<UserDoc>(COLLECTIONS.USERS);
 
-    return runInTransaction(async (session) => {
+    const res = await runInTransaction(async (session) => {
       const comm = await commsCol.findOne({ slug: communitySlug }, { session });
       if (!comm) throw AppError.notFound(`Community with slug '${communitySlug}' not found`);
       const user = await usersCol.findOne({ _id: userId }, { session });
@@ -204,7 +247,10 @@ export class CommunityService {
         { $set: { members_count: membersCount } },
         { session }
       );
-      return { community_id: comm._id, is_member: isMember, members_count: membersCount };
+      return { community_id: comm._id, is_member: isMember, members_count: membersCount, slug: comm.slug };
     });
+
+    await this.invalidateCommunityCache(res.slug);
+    return { community_id: res.community_id, is_member: res.is_member, members_count: res.members_count };
   }
 }

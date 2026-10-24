@@ -25,7 +25,7 @@ export function CommunityTabs({
 }: CommunityTabsProps) {
   return (
     <div
-      className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-[#E2E8F0] dark:border-[#2E3544] ${className}`}
+      className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-border ${className}`}
     >
       {/* Content Mode Tabs (All / Discussions / Visual Pins) */}
       <div
@@ -38,10 +38,10 @@ export function CommunityTabs({
           role="tab"
           aria-selected={activeTab === 'all'}
           onClick={() => onTabChange('all')}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-colors shrink-0 ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-colors shrink-0 cursor-pointer ${
             activeTab === 'all'
-              ? 'bg-[#0F172A] dark:bg-white text-white dark:text-[#0F172A] shadow-xs'
-              : 'bg-white dark:bg-[#181B22] text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white border border-[#E2E8F0] dark:border-[#2E3544]'
+              ? 'bg-primary text-white shadow-xs'
+              : 'bg-surface-card text-text-muted hover:text-text-primary border border-border hover:border-border-strong'
           }`}
         >
           <Layers size={14} />
@@ -50,8 +50,8 @@ export function CommunityTabs({
             <span
               className={`text-[11px] px-1.5 py-0.2 rounded-full ${
                 activeTab === 'all'
-                  ? 'bg-white/20 dark:bg-black/20 text-white dark:text-[#0F172A]'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-surface-subtle text-text-secondary border border-border/50'
               }`}
             >
               {counts.all}
@@ -64,10 +64,10 @@ export function CommunityTabs({
           role="tab"
           aria-selected={activeTab === 'discussions'}
           onClick={() => onTabChange('discussions')}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-colors shrink-0 ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-colors shrink-0 cursor-pointer ${
             activeTab === 'discussions'
-              ? 'bg-[#0F172A] dark:bg-white text-white dark:text-[#0F172A] shadow-xs'
-              : 'bg-white dark:bg-[#181B22] text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white border border-[#E2E8F0] dark:border-[#2E3544]'
+              ? 'bg-primary text-white shadow-xs'
+              : 'bg-surface-card text-text-muted hover:text-text-primary border border-border hover:border-border-strong'
           }`}
         >
           <MessageSquare size={14} />
@@ -76,8 +76,8 @@ export function CommunityTabs({
             <span
               className={`text-[11px] px-1.5 py-0.2 rounded-full ${
                 activeTab === 'discussions'
-                  ? 'bg-white/20 dark:bg-black/20 text-white dark:text-[#0F172A]'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-surface-subtle text-text-secondary border border-border/50'
               }`}
             >
               {counts.discussions}
@@ -90,10 +90,10 @@ export function CommunityTabs({
           role="tab"
           aria-selected={activeTab === 'visual'}
           onClick={() => onTabChange('visual')}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-colors shrink-0 ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-colors shrink-0 cursor-pointer ${
             activeTab === 'visual'
-              ? 'bg-[#0F172A] dark:bg-white text-white dark:text-[#0F172A] shadow-xs'
-              : 'bg-white dark:bg-[#181B22] text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white border border-[#E2E8F0] dark:border-[#2E3544]'
+              ? 'bg-primary text-white shadow-xs'
+              : 'bg-surface-card text-text-muted hover:text-text-primary border border-border hover:border-border-strong'
           }`}
         >
           <Image size={14} />
@@ -102,8 +102,8 @@ export function CommunityTabs({
             <span
               className={`text-[11px] px-1.5 py-0.2 rounded-full ${
                 activeTab === 'visual'
-                  ? 'bg-white/20 dark:bg-black/20 text-white dark:text-[#0F172A]'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-surface-subtle text-text-secondary border border-border/50'
               }`}
             >
               {counts.visual}
@@ -116,17 +116,17 @@ export function CommunityTabs({
       <div
         role="radiogroup"
         aria-label="Community feed sorting"
-        className="flex items-center gap-1 bg-white dark:bg-[#181B22] border border-[#E2E8F0] dark:border-[#2E3544] p-1 rounded-xl text-xs self-start sm:self-auto shrink-0 shadow-2xs"
+        className="flex items-center gap-1 bg-surface-card border border-border p-1 rounded-xl text-xs self-start sm:self-auto shrink-0 shadow-2xs"
       >
         <button
           type="button"
           role="radio"
           aria-checked={sort === 'hot'}
           onClick={() => onSortChange('hot')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold transition-colors ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${
             sort === 'hot'
-              ? 'bg-primary/10 text-primary dark:bg-primary/20 font-bold'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-primary/10 text-primary font-bold'
+              : 'text-text-muted hover:text-text-primary'
           }`}
         >
           <Flame size={13} className={sort === 'hot' ? 'text-primary' : ''} />
@@ -138,10 +138,10 @@ export function CommunityTabs({
           role="radio"
           aria-checked={sort === 'new'}
           onClick={() => onSortChange('new')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold transition-colors ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${
             sort === 'new'
-              ? 'bg-primary/10 text-primary dark:bg-primary/20 font-bold'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-primary/10 text-primary font-bold'
+              : 'text-text-muted hover:text-text-primary'
           }`}
         >
           <Sparkles size={13} className={sort === 'new' ? 'text-primary' : ''} />
@@ -153,10 +153,10 @@ export function CommunityTabs({
           role="radio"
           aria-checked={sort === 'top'}
           onClick={() => onSortChange('top')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold transition-colors ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${
             sort === 'top'
-              ? 'bg-primary/10 text-primary dark:bg-primary/20 font-bold'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-primary/10 text-primary font-bold'
+              : 'text-text-muted hover:text-text-primary'
           }`}
         >
           <TrendingUp size={13} className={sort === 'top' ? 'text-primary' : ''} />
@@ -166,3 +166,5 @@ export function CommunityTabs({
     </div>
   );
 }
+
+export default CommunityTabs;

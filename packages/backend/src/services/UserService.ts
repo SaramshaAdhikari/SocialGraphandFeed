@@ -10,20 +10,44 @@ import {
 import { getDb } from '../db/mongo.js';
 import { runInTransaction } from '../db/transaction.js';
 import { COLLECTIONS } from '../db/collections.js';
-import type { UserDoc, PostDoc, FollowDoc, PostVoteDoc, PostSaveDoc } from '../db/types.js';
+import type { UserDoc, PostDoc, FollowDoc, PostVoteDoc, PostSaveDoc, FeedInboxDoc } from '../db/types.js';
 import { toUserSummary, toUserProfile, toPostCard } from '../db/serialization.js';
 import { buildCursorFilter, encodePostCursor } from '../utils/pagination.js';
+import { getCached, setCachedWithTag, invalidateCachePattern } from '../cache/redis.js';
+import { NotificationService } from './NotificationService.js';
+import { config } from '../config/env.js';
 
 export class UserService {
+  private notificationService = new NotificationService();
+  private foowThreshold: number;
+
+  constructor(foowThreshold?: number) {
+    this.foowThreshold = foowThreshold ?? config.FOOW_MAX_FOLLOWERS_THRESHOLD ?? 500;
+  }
   private get db(): Db {
     return getDb();
   }
 
+  public async invalidateUserProfileCache(username: string): Promise<void> {
+    const normalized = username.trim().toLowerCase();
+    await invalidateCachePattern(
+      `cache:user:profile:${normalized}:_keys`,
+      `cache:user:profile:${normalized}:*`
+    );
+  }
+
   public async getUserProfile(username: string, currentUserId?: string): Promise<UserProfile> {
+    const normalizedUsername = username.trim().toLowerCase();
+    const cacheKey = `cache:user:profile:${normalizedUsername}:${currentUserId ? `u:${currentUserId}` : 'anon'}`;
+    const cached = await getCached<UserProfile>(cacheKey);
+    if (cached) return cached;
+
     const usersCol = this.db.collection<UserDoc>(COLLECTIONS.USERS);
     const followsCol = this.db.collection<FollowDoc>(COLLECTIONS.FOLLOWS);
 
-    const user = await usersCol.findOne({ username });
+    const user = await usersCol.findOne({
+      $or: [{ username: normalizedUsername }, { username }],
+    });
     if (!user) {
       throw AppError.notFound(`User with username '${username}' not found`);
     }
@@ -42,7 +66,22 @@ export class UserService {
       followsCol.countDocuments({ follower_id: user._id }),
       this.db.collection<PostDoc>(COLLECTIONS.POSTS).countDocuments({ author_id: user._id }),
     ]);
-    return { ...toUserProfile(user, isFollowing), followers_count: followersCount, following_count: followingCount, posts_count: postsCount };
+
+    const profile: UserProfile = {
+      ...toUserProfile(user, isFollowing),
+      followers_count: followersCount,
+      following_count: followingCount,
+      posts_count: postsCount,
+    };
+
+    await setCachedWithTag(
+      cacheKey,
+      `cache:user:profile:${user.username.toLowerCase()}:_keys`,
+      profile,
+      30
+    );
+
+    return profile;
   }
 
   public async getUserPosts(
@@ -135,21 +174,68 @@ export class UserService {
     const usersCol = this.db.collection<UserDoc>(COLLECTIONS.USERS);
     const followsCol = this.db.collection<FollowDoc>(COLLECTIONS.FOLLOWS);
 
-    return runInTransaction(async (session) => {
+    const res = await runInTransaction(async (session) => {
       const targetUser = await usersCol.findOne({ _id: targetUserId }, { session });
       const currentUser = await usersCol.findOne({ _id: currentUserId }, { session });
       if (!targetUser) throw AppError.notFound(`Target user ${targetUserId} not found`);
       if (!currentUser) throw AppError.notFound(`Current user ${currentUserId} not found`);
 
       const filter = { follower_id: currentUserId, target_user_id: targetUserId };
+      const inboxesCol = this.db.collection<FeedInboxDoc>(COLLECTIONS.FEED_INBOXES);
+      const postsCol = this.db.collection<PostDoc>(COLLECTIONS.POSTS);
       const existing = await followsCol.findOne(filter, { session });
-      if (existing) await followsCol.deleteOne(filter, { session });
-      else {
-        try { await followsCol.insertOne({ _id: `flw_${currentUserId}_${targetUserId}`, ...filter, created_at: new Date() }, { session }); }
+      if (existing) {
+        await followsCol.deleteOne(filter, { session });
+        await inboxesCol.deleteMany({ user_id: currentUserId, author_id: targetUserId }, { session });
+      } else {
+        try {
+          await followsCol.insertOne({ _id: `flw_${currentUserId}_${targetUserId}`, ...filter, created_at: new Date() }, { session });
+          await this.notificationService.createNotification({
+            recipient_id: targetUserId,
+            actor_id: currentUserId,
+            type: 'follow',
+            session,
+          });
+          const targetFollowersCount = await followsCol.countDocuments({ target_user_id: targetUserId }, { session });
+          if (targetFollowersCount <= this.foowThreshold) {
+            const authorPosts = await postsCol.find({ author_id: targetUserId }, { session }).toArray();
+            if (authorPosts.length > 0) {
+              const inboxDocs: FeedInboxDoc[] = authorPosts.map((p) => ({
+                _id: `inbox_${currentUserId}_${p._id}`,
+                user_id: currentUserId,
+                post_id: p._id,
+                author_id: targetUserId,
+                post_type: p.post_type,
+                created_at: p.created_at,
+                score: p.score,
+                hot_score: p.hot_score,
+              }));
+              await inboxesCol.insertMany(inboxDocs, { ordered: false, session });
+            }
+          }
+        }
         catch (error: any) { if (error?.code !== 11000) throw error; }
       }
-      return { target_user_id: targetUserId, is_following: !existing, followers_count: await followsCol.countDocuments({ target_user_id: targetUserId }, { session }) };
+      const followersCount = await followsCol.countDocuments({ target_user_id: targetUserId }, { session });
+      return {
+        target_user_id: targetUserId,
+        is_following: !existing,
+        followers_count: followersCount,
+        target_username: targetUser.username,
+        current_username: currentUser.username,
+      };
     });
+
+    await Promise.all([
+      this.invalidateUserProfileCache(res.target_username),
+      this.invalidateUserProfileCache(res.current_username),
+    ]);
+
+    return {
+      target_user_id: res.target_user_id,
+      is_following: res.is_following,
+      followers_count: res.followers_count,
+    };
   }
 
   public async setFollow(targetUserId: string, currentUserId: string, isFollowing: boolean): Promise<FollowToggleResponse> {
@@ -160,11 +246,47 @@ export class UserService {
     if (!target) throw AppError.notFound(`Target user ${targetUserId} not found`);
     if (!current) throw AppError.notFound(`Current user ${currentUserId} not found`);
     const filter = { follower_id: currentUserId, target_user_id: targetUserId };
+    const inboxesCol = this.db.collection<FeedInboxDoc>(COLLECTIONS.FEED_INBOXES);
+    const postsCol = this.db.collection<PostDoc>(COLLECTIONS.POSTS);
     if (isFollowing) {
-      try { await followsCol.insertOne({ _id: `flw_${currentUserId}_${targetUserId}`, ...filter, created_at: new Date() }); }
+      try {
+        await followsCol.insertOne({ _id: `flw_${currentUserId}_${targetUserId}`, ...filter, created_at: new Date() });
+        await this.notificationService.createNotification({
+          recipient_id: targetUserId,
+          actor_id: currentUserId,
+          type: 'follow',
+        });
+        const targetFollowersCount = await followsCol.countDocuments({ target_user_id: targetUserId });
+        if (targetFollowersCount <= this.foowThreshold) {
+          const authorPosts = await postsCol.find({ author_id: targetUserId }).toArray();
+          if (authorPosts.length > 0) {
+            const inboxDocs: FeedInboxDoc[] = authorPosts.map((p) => ({
+              _id: `inbox_${currentUserId}_${p._id}`,
+              user_id: currentUserId,
+              post_id: p._id,
+              author_id: targetUserId,
+              post_type: p.post_type,
+              created_at: p.created_at,
+              score: p.score,
+              hot_score: p.hot_score,
+            }));
+            await inboxesCol.insertMany(inboxDocs, { ordered: false });
+          }
+        }
+      }
       catch (error: any) { if (error?.code !== 11000) throw error; }
-    } else await followsCol.deleteOne(filter);
-    return { target_user_id: targetUserId, is_following: isFollowing, followers_count: await followsCol.countDocuments({ target_user_id: targetUserId }) };
+    } else {
+      await followsCol.deleteOne(filter);
+      await inboxesCol.deleteMany({ user_id: currentUserId, author_id: targetUserId });
+    }
+    const followersCount = await followsCol.countDocuments({ target_user_id: targetUserId });
+
+    await Promise.all([
+      this.invalidateUserProfileCache(target.username),
+      this.invalidateUserProfileCache(current.username),
+    ]);
+
+    return { target_user_id: targetUserId, is_following: isFollowing, followers_count: followersCount };
   }
 
   public async getFollowList(username: string, direction: 'followers' | 'following', currentUserId?: string, cursor?: string | null, requestedLimit = 20): Promise<FollowListResponse> {

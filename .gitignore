@@ -45,3 +45,7 @@ Thumbs.db
 *.tsbuildinfo
 packages/frontend/vite.config.js
 packages/frontend/vite.config.d.ts
+
+# Local Database and Cache dumps
+dump.rdb
+*.rdb

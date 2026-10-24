@@ -31,14 +31,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-xs font-semibold text-[#0F172A] mb-1.5 uppercase tracking-wider"
+            className="block text-xs font-semibold text-text-primary mb-1.5 uppercase tracking-wider"
           >
             {label}
           </label>
         )}
         <div className="relative flex items-center">
           {leftIcon && (
-            <span className="absolute left-3 text-[#94A3B8] pointer-events-none inline-flex items-center">
+            <span className="absolute left-3 text-text-muted pointer-events-none inline-flex items-center">
               {leftIcon}
             </span>
           )}
@@ -46,22 +46,22 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             disabled={disabled}
-            className={`w-full h-10 text-sm bg-white dark:bg-[#181B22] text-[#0F172A] dark:text-[#F8FAFC] placeholder-[#94A3B8] border rounded-md transition-all ` +
+            className={`w-full h-10 text-sm bg-surface-card text-text-primary placeholder:text-text-muted border rounded-xl transition-all ` +
               `focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ` +
-              `disabled:bg-[#F4F4F5] dark:disabled:bg-[#12141A] disabled:text-[#94A3B8] disabled:cursor-not-allowed ` +
+              `disabled:bg-surface-subtle disabled:text-text-muted disabled:cursor-not-allowed ` +
               `${leftIcon ? 'pl-9' : 'pl-3.5'} ${rightIcon ? 'pr-9' : 'pr-3.5'} ` +
-              `${error ? 'border-red-500 focus:ring-red-500' : 'border-[#E2E8F0] dark:border-[#2E3544] hover:border-[#CBD5E1] dark:hover:border-[#3E475A]'} ` +
+              `${error ? 'border-red-500 focus:ring-red-500' : 'border-border hover:border-border-strong'} ` +
               `${className}`}
             {...rest}
           />
           {rightIcon && (
-            <span className="absolute right-3 text-[#94A3B8] inline-flex items-center">
+            <span className="absolute right-3 text-text-muted inline-flex items-center">
               {rightIcon}
             </span>
           )}
         </div>
-        {error && <p className="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">{error}</p>}
-        {!error && helperText && <p className="mt-1 text-xs text-[#64748B] dark:text-[#94A3B8]">{helperText}</p>}
+        {error && <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>}
+        {!error && helperText && <p className="mt-1 text-xs text-text-muted">{helperText}</p>}
       </div>
     );
   }
@@ -96,8 +96,8 @@ export function SearchBar({
   return (
     <div className={`relative flex items-center w-full ${className}`}>
       <Search
-        size={18}
-        className="absolute left-3.5 text-[#94A3B8] pointer-events-none shrink-0"
+        size={17}
+        className="absolute left-3.5 text-text-muted pointer-events-none shrink-0"
         aria-hidden="true"
       />
       <input
@@ -107,17 +107,21 @@ export function SearchBar({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         aria-label={ariaLabel}
-        className="w-full h-10 pl-10 pr-9 text-sm bg-[#F4F4F5] dark:bg-[#262B36] text-[#0F172A] dark:text-[#F8FAFC] placeholder-[#94A3B8] rounded-full border border-transparent focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+        className="w-full h-10 pl-10 pr-16 text-sm bg-surface-subtle text-text-primary placeholder:text-text-muted rounded-full border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
       />
-      {value && (
+      {value ? (
         <button
           type="button"
           onClick={() => onChange('')}
           aria-label="Clear search query"
-          className="absolute right-2.5 p-1 rounded-full text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white hover:bg-[#E4E4E7] dark:hover:bg-[#323846] transition-colors"
+          className="absolute right-2.5 p-1 rounded-full text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors"
         >
           <X size={14} />
         </button>
+      ) : (
+        <kbd className="hidden sm:inline-flex items-center absolute right-3 px-1.5 py-0.5 text-[10px] font-mono font-medium text-text-muted bg-surface-card border border-border rounded pointer-events-none select-none">
+          Ctrl K
+        </kbd>
       )}
     </div>
   );

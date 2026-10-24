@@ -1,0 +1,296 @@
+# Security Contract (Universal v2)
+
+This document defines the enforceable security contract for all application code (backend, API, and frontend integration).
+
+This contract is **mandatory** and maps to OWASP Top 10 risk categories.
+
+---
+
+# 0. SECURITY MODEL
+
+## Trust Boundaries
+
+* Client → Backend = UNTRUSTED
+* Backend → Database = TRUSTED (after validation)
+* Backend → External APIs = UNTRUSTED
+* Internal services = ZERO TRUST unless explicitly authenticated
+
+---
+
+# 1. CORE PRINCIPLES
+
+* Backend is the sole trust authority
+* All input is untrusted until validated
+* Failures must be explicit and fail CLOSED
+* No silent failures in security-sensitive paths
+* All writes must be atomic and verifiable
+* Least privilege is mandatory everywhere
+
+---
+
+# 2. INPUT VALIDATION (OWASP A03: Injection)
+
+All endpoints MUST:
+
+* Enforce strict schema validation:
+
+  * required fields
+  * type checks
+  * constraints (length, format)
+* Reject unknown fields (no loose payloads)
+* Reject malformed JSON
+* Enforce max request size
+
+Failure response:
+→ 400 Bad Request (deterministic)
+
+---
+
+# 3. INJECTION PROTECTION
+
+## SQL
+
+* Prepared statements ONLY
+* No string concatenation
+* Dynamic fields must use allowlists
+
+## NoSQL / JSON
+
+* Validate structure strictly
+* Prevent operator injection
+
+## Command / System
+
+* No direct execution of user input
+* All system calls must sanitize input
+
+---
+
+# 4. AUTHENTICATION (OWASP A07)
+
+* Passwords MUST be hashed (bcrypt/argon2)
+* Session/token issued ONLY after full validation
+* Session ID MUST regenerate on login
+* Authentication must not partially succeed
+
+---
+
+# 5. SESSION SECURITY
+
+* Cookies MUST be:
+
+  * HttpOnly
+  * Secure (HTTPS)
+  * SameSite=Strict or Lax
+* Idle timeout required
+* Absolute timeout required
+* Logout MUST invalidate session immediately
+
+---
+
+# 6. AUTHORIZATION (OWASP A01)
+
+* All protected endpoints require authentication
+* Ownership checks MUST be enforced
+* DB queries MUST include ownership constraints
+* Admin actions require explicit role checks
+
+---
+
+# 7. CSRF PROTECTION
+
+* All non-GET endpoints MUST require CSRF token
+* Token must be session-bound
+* Invalid/missing token → 403
+* No state change allowed on failure
+
+---
+
+# 8. XSS & OUTPUT ENCODING (OWASP A03)
+
+* Output MUST be encoded by default
+* No raw HTML rendering unless explicitly sanitized
+* dangerouslySetInnerHTML is banned
+
+## CSP (Required)
+
+Content-Security-Policy:
+default-src 'self';
+script-src 'self';
+style-src 'self';
+img-src 'self' data: https:;
+font-src 'self' data:;
+connect-src 'self' https://<api-origin>;
+frame-ancestors 'none';
+base-uri 'self';
+form-action 'self'
+
+---
+
+# 9. API SECURITY
+
+* All responses MUST follow a consistent JSON envelope
+* Include request_id for traceability
+* No success response without confirmed DB success
+* No stack traces or internal errors exposed
+
+---
+
+# 10. RATE LIMITING & ABUSE (OWASP A04)
+
+* Must be enforced server-side
+* Apply per IP AND per user
+
+Minimum:
+
+* login: 5/min
+* signup: 3/min
+* messaging/posting: capped
+
+Violations:
+→ 429 Too Many Requests
+
+---
+
+# 11. FILE & MEDIA SECURITY
+
+* Validate MIME type server-side
+* Enforce extension whitelist
+* Enforce max file size
+* Use randomized filenames
+* Files MUST NOT be executable
+
+---
+
+# 12. DATA SECURITY
+
+* No plaintext passwords
+* No secrets in code
+* Secrets MUST come from environment
+* DB access must use safe drivers (PDO, ORM safe modes)
+
+---
+
+# 13. HEADERS & BROWSER SECURITY (OWASP A05)
+
+Required headers:
+
+* X-Frame-Options: DENY
+* X-Content-Type-Options: nosniff
+* Referrer-Policy: strict-origin-when-cross-origin
+
+---
+
+# 14. ERROR HANDLING
+
+* No sensitive data in errors
+* No stack traces returned
+* Errors must be deterministic
+* Security failures must be logged
+
+---
+
+# 15. LOGGING & MONITORING (OWASP A09)
+
+Log:
+
+* failed authentication
+* CSRF failures
+* rate limit violations
+
+Logs MUST include:
+
+* timestamp
+* request_id
+* actor (if known)
+* IP address
+
+Logs MUST NOT include:
+
+* passwords
+* tokens
+* secrets
+
+---
+
+# 16. IDENTITY & ACCESS EVENTS
+
+Trigger monitoring on:
+
+* repeated failed login
+* rapid requests
+* suspicious behavior
+
+System MUST:
+
+* throttle OR temporarily lock
+
+---
+
+# 17. IDPOTENCY & DUPLICATE PROTECTION
+
+* Write endpoints SHOULD support idempotency keys
+* Duplicate requests MUST NOT create duplicate records
+
+---
+
+# 18. CACHING & PERFORMANCE SAFETY
+
+* Cache read-heavy endpoints (short TTL)
+* Prevent repeated DB hits for identical requests
+* Enforce pagination limits and max page size
+
+---
+
+# 19. DEPENDENCY & CONFIG SECURITY (OWASP A06)
+
+* No vulnerable/outdated dependencies
+* Lock versions where possible
+* Disable unused features/services
+
+---
+
+# 20. CRYPTOGRAPHY (OWASP A02)
+
+* Use standard libraries only
+* No custom crypto
+* Secure random generation required
+* Sensitive data must be encrypted where applicable
+
+---
+
+# 21. FAIL-SAFE BEHAVIOR
+
+All failures MUST:
+
+* fail closed
+* not execute partial logic
+* not mutate state
+* not leak data
+
+---
+
+# 22. SECURITY VALIDATION REQUIREMENT
+
+The system is considered secure ONLY if:
+
+* All rules above are enforced
+* All failures behave safely
+* No unauthorized access is possible
+* No sensitive data is exposed
+
+---
+
+# 23. NON-GOALS (IMPORTANT)
+
+This contract does NOT cover:
+
+* Infrastructure security (TLS, CDN, WAF)
+* Physical security
+* Advanced side-channel attacks
+
+These must be handled separately.
+
+---
+
+# END OF CONTRACT

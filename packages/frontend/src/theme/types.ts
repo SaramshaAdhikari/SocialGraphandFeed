@@ -66,4 +66,5 @@ export interface ThemeContextValue {
   allPalettes: PaletteDefinition[];
   setMode: (mode: AppearanceMode) => void;
   setPaletteId: (id: PaletteId) => void;
+  resetToDefault?: () => void;
 }

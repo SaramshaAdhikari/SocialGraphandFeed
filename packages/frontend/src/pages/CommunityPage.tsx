@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ArrowLeft, BookOpen, ChevronDown, ChevronUp, Layers, AlertCircle, Home, Compass } from 'lucide-react';
 import type { DiscussionPostCard as IDiscussionPostCard, VisualPinCard as IVisualPinCard } from '@socialgraph/shared';
-import { useRouter } from '../router/Router';
+import { useRouter, Link } from '../router/Router';
 import { useCommunity } from '../hooks/useCommunity';
 import { CommunityHeader, CommunityTabs, CommunitySidebar, CommunitySkeleton } from '../components/community';
 import { DiscussionPostCard, VisualPinCard } from '../components/feed';
@@ -67,14 +67,14 @@ export function CommunityPage() {
   if (isNotFound || (!community && error)) {
     return (
       <div className="max-w-xl mx-auto px-4 py-16 text-center" role="region" aria-label="Community Not Found">
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#181B22] p-8 shadow-sm">
+        <div className="rounded-2xl border border-border bg-surface-card p-8 shadow-sm">
           <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400 mb-4">
             <AlertCircle size={28} />
           </div>
-          <h1 className="text-xl font-bold text-[#0F172A] dark:text-[#F8FAFC]">
+          <h1 className="text-xl font-bold text-text-primary">
             Community Not Found
           </h1>
-          <p className="mt-2 text-sm text-[#64748B] dark:text-[#94A3B8] leading-relaxed">
+          <p className="mt-2 text-sm text-text-muted leading-relaxed">
             The community <span className="font-mono text-primary">c/{communitySlug}</span> does not exist or may have been renamed.
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -115,15 +115,22 @@ export function CommunityPage() {
           type="button"
           onClick={handleBack}
           aria-label="Go back to feed"
-          className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#475569] dark:text-[#94A3B8] hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5 -mx-1"
+          className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-text-secondary hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5 -mx-1"
         >
           <ArrowLeft size={16} />
           <span>Back to Feed</span>
         </button>
 
-        <span className="text-xs font-mono text-[#94A3B8]">
-          id: {community.id}
-        </span>
+        <div className="flex items-center gap-1.5 text-xs text-text-muted">
+          <Link
+            to="/communities"
+            className="hover:text-primary transition-colors font-medium"
+          >
+            Communities
+          </Link>
+          <span>/</span>
+          <span className="font-semibold text-primary">c/{community.slug}</span>
+        </div>
       </nav>
 
       {/* Community Header Banner & Identity */}
@@ -136,12 +143,12 @@ export function CommunityPage() {
 
       {/* Mobile Rules Accordion (Visible on small screens only) */}
       {community.rules && community.rules.length > 0 && (
-        <div className="lg:hidden rounded-xl border border-[#E2E8F0] dark:border-[#2E3544] bg-white dark:bg-[#181B22] p-3 text-xs shadow-2xs">
+        <div className="lg:hidden rounded-xl border border-border bg-surface-card p-3 text-xs shadow-2xs">
           <button
             type="button"
             onClick={() => setMobileRulesOpen(!mobileRulesOpen)}
             aria-expanded={mobileRulesOpen}
-            className="w-full flex items-center justify-between font-bold text-[#0F172A] dark:text-[#F8FAFC]"
+            className="w-full flex items-center justify-between font-bold text-text-primary"
           >
             <span className="flex items-center gap-2 text-primary">
               <BookOpen size={15} />
@@ -153,12 +160,12 @@ export function CommunityPage() {
           {mobileRulesOpen && (
             <ol className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
               {community.rules.map((rule, idx) => (
-                <li key={rule.id} className="text-xs text-[#475569] dark:text-[#CBD5E1]">
-                  <span className="font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
+                <li key={rule.id} className="text-xs text-text-secondary">
+                  <span className="font-semibold text-text-primary">
                     {idx + 1}. {rule.title}
                   </span>
                   {rule.description && (
-                    <p className="text-[11px] text-[#64748B] dark:text-[#94A3B8] mt-0.5 pl-3.5">
+                    <p className="text-[11px] text-text-muted mt-0.5 pl-3.5">
                       {rule.description}
                     </p>
                   )}
@@ -198,13 +205,13 @@ export function CommunityPage() {
           ) : filteredPosts.length === 0 ? (
             <div
               data-testid="community-feed-empty"
-              className="text-center py-12 px-4 rounded-2xl border border-dashed border-[#E2E8F0] dark:border-[#2E3544] bg-white/60 dark:bg-[#181B22]/60"
+              className="text-center py-12 px-4 rounded-2xl border border-dashed border-border bg-surface-card/60"
             >
               <Layers size={32} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
-              <h3 className="text-base font-bold text-[#0F172A] dark:text-[#F8FAFC]">
+              <h3 className="text-base font-bold text-text-primary">
                 No posts in this view yet
               </h3>
-              <p className="text-xs text-[#64748B] dark:text-[#94A3B8] mt-1 max-w-sm mx-auto">
+              <p className="text-xs text-text-muted mt-1 max-w-sm mx-auto">
                 {activeTab === 'all'
                   ? 'Be the first to start a discussion or share a pin in this community.'
                   : `There are currently no ${activeTab} posts in this hub.`}
