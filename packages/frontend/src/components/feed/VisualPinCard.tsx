@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import type { VisualPinCard as IVisualPinCard } from '@socialgraph/shared';
-import { Heart, MessageSquare, Bookmark, Share2, Check } from 'lucide-react';
+import { Heart, MessageSquare, Bookmark, Share2, Check, ImageOff } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { Link } from '../../router/Router';
 import { formatRelativeTime } from '../../utils/date';
+import { usePostModal } from '../../context/PostModalContext';
 
 export interface VisualPinCardProps {
   post: IVisualPinCard;
   onVote: (postId: string, direction: 1 | -1 | 0) => void;
   onToggleSave: (postId: string) => void;
+  onPostClick?: (post: IVisualPinCard) => void;
   className?: string;
 }
 
@@ -16,10 +18,28 @@ export function VisualPinCard({
   post,
   onVote,
   onToggleSave,
+  onPostClick,
   className = '',
 }: VisualPinCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { openPostModal } = usePostModal();
+
+  const handleOpenModal = (e: React.MouseEvent) => {
+    if (onPostClick) {
+      e.preventDefault();
+      onPostClick(post);
+    } else if (!e.metaKey && !e.ctrlKey && e.button === 0) {
+      e.preventDefault();
+      openPostModal(post.id);
+    }
+  };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, input, textarea, [role="button"]')) return;
+    openPostModal(post.id);
+  };
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -49,10 +69,11 @@ export function VisualPinCard({
   return (
     <article
       data-testid={`post-visual-${post.id}`}
-      className={`bg-white dark:bg-[#181B22] rounded-xl border border-[#E2E8F0] dark:border-[#2E3544] shadow-sm hover:border-[#CBD5E1] dark:hover:border-[#3E475A] transition-all duration-150 overflow-hidden ${className}`}
+      onClick={handleCardClick}
+      className={`bg-surface-card rounded-2xl border border-border shadow-xs hover:border-border-strong transition-all duration-150 overflow-hidden cursor-pointer ${className}`}
     >
       {/* Author & Context Header */}
-      <div className="p-3 sm:p-4 flex items-center justify-between gap-3 border-b border-[#F8FAFC] dark:border-[#262B36]">
+      <div className="p-3.5 sm:p-4 flex items-center justify-between gap-3 border-b border-border/60">
         <div className="flex items-center gap-2.5 min-w-0">
           <Link
             to={`/u/${post.author.username}`}
@@ -65,7 +86,7 @@ export function VisualPinCard({
             />
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-xs sm:text-sm text-[#0F172A] dark:text-[#F8FAFC] group-hover/author:text-primary truncate">
+                <span className="font-bold text-xs sm:text-sm text-text-primary group-hover/author:text-primary truncate">
                   {post.author.display_name}
                 </span>
                 {post.author.is_verified && (
@@ -77,7 +98,7 @@ export function VisualPinCard({
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1 text-[11px] text-[#94A3B8]">
+              <div className="flex items-center gap-1 text-[11px] text-text-muted">
                 <span>@{post.author.username}</span>
                 <span>•</span>
                 <time dateTime={post.created_at}>
@@ -91,7 +112,7 @@ export function VisualPinCard({
         {post.community_slug && (
           <Link
             to={`/c/${post.community_slug}`}
-            className="text-xs font-semibold text-[#475569] dark:text-[#CBD5E1] hover:text-primary bg-[#F1F5F9] dark:bg-[#262B36] hover:bg-[#E2E8F0] dark:hover:bg-[#323846] px-2 py-0.5 rounded-full transition-colors shrink-0"
+            className="text-xs font-bold text-text-secondary hover:text-primary bg-surface-subtle border border-border/60 px-2.5 py-0.5 rounded-full transition-colors shrink-0"
           >
             c/{post.community_slug}
           </Link>
@@ -100,33 +121,45 @@ export function VisualPinCard({
 
       {/* Media Box with CLS Aspect Ratio Reservation */}
       <div
-        className="relative group bg-slate-100 dark:bg-[#12141A] overflow-hidden"
+        className="relative group bg-surface-subtle overflow-hidden"
         style={{
           aspectRatio: post.media.aspect_ratio || 1.33,
-          backgroundColor: post.dominant_color || '#F1F5F9',
+          backgroundColor: post.dominant_color || undefined,
         }}
       >
-        <Link to={`/post/${post.id}`} className="block w-full h-full cursor-pointer">
-          <img
-            src={post.media.url}
-            alt={post.media.alt_text || post.title || 'Visual pin'}
-            loading="lazy"
-            onLoad={() => setImageLoaded(true)}
-            className={`w-full h-full object-cover transition-opacity duration-300 group-hover:scale-[1.01] ${
-              imageLoaded ? 'opacity-100' : 'opacity-0'
-            }`}
-          />
+        <Link
+          to={`/post/${post.id}`}
+          onClick={handleOpenModal}
+          className="block w-full h-full cursor-pointer"
+        >
+          {!imageError ? (
+            <img
+              src={post.media.url}
+              alt={post.media.alt_text || post.title || 'Visual pin'}
+              loading="lazy"
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+              className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-[1.015] ${
+                imageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-text-muted bg-surface-subtle">
+              <ImageOff size={28} className="mb-1.5 opacity-60" />
+              <span className="text-xs font-medium text-text-muted">Image preview unavailable</span>
+            </div>
+          )}
         </Link>
 
-        {/* Floating Quick Save Button (Pinterest style) */}
+        {/* Floating Quick Save Button */}
         <button
           type="button"
           onClick={handleSave}
           aria-label={post.is_saved ? 'Unsave pin' : 'Save pin'}
-          className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-bold shadow-md transition-transform duration-150 cursor-pointer ${
+          className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-bold shadow-md transition-all duration-150 cursor-pointer ${
             post.is_saved
-              ? 'bg-[#0F172A] dark:bg-white text-white dark:text-[#0F172A] hover:bg-black'
-              : 'bg-[#E60023] text-white hover:bg-[#ad081b] opacity-0 group-hover:opacity-100 focus:opacity-100'
+              ? 'bg-ink-button text-white hover:bg-ink-button-hover opacity-100'
+              : 'bg-primary text-white hover:bg-primary-hover opacity-0 group-hover:opacity-100 focus:opacity-100'
           }`}
         >
           {post.is_saved ? 'Saved' : 'Save'}
@@ -134,50 +167,51 @@ export function VisualPinCard({
       </div>
 
       {/* Post Details & Captions */}
-      <div className="p-3 sm:p-4">
+      <div className="p-3.5 sm:p-4">
         {post.title && (
-          <Link to={`/post/${post.id}`}>
-            <h2 className="text-sm sm:text-base font-bold text-[#0F172A] dark:text-[#F8FAFC] hover:text-primary transition-colors mb-1 leading-snug">
+          <Link to={`/post/${post.id}`} onClick={handleOpenModal}>
+            <h2 className="text-sm sm:text-base font-bold text-text-primary hover:text-primary transition-colors mb-1 leading-snug">
               {post.title}
             </h2>
           </Link>
         )}
 
         {post.caption && (
-          <p className="text-xs sm:text-sm text-[#475569] dark:text-[#CBD5E1] line-clamp-2 leading-relaxed mb-3">
+          <p className="text-xs sm:text-sm text-text-secondary line-clamp-2 leading-relaxed mb-3">
             {post.caption}
           </p>
         )}
 
         {/* Action Row */}
-        <div className="flex items-center justify-between pt-2 border-t border-[#F8FAFC] dark:border-[#262B36] text-xs text-[#64748B] dark:text-[#94A3B8]">
-          <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center justify-between pt-2.5 border-t border-border/60 text-xs text-text-muted">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Heart / Like Button */}
             <button
               type="button"
               onClick={handleLike}
               aria-label="Like pin"
               aria-pressed={post.user_vote === 1}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
                 post.user_vote === 1
-                  ? 'text-[#E11D48] bg-[#FFE4E6] dark:bg-rose-950/40 font-semibold'
-                  : 'hover:text-[#E11D48] hover:bg-[#F8FAFC] dark:hover:bg-[#262B36]'
+                  ? 'text-rose-600 bg-rose-50 dark:bg-rose-950/40 font-bold'
+                  : 'hover:text-rose-600 hover:bg-rose-500/10'
               }`}
             >
               <Heart
                 size={16}
-                className={post.user_vote === 1 ? 'fill-[#E11D48]' : ''}
+                className={post.user_vote === 1 ? 'fill-rose-600 text-rose-600' : ''}
               />
-              <span className="tabular-nums">{post.score}</span>
+              <span className="tabular-nums font-mono">{post.score}</span>
             </button>
 
             {/* Comments */}
             <Link
               to={`/post/${post.id}`}
-              className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F8FAFC] dark:hover:bg-[#262B36] transition-colors"
+              onClick={handleOpenModal}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-subtle transition-colors"
             >
               <MessageSquare size={16} />
-              <span className="tabular-nums">{post.comments_count}</span>
+              <span className="tabular-nums font-mono">{post.comments_count}</span>
             </Link>
 
             {/* Share */}
@@ -185,14 +219,14 @@ export function VisualPinCard({
               type="button"
               onClick={handleShare}
               aria-label="Share pin"
-              className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F8FAFC] dark:hover:bg-[#262B36] transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-subtle transition-colors cursor-pointer"
             >
               {copied ? (
-                <Check size={16} className="text-emerald-600" />
+                <Check size={16} className="text-emerald-500" />
               ) : (
                 <Share2 size={16} />
               )}
-              <span>{copied ? 'Copied' : 'Share'}</span>
+              <span className="hidden sm:inline">{copied ? 'Copied' : 'Share'}</span>
             </button>
           </div>
 
@@ -202,10 +236,10 @@ export function VisualPinCard({
             onClick={handleSave}
             aria-label="Save pin"
             aria-pressed={post.is_saved}
-            className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
               post.is_saved
                 ? 'text-primary bg-primary/10'
-                : 'hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F8FAFC] dark:hover:bg-[#262B36]'
+                : 'text-text-muted hover:text-text-primary hover:bg-surface-subtle'
             }`}
           >
             <Bookmark
@@ -218,3 +252,4 @@ export function VisualPinCard({
     </article>
   );
 }
+export default VisualPinCard;

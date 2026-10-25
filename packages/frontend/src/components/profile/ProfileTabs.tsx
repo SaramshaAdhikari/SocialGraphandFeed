@@ -34,7 +34,7 @@ export function ProfileTabs({
     <div
       role="tablist"
       aria-label="User Profile Content Tabs"
-      className={`flex items-center gap-1.5 sm:gap-2 p-1.5 bg-white dark:bg-[#181B22] rounded-2xl border border-[#E2E8F0] dark:border-[#2E3544] shadow-xs overflow-x-auto no-scrollbar transition-colors ${className}`}
+      className={`flex items-center gap-1.5 sm:gap-2 p-1.5 bg-surface-card rounded-2xl border border-border shadow-xs overflow-x-auto no-scrollbar transition-colors ${className}`}
     >
       {tabs.map((tab) => {
         const Icon = tab.icon;
@@ -52,17 +52,17 @@ export function ProfileTabs({
             className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
               isActive
                 ? 'bg-primary text-white shadow-xs'
-                : 'text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F4F4F5] dark:hover:bg-[#262B36]'
+                : 'text-text-muted hover:text-text-primary hover:bg-surface-subtle'
             }`}
           >
-            <Icon size={16} className={isActive ? 'text-white' : 'text-[#64748B] dark:text-[#94A3B8]'} />
+            <Icon size={16} className={isActive ? 'text-white' : 'text-text-muted'} />
             <span>{tab.label}</span>
             {typeof tab.count === 'number' && (
               <span
                 className={`ml-0.5 text-[11px] px-1.5 py-0.2 rounded-full tabular-nums font-bold ${
                   isActive
                     ? 'bg-white/20 text-white'
-                    : 'bg-[#F1F5F9] dark:bg-[#262B36] text-[#64748B] dark:text-[#94A3B8]'
+                    : 'bg-surface-subtle text-text-secondary border border-border/50'
                 }`}
               >
                 {tab.count}

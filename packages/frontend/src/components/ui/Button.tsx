@@ -13,23 +13,29 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'bg-primary text-white hover:opacity-90 active:opacity-100 shadow-sm border border-transparent',
+    'bg-primary text-white hover:opacity-95 active:opacity-90 shadow-sm border border-transparent font-semibold btn-interaction btn-glow',
   secondary:
-    'bg-[#0F172A] dark:bg-white text-white dark:text-[#0F172A] hover:bg-[#1E293B] dark:hover:bg-slate-100 active:bg-[#334155] shadow-sm border border-transparent',
+    'bg-primary-soft text-primary hover:bg-primary/20 active:bg-primary/25 border border-primary/30 font-semibold btn-interaction',
   outline:
-    'bg-white dark:bg-[#181B22] text-[#0F172A] dark:text-[#F8FAFC] border border-[#E2E8F0] dark:border-[#2E3544] hover:bg-[#F4F4F5] dark:hover:bg-[#262B36] hover:border-[#CBD5E1] dark:hover:border-[#3E475A]',
+    'bg-surface-card text-text-primary border border-border hover:bg-surface-subtle hover:border-border-strong btn-interaction',
   ghost:
-    'bg-transparent text-[#475569] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F4F4F5] dark:hover:bg-[#262B36] border border-transparent',
+    'bg-transparent text-text-muted hover:text-text-primary hover:bg-surface-subtle border border-transparent transition-colors',
   pill:
-    'bg-[#0F172A] dark:bg-white text-white dark:text-[#0F172A] hover:bg-[#1E293B] dark:hover:bg-slate-100 rounded-full shadow-sm border border-transparent',
+    'bg-surface-card text-text-primary hover:bg-surface-subtle border border-border rounded-full shadow-sm btn-interaction',
   danger:
-    'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-sm border border-transparent',
+    'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-sm border border-transparent btn-interaction',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-xs gap-1.5 rounded-md min-h-[32px]',
-  md: 'h-10 px-4 text-sm gap-2 rounded-md min-h-[40px]',
-  lg: 'h-12 px-6 text-base gap-2.5 rounded-lg min-h-[48px]',
+  sm: 'h-8 px-3 text-xs gap-1.5 min-h-[32px]',
+  md: 'h-10 px-4 text-sm gap-2 min-h-[40px]',
+  lg: 'h-12 px-6 text-base gap-2.5 min-h-[48px]',
+};
+
+const defaultRadius: Record<ButtonSize, string> = {
+  sm: 'rounded-md',
+  md: 'rounded-lg',
+  lg: 'rounded-xl',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -49,11 +55,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const isPill = variant === 'pill';
-    const borderRadius = isPill ? 'rounded-full' : sizeStyles[size].split(' ').find((c) => c.startsWith('rounded-')) || 'rounded-md';
+    const hasCustomRadius = className.split(/\s+/).some((c) => c.startsWith('rounded-'));
+    const radiusClass = hasCustomRadius ? '' : isPill ? 'rounded-full' : defaultRadius[size];
 
     const baseClasses =
-      'inline-flex items-center justify-center font-medium transition-all select-none cursor-pointer ' +
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#181B22] ' +
+      'inline-flex items-center justify-center font-medium transition-all select-none cursor-pointer whitespace-nowrap ' +
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0B0B0F] ' +
       'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none active:scale-[0.98]';
 
     return (
@@ -62,12 +69,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         type={type}
         disabled={disabled || isLoading}
         aria-busy={isLoading}
-        className={`${baseClasses} ${variantStyles[variant]} ${sizeStyles[size]} ${borderRadius} ${className}`}
+        className={`${baseClasses} ${variantStyles[variant]} ${sizeStyles[size]} ${radiusClass} ${className}`.trim()}
         {...rest}
       >
         {isLoading && (
           <svg
-            className="animate-spin -ml-1 mr-2 h-4 w-4 text-current"
+            className="animate-spin -ml-1 mr-2 h-4 w-4 text-current shrink-0"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -88,12 +95,21 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             />
           </svg>
         )}
-        {!isLoading && leftIcon && <span className="inline-flex shrink-0">{leftIcon}</span>}
-        <span>{children}</span>
-        {!isLoading && rightIcon && <span className="inline-flex shrink-0">{rightIcon}</span>}
+        {!isLoading && leftIcon && (
+          <span className="inline-flex items-center justify-center shrink-0 leading-none" aria-hidden="true">
+            {leftIcon}
+          </span>
+        )}
+        <span className="inline-flex items-center justify-center leading-none whitespace-nowrap">{children}</span>
+        {!isLoading && rightIcon && (
+          <span className="inline-flex items-center justify-center shrink-0 leading-none" aria-hidden="true">
+            {rightIcon}
+          </span>
+        )}
       </button>
     );
   }
 );
 
 Button.displayName = 'Button';
+export default Button;

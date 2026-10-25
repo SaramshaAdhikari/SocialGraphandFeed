@@ -52,18 +52,14 @@ export function HomePage() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm dark:border-slate-700 dark:bg-[#181B22]">
-        <span className="text-slate-600 dark:text-slate-300">
+    <div className="space-y-5 sm:space-y-6">
+      <div className="flex items-center justify-between rounded-xl border border-border bg-surface-card px-4 py-3 text-sm shadow-sm">
+        <span className="text-text-secondary">
           <span className={`mr-2 inline-block h-2 w-2 rounded-full ${connected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
           {connected ? 'Live social graph connected' : 'Live updates reconnecting; feed remains available'}
         </span>
         {newPosts > 0 && (
-          <button
-            type="button"
-            className="rounded-lg bg-indigo-600 px-3 py-1.5 font-semibold text-white hover:bg-indigo-700"
-            onClick={() => { setNewPosts(0); void refresh(); }}
-          >
+          <button type="button" className="rounded-lg bg-primary px-3 py-1.5 font-semibold text-white" onClick={() => { setNewPosts(0); void refresh(); }}>
             {newPosts} new {newPosts === 1 ? 'post' : 'posts'} available
           </button>
         )}
@@ -72,7 +68,7 @@ export function HomePage() {
       {toastMessage && (
         <div
           role="status"
-          className="fixed bottom-16 right-4 sm:bottom-6 sm:right-6 z-50 flex items-center gap-2 bg-[#0F172A] text-white px-4 py-2.5 rounded-lg shadow-lg text-xs animate-slide-up"
+          className="fixed bottom-16 right-4 sm:bottom-6 sm:right-6 z-50 flex items-center gap-2 bg-surface-card text-text-primary border border-border px-4 py-2.5 rounded-lg shadow-lg text-xs animate-slide-up"
         >
           <AlertCircle size={16} className="text-amber-400 shrink-0" />
           <span>{toastMessage}</span>

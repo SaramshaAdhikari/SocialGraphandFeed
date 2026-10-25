@@ -35,7 +35,7 @@ export function Avatar({ src, alt, size = 'md', className = '' }: AvatarProps) {
 
   return (
     <div
-      className={`relative inline-flex items-center justify-center rounded-full bg-[#F1F5F9] border border-[#E2E8F0] overflow-hidden select-none shrink-0 ${dimension} ${className}`}
+      className={`relative inline-flex items-center justify-center rounded-full bg-surface-subtle border border-border overflow-hidden select-none shrink-0 ${dimension} ${className}`}
       role="img"
       aria-label={alt}
     >
@@ -48,7 +48,7 @@ export function Avatar({ src, alt, size = 'md', className = '' }: AvatarProps) {
           loading="lazy"
         />
       ) : initials ? (
-        <span className={`font-semibold text-[#475569] ${text}`}>{initials}</span>
+        <span className={`font-semibold text-[#475569] dark:text-[#CBD5E1] ${text}`}>{initials}</span>
       ) : (
         <User size={icon} className="text-[#94A3B8]" aria-hidden="true" />
       )}

@@ -220,7 +220,9 @@ export class MockAdapter implements ISocialGraphApi {
       items = items.filter(
         (p) =>
           p.community_slug?.toLowerCase() === targetSlug ||
-          p.community_id?.toLowerCase() === targetSlug
+          p.community_id?.toLowerCase() === targetSlug ||
+          (targetSlug === 'c_systems' && (p.community_id === 'comm_systems' || p.community_slug === 'systems')) ||
+          (targetSlug === 'comm_systems' && (p.community_id === 'comm_systems' || p.community_slug === 'systems'))
       );
     }
     if (topic && topic !== 'all') {
@@ -653,11 +655,23 @@ export class MockAdapter implements ISocialGraphApi {
   public async getCommunity(communitySlug: string): Promise<Community> {
     await this.delay(`/api/v1/communities/${communitySlug}`);
     const normalized = communitySlug.toLowerCase();
+    const aliasMap: Record<string, string> = {
+      c_systems: 'comm_systems',
+      c_architecture: 'comm_architecture',
+      c_frontend: 'comm_frontend',
+      c_photography: 'comm_photography',
+      c_design: 'comm_design',
+    };
+    const resolvedId = aliasMap[normalized] || normalized;
     const comm =
       this.communities[communitySlug] ||
       this.communities[normalized] ||
+      this.communities[resolvedId] ||
       Object.values(this.communities).find(
-        (c) => c.slug.toLowerCase() === normalized || c.id === communitySlug
+        (c) =>
+          c.slug.toLowerCase() === normalized ||
+          c.id.toLowerCase() === normalized ||
+          c.id.toLowerCase() === resolvedId
       );
 
     if (!comm) {
@@ -681,7 +695,12 @@ export class MockAdapter implements ISocialGraphApi {
     const community = await this.getCommunity(communitySlug);
     const { sort = 'hot', limit = 10, cursor } = query;
 
-    const scoped = this.posts.filter((p) => p.community_id === community.id);
+    const scoped = this.posts.filter(
+      (p) =>
+        p.community_id === community.id ||
+        (community.id === 'comm_systems' && p.community_id === 'c_systems') ||
+        p.community_slug === community.slug
+    );
 
     // Sorting implementation
     if (sort === 'hot' || sort === 'top') {

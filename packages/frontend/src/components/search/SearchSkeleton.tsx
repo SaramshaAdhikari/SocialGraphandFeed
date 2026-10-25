@@ -2,22 +2,22 @@ import type { SearchCategory } from '../../api/types';
 
 export interface SearchSkeletonProps {
   category?: SearchCategory;
-  className?: string;
 }
 
-export function SearchSkeleton({ category = 'all', className = '' }: SearchSkeletonProps) {
+export function SearchSkeleton({ category = 'all' }: SearchSkeletonProps) {
   return (
     <div
+      data-testid="search-skeleton"
       aria-busy="true"
       aria-label="Loading search results"
-      className={`space-y-6 ${className}`}
+      className="space-y-6"
     >
       {/* Category header tabs pulse */}
-      <div className="flex items-center gap-2 pb-3 border-b border-[#E2E8F0] dark:border-[#2E3544]">
+      <div className="flex items-center gap-2 pb-3 border-b border-border">
         {[60, 85, 75, 90, 65].map((w, i) => (
           <div
             key={i}
-            className="h-8 bg-slate-200 dark:bg-[#262B36] rounded-full animate-pulse"
+            className="h-8 bg-surface-subtle rounded-full animate-pulse"
             style={{ width: `${w}px` }}
           />
         ))}
@@ -29,14 +29,14 @@ export function SearchSkeleton({ category = 'all', className = '' }: SearchSkele
           {[1.2, 0.75, 1.4, 0.9, 1.1, 0.8].map((ratio, i) => (
             <div
               key={i}
-              className="break-inside-avoid mb-4 bg-white dark:bg-[#181B22] rounded-2xl border border-[#E2E8F0] dark:border-[#2E3544] p-3 animate-pulse"
+              className="break-inside-avoid mb-4 bg-surface-card rounded-2xl border border-border p-3 animate-pulse"
             >
               <div
-                className="w-full bg-slate-200 dark:bg-[#262B36] rounded-xl mb-3"
+                className="w-full bg-surface-subtle rounded-xl mb-3"
                 style={{ aspectRatio: ratio }}
               />
-              <div className="h-4 bg-slate-200 dark:bg-[#262B36] rounded w-3/4 mb-2" />
-              <div className="h-3 bg-slate-100 dark:bg-[#1E232E] rounded w-1/2" />
+              <div className="h-4 bg-surface-subtle rounded w-3/4 mb-2" />
+              <div className="h-3 bg-surface-subtle rounded w-1/2" />
             </div>
           ))}
         </div>
@@ -46,11 +46,11 @@ export function SearchSkeleton({ category = 'all', className = '' }: SearchSkele
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-white dark:bg-[#181B22] border border-[#E2E8F0] dark:border-[#2E3544] rounded-2xl overflow-hidden p-4 animate-pulse"
+              className="bg-surface-card border border-border rounded-2xl overflow-hidden p-4 animate-pulse"
             >
-              <div className="h-16 bg-slate-200 dark:bg-[#262B36] rounded-lg mb-3" />
-              <div className="h-4 bg-slate-200 dark:bg-[#262B36] rounded w-1/2 mb-2" />
-              <div className="h-3 bg-slate-100 dark:bg-[#1E232E] rounded w-3/4" />
+              <div className="h-16 bg-surface-subtle rounded-lg mb-3" />
+              <div className="h-4 bg-surface-subtle rounded w-1/2 mb-2" />
+              <div className="h-3 bg-surface-subtle rounded w-3/4" />
             </div>
           ))}
         </div>
@@ -60,13 +60,13 @@ export function SearchSkeleton({ category = 'all', className = '' }: SearchSkele
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-white dark:bg-[#181B22] border border-[#E2E8F0] dark:border-[#2E3544] rounded-2xl p-4 animate-pulse flex items-start gap-3"
+              className="bg-surface-card border border-border rounded-2xl p-4 animate-pulse flex items-start gap-3"
             >
-              <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-[#262B36] shrink-0" />
+              <div className="w-12 h-12 rounded-full bg-surface-subtle shrink-0" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 bg-slate-200 dark:bg-[#262B36] rounded w-1/3" />
-                <div className="h-3 bg-slate-100 dark:bg-[#1E232E] rounded w-1/4" />
-                <div className="h-3 bg-slate-100 dark:bg-[#1E232E] rounded w-full" />
+                <div className="h-4 bg-surface-subtle rounded w-1/3" />
+                <div className="h-3 bg-surface-subtle rounded w-1/4" />
+                <div className="h-3 bg-surface-subtle rounded w-full" />
               </div>
             </div>
           ))}
@@ -77,16 +77,16 @@ export function SearchSkeleton({ category = 'all', className = '' }: SearchSkele
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="bg-white dark:bg-[#181B22] border border-[#E2E8F0] dark:border-[#2E3544] rounded-2xl p-5 animate-pulse"
+              className="bg-surface-card border border-border rounded-2xl p-5 animate-pulse"
             >
               <div className="flex items-center gap-2.5 mb-3">
-                <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-[#262B36]" />
-                <div className="h-3 bg-slate-200 dark:bg-[#262B36] rounded w-32" />
+                <div className="w-8 h-8 rounded-full bg-surface-subtle" />
+                <div className="h-3 bg-surface-subtle rounded w-32" />
               </div>
-              <div className="h-5 bg-slate-200 dark:bg-[#262B36] rounded w-4/5 mb-3" />
+              <div className="h-5 bg-surface-subtle rounded w-4/5 mb-3" />
               <div className="space-y-2">
-                <div className="h-3 bg-slate-100 dark:bg-[#1E232E] rounded w-full" />
-                <div className="h-3 bg-slate-100 dark:bg-[#1E232E] rounded w-5/6" />
+                <div className="h-3 bg-surface-subtle rounded w-full" />
+                <div className="h-3 bg-surface-subtle rounded w-5/6" />
               </div>
             </div>
           ))}
@@ -95,3 +95,5 @@ export function SearchSkeleton({ category = 'all', className = '' }: SearchSkele
     </div>
   );
 }
+
+export default SearchSkeleton;

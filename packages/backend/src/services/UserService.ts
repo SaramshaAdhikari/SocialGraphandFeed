@@ -232,7 +232,6 @@ export class UserService {
       this.invalidateUserProfileCache(res.target_username),
       this.invalidateUserProfileCache(res.current_username),
     ]);
-
     realtimeEventBus.publish({
       type: res.is_following ? 'follow.created' : 'follow.deleted',
       actor_id: res.current_user_id,
@@ -293,7 +292,6 @@ export class UserService {
       this.invalidateUserProfileCache(target.username),
       this.invalidateUserProfileCache(current.username),
     ]);
-
     realtimeEventBus.publish({
       type: isFollowing ? 'follow.created' : 'follow.deleted',
       actor_id: currentUserId,
@@ -340,23 +338,18 @@ export class UserService {
     const center = await users.findOne({ _id: userId });
     if (!center) throw AppError.notFound(`User ${userId} not found`);
     const limit = Math.min(Math.max(requestedLimit, 1), 50);
-    const directEdges = await follows.find({
-      $or: [{ follower_id: userId }, { target_user_id: userId }],
-    }).limit(limit * 2).toArray();
+    const directEdges = await follows.find({ $or: [{ follower_id: userId }, { target_user_id: userId }] }).limit(limit * 2).toArray();
     const directIds = new Set<string>([userId]);
     for (const edge of directEdges) {
       directIds.add(edge.follower_id);
       directIds.add(edge.target_user_id);
     }
-    const secondEdges = directIds.size > 1
-      ? await follows.find({
-          $or: [
-            { follower_id: { $in: Array.from(directIds) } },
-            { target_user_id: { $in: Array.from(directIds) } },
-          ],
-        }).limit(limit * 4).toArray()
-      : [];
-    const edges = [...directEdges, ...secondEdges];
+    const edges = await follows.find({
+      $or: [
+        { follower_id: { $in: Array.from(directIds) } },
+        { target_user_id: { $in: Array.from(directIds) } },
+      ],
+    }).limit(limit * 4).toArray();
     const nodeIds = new Set<string>([userId]);
     for (const edge of edges) {
       nodeIds.add(edge.follower_id);
@@ -365,13 +358,12 @@ export class UserService {
     }
     const boundedIds = new Set(Array.from(nodeIds).slice(0, limit + 1));
     const nodeDocs = await users.find({ _id: { $in: Array.from(boundedIds) } }).toArray();
-    const nodes = nodeDocs.map(toUserSummary);
     const uniqueEdges = new Map<string, { source: string; target: string }>();
     for (const edge of edges) {
       if (boundedIds.has(edge.follower_id) && boundedIds.has(edge.target_user_id)) {
         uniqueEdges.set(edge._id, { source: edge.follower_id, target: edge.target_user_id });
       }
     }
-    return { center: toUserSummary(center), nodes, edges: Array.from(uniqueEdges.values()) };
+    return { center: toUserSummary(center), nodes: nodeDocs.map(toUserSummary), edges: Array.from(uniqueEdges.values()) };
   }
 }

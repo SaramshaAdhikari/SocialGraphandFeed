@@ -9,11 +9,11 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
 
 const variantStyles = {
   ghost:
-    'bg-transparent text-[#475569] hover:text-[#0F172A] hover:bg-[#F4F4F5] active:bg-[#E4E4E7]',
+    'bg-transparent text-text-muted hover:text-text-primary hover:bg-surface-subtle active:bg-surface-subtle',
   outline:
-    'bg-white text-[#475569] border border-[#E2E8F0] hover:text-[#0F172A] hover:bg-[#F4F4F5]',
+    'bg-surface-card text-text-muted border border-border hover:text-text-primary hover:bg-surface-subtle',
   filled:
-    'bg-[#0F172A] text-white hover:bg-[#1E293B]',
+    'bg-primary text-white hover:bg-primary-hover',
   danger:
     'bg-transparent text-red-600 hover:bg-red-50 active:bg-red-100',
 };
@@ -47,9 +47,9 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         aria-label={ariaLabel}
         aria-pressed={active}
         className={`inline-flex items-center justify-center rounded-full transition-all cursor-pointer select-none ` +
-          `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2 ` +
+          `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ` +
           `disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none active:scale-95 ` +
-          `${variantStyles[variant]} ${sizeStyles[size]} ${active ? 'bg-[#EFF6FF] text-[#2563EB]' : ''} ${className}`}
+          `${variantStyles[variant]} ${sizeStyles[size]} ${active ? 'bg-primary-soft text-primary font-bold' : ''} hover:scale-105 active:scale-95 duration-150 ${className}`}
         {...rest}
       >
         {children}

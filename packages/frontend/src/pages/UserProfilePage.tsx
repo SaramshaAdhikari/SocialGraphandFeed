@@ -68,15 +68,15 @@ export function UserProfilePage() {
         aria-label="User Profile Not Found"
         data-testid="profile-not-found"
       >
-        <div className="bg-white dark:bg-[#181B22] rounded-3xl border border-[#E2E8F0] dark:border-[#2E3544] p-8 sm:p-12 shadow-sm transition-colors">
+        <div className="bg-surface-card rounded-3xl border border-border p-8 sm:p-12 shadow-sm transition-colors">
           <div className="w-16 h-16 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto mb-4">
             <UserX size={32} />
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#0F172A] dark:text-[#F8FAFC] mb-2 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-text-primary mb-2 tracking-tight">
             User Not Found
           </h1>
-          <p className="text-sm text-[#64748B] dark:text-[#94A3B8] max-w-md mx-auto mb-6 leading-relaxed">
-            The user <span className="font-semibold text-[#0F172A] dark:text-[#F8FAFC]">@{username || 'unknown'}</span> does not exist or has been removed from SocialGraph.
+          <p className="text-sm text-text-muted max-w-md mx-auto mb-6 leading-relaxed">
+            The user <span className="font-semibold text-text-primary">@{username || 'unknown'}</span> does not exist or has been removed from SocialGraph.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3">
@@ -140,9 +140,9 @@ export function UserProfilePage() {
           /* Empty State for Selected Tab */
           <div
             data-testid="profile-tab-empty"
-            className="bg-white dark:bg-[#181B22] rounded-3xl border border-[#E2E8F0] dark:border-[#2E3544] p-12 text-center shadow-xs transition-colors"
+            className="bg-surface-card rounded-3xl border border-border p-12 text-center shadow-xs transition-colors"
           >
-            <div className="w-14 h-14 rounded-2xl bg-[#F1F5F9] dark:bg-[#262B36] text-[#64748B] dark:text-[#94A3B8] flex items-center justify-center mx-auto mb-3.5">
+            <div className="w-14 h-14 rounded-2xl bg-surface-subtle text-text-muted flex items-center justify-center mx-auto mb-3.5">
               {activeTab === 'discussions' ? (
                 <MessageSquare size={26} />
               ) : activeTab === 'visual' ? (
@@ -154,7 +154,7 @@ export function UserProfilePage() {
               )}
             </div>
 
-            <h3 className="text-base font-bold text-[#0F172A] dark:text-[#F8FAFC] mb-1.5">
+            <h3 className="text-base font-bold text-text-primary mb-1.5">
               {activeTab === 'discussions'
                 ? 'No discussions published yet'
                 : activeTab === 'visual'
@@ -164,7 +164,7 @@ export function UserProfilePage() {
                 : 'No posts published yet'}
             </h3>
 
-            <p className="text-xs sm:text-sm text-[#64748B] dark:text-[#94A3B8] max-w-sm mx-auto leading-relaxed mb-4">
+            <p className="text-xs sm:text-sm text-text-muted max-w-sm mx-auto leading-relaxed mb-4">
               {activeTab === 'discussions'
                 ? `When @${profile.username} publishes architectural notes or technical discussions, they will appear here.`
                 : activeTab === 'visual'

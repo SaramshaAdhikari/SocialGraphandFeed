@@ -50,13 +50,13 @@ export function VoteControl({
       ? 'text-[#F97316] font-bold'
       : userVote === -1
       ? 'text-[#6366F1] font-bold'
-      : 'text-[#0F172A] dark:text-[#F8FAFC] font-semibold';
+      : 'text-text-primary font-semibold';
 
   return (
     <div
       role="group"
       aria-label="Vote on post"
-      className={`inline-flex items-center select-none bg-[#F4F4F5] dark:bg-[#262B36] rounded-full border border-transparent ${
+      className={`inline-flex items-center select-none bg-surface-subtle rounded-full border border-border ${
         isVertical
           ? 'flex-col py-1.5 px-1 min-w-[36px]'
           : 'flex-row px-2 py-0.5 gap-1 min-h-[32px]'
@@ -68,10 +68,10 @@ export function VoteControl({
         disabled={disabled}
         aria-label="Upvote"
         aria-pressed={userVote === 1}
-        className={`p-1 rounded-full transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 disabled:cursor-not-allowed ${
+        className={`p-1 rounded-full transition-all duration-150 hover:scale-110 active:scale-90 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 disabled:cursor-not-allowed ${
           userVote === 1
             ? 'text-[#F97316] hover:bg-[#FFEDD5] dark:hover:bg-[#431407]'
-            : 'text-[#64748B] dark:text-[#94A3B8] hover:text-[#F97316] hover:bg-[#E4E4E7] dark:hover:bg-[#323846]'
+            : 'text-text-muted hover:text-[#F97316] hover:bg-surface-card'
         }`}
       >
         <ArrowBigUp
@@ -96,10 +96,10 @@ export function VoteControl({
         disabled={disabled}
         aria-label="Downvote"
         aria-pressed={userVote === -1}
-        className={`p-1 rounded-full transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 disabled:cursor-not-allowed ${
+        className={`p-1 rounded-full transition-all duration-150 hover:scale-110 active:scale-90 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 disabled:cursor-not-allowed ${
           userVote === -1
             ? 'text-[#6366F1] hover:bg-[#EEF2FF] dark:hover:bg-[#1E1B4B]'
-            : 'text-[#64748B] dark:text-[#94A3B8] hover:text-[#6366F1] hover:bg-[#E4E4E7] dark:hover:bg-[#323846]'
+            : 'text-text-muted hover:text-[#6366F1] hover:bg-surface-card'
         }`}
       >
         <ArrowBigDown

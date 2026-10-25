@@ -3,7 +3,7 @@ import type { FeedQuery, FeedResponse, DiscoveryQuery, DiscoveryResponse, Visual
 import { getDb } from '../db/mongo.js';
 import { COLLECTIONS } from '../db/collections.js';
 import { config } from '../config/env.js';
-import type { PostDoc, UserDoc, FollowDoc, PostVoteDoc, PostSaveDoc, FeedInboxDoc } from '../db/types.js';
+import type { PostDoc, UserDoc, FollowDoc, PostVoteDoc, PostSaveDoc, FeedInboxDoc, CommunityMembershipDoc } from '../db/types.js';
 import { toUserSummary, toPostCard } from '../db/serialization.js';
 import {
   buildCursorFilter,
@@ -241,7 +241,23 @@ export class FeedService {
       }
       scopeFilter = { author_id: { $in: targetUserIds } };
     } else if (scope === 'communities') {
-      scopeFilter = { community_id: { $exists: true, $ne: null as any } };
+      if (currentUserId) {
+        const mbrsCol = this.db.collection<CommunityMembershipDoc>(COLLECTIONS.COMMUNITY_MEMBERSHIPS);
+        const memberships = await mbrsCol.find({ user_id: currentUserId }).toArray();
+        const joinedCommIds = memberships.map((m) => m.community_id);
+        if (joinedCommIds.length === 0) {
+          return {
+            success: true,
+            data: [],
+            next_cursor: null,
+            has_more: false,
+            meta: { count: 0, server_execution_time_ms: Number((performance.now() - start).toFixed(2)) },
+          };
+        }
+        scopeFilter = { community_id: { $in: joinedCommIds } };
+      } else {
+        scopeFilter = { community_id: { $exists: true, $ne: null as any } };
+      }
     }
 
     // 2. Build cursor filter

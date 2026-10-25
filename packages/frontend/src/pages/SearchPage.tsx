@@ -71,23 +71,23 @@ export function SearchPage() {
       {!hasSearched ? (
         <section
           data-testid="search-initial-state"
-          className="bg-white dark:bg-[#181B22] border border-[#E2E8F0] dark:border-[#2E3544] rounded-2xl p-6 sm:p-10 shadow-xs"
+          className="bg-surface-card border border-border rounded-2xl p-6 sm:p-10 shadow-xs"
         >
           <div className="max-w-xl">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-3">
               <Sparkles size={13} />
               <span>Universal Discovery</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A] dark:text-[#F8FAFC] tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">
               Search across SocialGraph
             </h2>
-            <p className="mt-2 text-sm text-[#64748B] dark:text-[#94A3B8] leading-relaxed">
+            <p className="mt-2 text-sm text-text-muted leading-relaxed">
               Find technical discussions, architectural pins, research communities, and fellow systems engineers.
             </p>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-[#F1F5F9] dark:border-[#262B36]">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[#64748B] dark:text-[#94A3B8] mb-3 flex items-center gap-1.5">
+          <div className="mt-8 pt-6 border-t border-border">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted mb-3 flex items-center gap-1.5">
               <Search size={13} />
               <span>Suggested Searches</span>
             </h3>
@@ -98,7 +98,7 @@ export function SearchPage() {
                   key={topic.name}
                   type="button"
                   onClick={() => handleSuggestionClick(topic.name)}
-                  className="group flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-[#262B36] text-[#334155] dark:text-[#CBD5E1] hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/20 dark:hover:text-primary transition-all cursor-pointer"
+                  className="group flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium bg-surface-subtle text-text-secondary border border-border/50 hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/20 dark:hover:text-primary transition-all cursor-pointer"
                 >
                   <span>{topic.name}</span>
                   <ArrowRight
@@ -171,7 +171,7 @@ export function SearchPage() {
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <Users size={16} className="text-primary" />
-                          <h3 className="font-bold text-sm text-[#0F172A] dark:text-[#F8FAFC]">
+                          <h3 className="font-bold text-sm text-text-primary">
                             Communities ({results.communities.length})
                           </h3>
                         </div>
@@ -203,7 +203,7 @@ export function SearchPage() {
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <User size={16} className="text-primary" />
-                          <h3 className="font-bold text-sm text-[#0F172A] dark:text-[#F8FAFC]">
+                          <h3 className="font-bold text-sm text-text-primary">
                             People ({results.users.length})
                           </h3>
                         </div>
@@ -231,7 +231,7 @@ export function SearchPage() {
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <MessageSquare size={16} className="text-primary" />
-                          <h3 className="font-bold text-sm text-[#0F172A] dark:text-[#F8FAFC]">
+                          <h3 className="font-bold text-sm text-text-primary">
                             Discussions ({results.discussions.length})
                           </h3>
                         </div>
@@ -264,7 +264,7 @@ export function SearchPage() {
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <Image size={16} className="text-primary" />
-                          <h3 className="font-bold text-sm text-[#0F172A] dark:text-[#F8FAFC]">
+                          <h3 className="font-bold text-sm text-text-primary">
                             Visual Pins ({results.visuals.length})
                           </h3>
                         </div>
@@ -292,7 +292,7 @@ export function SearchPage() {
               {category === 'discussions' && (
                 <section aria-label="Discussions search results" className="space-y-4">
                   {results.discussions.length === 0 ? (
-                    <p className="text-center py-10 text-xs text-[#64748B] dark:text-[#94A3B8]">
+                    <p className="text-center py-10 text-xs text-text-muted">
                       No discussion posts matched &ldquo;{query}&rdquo;.
                     </p>
                   ) : (
@@ -312,7 +312,7 @@ export function SearchPage() {
               {category === 'visual' && (
                 <section aria-label="Visual pins search results">
                   {results.visuals.length === 0 ? (
-                    <p className="text-center py-10 text-xs text-[#64748B] dark:text-[#94A3B8]">
+                    <p className="text-center py-10 text-xs text-text-muted">
                       No visual pins matched &ldquo;{query}&rdquo;.
                     </p>
                   ) : (
@@ -329,7 +329,7 @@ export function SearchPage() {
               {category === 'communities' && (
                 <section aria-label="Communities search results">
                   {results.communities.length === 0 ? (
-                    <p className="text-center py-10 text-xs text-[#64748B] dark:text-[#94A3B8]">
+                    <p className="text-center py-10 text-xs text-text-muted">
                       No communities matched &ldquo;{query}&rdquo;.
                     </p>
                   ) : (
@@ -350,7 +350,7 @@ export function SearchPage() {
               {category === 'people' && (
                 <section aria-label="People search results">
                   {results.users.length === 0 ? (
-                    <p className="text-center py-10 text-xs text-[#64748B] dark:text-[#94A3B8]">
+                    <p className="text-center py-10 text-xs text-text-muted">
                       No people matched &ldquo;{query}&rdquo;.
                     </p>
                   ) : (

@@ -266,14 +266,7 @@ export class PostService {
           { session }
         );
       }
-      return {
-        post_id: postId,
-        score,
-        new_score: score,
-        user_vote: direction,
-        previous_vote: prevDirection,
-        author_id: post.author_id,
-      };
+      return { post_id: postId, score, new_score: score, user_vote: direction, previous_vote: prevDirection, author_id: post.author_id };
     });
 
     await this.invalidatePostCache(postId);

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useApi } from '../api';
 import { ApiClientError } from '../api/client';
-import type { Community, PostCard, CreatePostInput } from '@socialgraph/shared';
+import type { Community, PostCard, CreatePostInput, MediaAttachment } from '@socialgraph/shared';
 
 export type PostComposerType = 'discussion' | 'visual';
 
@@ -19,6 +19,11 @@ export interface UseCreatePostReturn {
   removeTag: (tag: string) => void;
   imageUrl: string;
   setImageUrl: (url: string) => void;
+  mediaList: MediaAttachment[];
+  addMediaItem: (item: { url: string; aspect_ratio?: number; alt_text?: string }) => void;
+  removeMediaItem: (index: number) => void;
+  reorderMediaItem: (fromIndex: number, toIndex: number) => void;
+  setCoverMedia: (index: number) => void;
   imageAspectRatio: number;
   setImageAspectRatio: (ratio: number) => void;
   imageAlt: string;
@@ -66,6 +71,7 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
   const [communityId, setCommunityId] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState('');
+  const [mediaList, setMediaList] = useState<MediaAttachment[]>([]);
   const [imageAspectRatio, setImageAspectRatio] = useState(1.0);
   const [imageAlt, setImageAlt] = useState('');
   const [destinationUrl, setDestinationUrl] = useState('');
@@ -114,8 +120,93 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
 
   const handleSetImageUrl = useCallback((val: string) => {
     setImageUrl(val);
+    setMediaList((prev) => {
+      if (prev.length <= 1) {
+        if (!val.trim()) return [];
+        return [{
+          id: prev[0]?.id || `m_${Date.now()}`,
+          url: val.trim(),
+          aspect_ratio: imageAspectRatio || 1.0,
+          alt_text: imageAlt || '',
+        }];
+      }
+      const next = [...prev];
+      next[0] = { ...next[0], url: val.trim() };
+      return next;
+    });
     refreshIdempotencyKey();
-  }, [refreshIdempotencyKey]);
+  }, [imageAspectRatio, imageAlt, refreshIdempotencyKey]);
+
+  const addMediaItem = useCallback(
+    (item: { url: string; aspect_ratio?: number; alt_text?: string }) => {
+      if (!item.url.trim()) return;
+      const newAttachment: MediaAttachment = {
+        id: `m_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        url: item.url.trim(),
+        aspect_ratio: item.aspect_ratio || 1.0,
+        alt_text: item.alt_text || '',
+      };
+      setMediaList((prev) => {
+        if (prev.length >= 10) return prev;
+        const next = [...prev, newAttachment];
+        if (next.length === 1) {
+          setImageUrl(next[0].url);
+          setImageAspectRatio(next[0].aspect_ratio);
+          setImageAlt(next[0].alt_text || '');
+        }
+        return next;
+      });
+      refreshIdempotencyKey();
+    },
+    [refreshIdempotencyKey]
+  );
+
+  const removeMediaItem = useCallback(
+    (index: number) => {
+      setMediaList((prev) => {
+        const next = prev.filter((_, i) => i !== index);
+        if (next.length > 0) {
+          setImageUrl(next[0].url);
+          setImageAspectRatio(next[0].aspect_ratio);
+          setImageAlt(next[0].alt_text || '');
+        } else {
+          setImageUrl('');
+          setIsLocalFile(false);
+          setImageLoaded(false);
+          setImageError(false);
+        }
+        return next;
+      });
+      refreshIdempotencyKey();
+    },
+    [refreshIdempotencyKey]
+  );
+
+  const reorderMediaItem = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      setMediaList((prev) => {
+        if (fromIndex < 0 || fromIndex >= prev.length || toIndex < 0 || toIndex >= prev.length) {
+          return prev;
+        }
+        const next = [...prev];
+        const [moved] = next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, moved);
+        setImageUrl(next[0].url);
+        setImageAspectRatio(next[0].aspect_ratio);
+        setImageAlt(next[0].alt_text || '');
+        return next;
+      });
+      refreshIdempotencyKey();
+    },
+    [refreshIdempotencyKey]
+  );
+
+  const setCoverMedia = useCallback(
+    (index: number) => {
+      reorderMediaItem(index, 0);
+    },
+    [reorderMediaItem]
+  );
 
   const handleSetDestinationUrl = useCallback((val: string) => {
     setDestinationUrl(val);
@@ -215,6 +306,7 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
 
   const clearImage = useCallback(() => {
     setImageUrl('');
+    setMediaList([]);
     setIsLocalFile(false);
     setImageError(false);
     setImageLoaded(false);
@@ -266,9 +358,10 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
       communityId ||
       tags.length > 0 ||
       imageUrl.trim() ||
+      mediaList.length > 0 ||
       destinationUrl.trim()
     );
-  }, [title, content, communityId, tags, imageUrl, destinationUrl]);
+  }, [title, content, communityId, tags, imageUrl, mediaList.length, destinationUrl]);
 
   // Form validation
   const validateForm = useCallback((): boolean => {
@@ -292,13 +385,14 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
 
     if (postType === 'visual') {
       const isLive = api.dataSource === 'live';
-      if (!imageUrl.trim()) {
+      const effectiveUrl = imageUrl.trim() || (mediaList.length > 0 ? mediaList[0].url : '');
+      if (!effectiveUrl) {
         newErrors.imageUrl = isLive
           ? 'An externally accessible image URL is required.'
           : 'An image URL or local file preview is required.';
-      } else if (isLive && (isLocalFile || imageUrl.trim().startsWith('blob:'))) {
+      } else if (isLive && (isLocalFile || effectiveUrl.startsWith('blob:'))) {
         newErrors.imageUrl = 'Local file upload requires cloud media storage which is not yet configured. Please provide an externally accessible image URL (e.g. https://...).';
-      } else if (imageError) {
+      } else if (imageError && mediaList.length <= 1) {
         newErrors.imageUrl = 'The provided image could not be loaded. Please check the URL.';
       }
 
@@ -316,7 +410,7 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [postType, title, content, imageUrl, isLocalFile, imageError, destinationUrl, api]);
+  }, [postType, title, content, imageUrl, mediaList, isLocalFile, imageError, destinationUrl, api]);
 
   // Submission handler
   const submitPost = useCallback(async (): Promise<PostCard | null> => {
@@ -340,6 +434,19 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
     try {
       let input: CreatePostInput;
 
+      const mediaItems: MediaAttachment[] = mediaList.length > 0
+        ? mediaList
+        : imageUrl.trim()
+        ? [
+            {
+              id: `m_${Date.now()}`,
+              url: imageUrl.trim(),
+              aspect_ratio: imageAspectRatio || 1.0,
+              alt_text: imageAlt.trim() || title.trim(),
+            },
+          ]
+        : [];
+
       if (postType === 'discussion') {
         input = {
           post_type: 'discussion',
@@ -348,6 +455,7 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
           community_id: communityId || undefined,
           tags: finalTags,
           flair: finalFlair,
+          media: mediaItems.length > 0 ? mediaItems : undefined,
         };
       } else {
         input = {
@@ -358,14 +466,7 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
           community_id: communityId || undefined,
           destination_url: destinationUrl.trim() || undefined,
           tags: finalTags,
-          media: [
-            {
-              id: `m_${Date.now()}`,
-              url: imageUrl.trim(),
-              aspect_ratio: imageAspectRatio || 1.0,
-              alt_text: imageAlt.trim() || title.trim(),
-            },
-          ],
+          media: mediaItems.length > 0 ? mediaItems : undefined,
         };
       }
 
@@ -410,6 +511,7 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
     communityId,
     tags,
     imageUrl,
+    mediaList,
     imageAspectRatio,
     imageAlt,
     destinationUrl,
@@ -424,6 +526,7 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
     setCommunityId('');
     setTags([]);
     setImageUrl('');
+    setMediaList([]);
     setImageAspectRatio(1.0);
     setImageAlt('');
     setDestinationUrl('');
@@ -453,6 +556,11 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
     removeTag,
     imageUrl,
     setImageUrl: handleSetImageUrl,
+    mediaList,
+    addMediaItem,
+    removeMediaItem,
+    reorderMediaItem,
+    setCoverMedia,
     imageAspectRatio,
     setImageAspectRatio: handleSetImageAspectRatio,
     imageAlt,
