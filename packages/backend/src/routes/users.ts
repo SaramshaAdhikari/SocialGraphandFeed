@@ -38,12 +38,6 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{ Querystring: { limit?: number } }>(
     '/graph/neighborhood',
     { preHandler: requireIdentity },
-    async (request) => userService.getGraphNeighborhood(getRequestUserId(request)!, request.query.limit)
-  );
-
-  fastify.get<{ Querystring: { limit?: number } }>(
-    '/graph/neighborhood',
-    { preHandler: requireIdentity },
     async (request) => {
       return userService.getGraphNeighborhood(getRequestUserId(request)!, request.query.limit);
     }
