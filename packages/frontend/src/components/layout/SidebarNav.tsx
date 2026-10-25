@@ -1,4 +1,4 @@
-import { Home, Compass, Users, Search, Bookmark, User, Activity, Palette, PlusCircle } from 'lucide-react';
+import { Home, Compass, Users, Search, Bookmark, User, Activity, Palette, PlusCircle, Network } from 'lucide-react';
 import { Link, useRouter } from '../../router/Router';
 import { useAuth } from '../../auth/AuthContext';
 
@@ -15,6 +15,7 @@ const navItems: NavItem[] = [
   { label: 'Create', to: '/create', icon: PlusCircle },
   { label: 'Communities', to: '/communities', icon: Users },
   { label: 'Search', to: '/search', icon: Search },
+  { label: 'Social Graph', to: '/graph', icon: Network },
   { label: 'Saved', to: '/saved', icon: Bookmark },
   { label: 'Appearance', to: '/settings/appearance', icon: Palette },
   { label: 'Diagnostics', to: '/diagnostics', icon: Activity },

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useFeed } from '../hooks/useFeed';
 import { FeedSortBar } from '../components/feed/FeedSortBar';
 import { FeedList } from '../components/feed/FeedList';
 import { AlertCircle, X } from 'lucide-react';
+import { useRealtimeEvents } from '../hooks/useRealtimeEvents';
 
 export function HomePage() {
   const {
@@ -26,6 +27,11 @@ export function HomePage() {
   });
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [newPosts, setNewPosts] = useState(0);
+  const handleRealtimeEvent = useCallback((event: { type: string }) => {
+    if (event.type === 'post.created') setNewPosts((count) => count + 1);
+  }, []);
+  const { connected } = useRealtimeEvents(handleRealtimeEvent);
 
   const handleVote = async (postId: string, direction: 1 | -1 | 0) => {
     try {
@@ -47,6 +53,21 @@ export function HomePage() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm dark:border-slate-700 dark:bg-[#181B22]">
+        <span className="text-slate-600 dark:text-slate-300">
+          <span className={`mr-2 inline-block h-2 w-2 rounded-full ${connected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+          {connected ? 'Live social graph connected' : 'Live updates reconnecting; feed remains available'}
+        </span>
+        {newPosts > 0 && (
+          <button
+            type="button"
+            className="rounded-lg bg-indigo-600 px-3 py-1.5 font-semibold text-white hover:bg-indigo-700"
+            onClick={() => { setNewPosts(0); void refresh(); }}
+          >
+            {newPosts} new {newPosts === 1 ? 'post' : 'posts'} available
+          </button>
+        )}
+      </div>
       {/* Interactive Toast Notification for Mutation Failures */}
       {toastMessage && (
         <div

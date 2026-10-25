@@ -27,6 +27,7 @@ import { getCached, setCachedWithTag, invalidateCachePattern } from '../cache/re
 import { NotificationService } from './NotificationService.js';
 import { config } from '../config/env.js';
 import { UserService } from './UserService.js';
+import { realtimeEventBus } from '../realtime/EventBus.js';
 
 export interface VoteResult {
   post_id: string;
@@ -109,7 +110,7 @@ export class PostService {
       }
     }
 
-    const { card, authorUsername } = await runInTransaction(async (session) => {
+    const { card, authorUsername, followerIds } = await runInTransaction(async (session) => {
       const author = await usersCol.findOne({ _id: authorId }, { session });
       if (!author) throw AppError.notFound(`Author user ${authorId} not found`);
 
@@ -172,6 +173,7 @@ export class PostService {
             return {
               card: toPostCard(dup, toUserSummary(author), 0, false),
               authorUsername: null,
+              followerIds: [],
             };
           }
         }
@@ -204,12 +206,19 @@ export class PostService {
       return {
         card: toPostCard(postDoc, toUserSummary(author), 0, false),
         authorUsername: author.username,
+        followerIds: followers.map((f) => f.follower_id),
       };
     });
 
     if (authorUsername) {
       await this.userService.invalidateUserProfileCache(authorUsername);
     }
+    realtimeEventBus.publish({
+      type: 'post.created',
+      author_id: authorId,
+      post_id: card.id,
+      follower_ids: followerIds,
+    });
 
     return card;
   }
@@ -257,10 +266,25 @@ export class PostService {
           { session }
         );
       }
-      return { post_id: postId, score, new_score: score, user_vote: direction };
+      return {
+        post_id: postId,
+        score,
+        new_score: score,
+        user_vote: direction,
+        previous_vote: prevDirection,
+        author_id: post.author_id,
+      };
     });
 
     await this.invalidatePostCache(postId);
+    if (res.previous_vote !== res.user_vote && (res.previous_vote === 1 || res.user_vote === 1)) {
+      realtimeEventBus.publish({
+        type: res.user_vote === 1 ? 'post.liked' : 'post.unliked',
+        actor_id: userId,
+        post_id: postId,
+        author_id: res.author_id,
+      });
+    }
     return res;
   }
 

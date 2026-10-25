@@ -70,6 +70,8 @@ If `docker compose exec` cannot connect, check `docker compose ps` and `docker c
 
 Community membership source-of-truth and the original sidebar/detail mismatch are documented in [docs/COMMUNITY_MEMBERSHIP.md](docs/COMMUNITY_MEMBERSHIP.md).
 
+The relationship-aware live-update demo is documented in [docs/REALTIME_SOCIAL_GRAPH_DEMO.md](docs/REALTIME_SOCIAL_GRAPH_DEMO.md). It covers authenticated SSE delivery, follower-aware post events, reconnect behavior, and the bounded MongoDB-backed graph view at `/graph`.
+
 ## Repository layout
 
 - `packages/frontend`: React and Vite UI

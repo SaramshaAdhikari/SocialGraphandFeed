@@ -16,6 +16,7 @@ import { ThemeProvider } from './theme';
 import { AuthPage } from './pages/AuthPage';
 import { AuthGate } from './pages/AuthGate';
 import { AuthProvider } from './auth/AuthContext';
+import { GraphPage } from './pages/GraphPage';
 
 export function App() {
   return (
@@ -41,6 +42,7 @@ export function App() {
 
               {/* Screen 2: Discover */}
               <Route path="/explore" element={<DiscoverPage />} />
+              <Route path="/graph" element={<AuthGate><GraphPage /></AuthGate>} />
 
               {/* Screen 3: Post Detail & Threaded Comments */}
               <Route path="/post/:postId" element={<PostDetailPage />} />
