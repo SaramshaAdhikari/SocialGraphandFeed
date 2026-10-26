@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from '../router/Router';
 import { useCreatePost } from '../hooks/useCreatePost';
 import {
@@ -7,6 +7,8 @@ import {
   VisualPinUploader,
   CommunitySelect,
   TagInput,
+  PinPreview,
+  DiscussionPreview,
 } from '../components/composer';
 import { Input, Button } from '../components/ui';
 import { ArrowLeft, Send, AlertCircle, Info, Sparkles, Clock } from 'lucide-react';
@@ -60,6 +62,61 @@ export function CreatePostPage() {
   } = useCreatePost('discussion');
 
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
+  const [draftStatus, setDraftStatus] = useState<'saved' | 'restored' | null>(null);
+
+  const selectedCommunityName = useMemo(
+    () => communities.find((community) => community.id === communityId)?.name,
+    [communities, communityId],
+  );
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem('socialgraph:create-post-draft');
+      if (!saved || isDirty) return;
+      const draft = JSON.parse(saved) as {
+        postType?: 'discussion' | 'visual';
+        title?: string;
+        content?: string;
+        communityId?: string;
+        tags?: string[];
+        imageUrl?: string;
+        imageAlt?: string;
+        destinationUrl?: string;
+      };
+      if (draft.postType) setPostType(draft.postType);
+      if (draft.title) setTitle(draft.title);
+      if (draft.content) setContent(draft.content);
+      if (draft.communityId) setCommunityId(draft.communityId);
+      if (draft.tags) draft.tags.forEach(addTag);
+      if (draft.imageUrl) setImageUrl(draft.imageUrl);
+      if (draft.imageAlt) setImageAlt(draft.imageAlt);
+      if (draft.destinationUrl) setDestinationUrl(draft.destinationUrl);
+      if (Object.keys(draft).length > 0) setDraftStatus('restored');
+    } catch {
+      window.localStorage.removeItem('socialgraph:create-post-draft');
+    }
+  }, []);
+
+  const saveDraft = () => {
+    try {
+      window.localStorage.setItem(
+        'socialgraph:create-post-draft',
+        JSON.stringify({
+          postType,
+          title,
+          content,
+          communityId,
+          tags,
+          imageUrl,
+          imageAlt,
+          destinationUrl,
+        }),
+      );
+      setDraftStatus('saved');
+    } catch {
+      setDraftStatus(null);
+    }
+  };
 
   const handleBack = () => {
     if (isDirty) {
@@ -78,6 +135,7 @@ export function CreatePostPage() {
     e.preventDefault();
     const created = await submitPost();
     if (created && created.id) {
+      window.localStorage.removeItem('socialgraph:create-post-draft');
       navigate(`/post/${created.id}`);
     }
   };
@@ -111,7 +169,16 @@ export function CreatePostPage() {
         </div>
 
         {/* Action button in header (desktop) */}
-        <div className="hidden sm:flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={saveDraft}
+            disabled={submitting || !isDirty}
+          >
+            Save Draft
+          </Button>
           <Button
             type="button"
             variant="ghost"
@@ -142,6 +209,12 @@ export function CreatePostPage() {
           </Button>
         </div>
       </div>
+
+      {draftStatus && (
+        <p role="status" className="text-xs text-text-muted">
+          {draftStatus === 'restored' ? 'Draft restored from this browser.' : 'Draft saved locally.'}
+        </p>
+      )}
 
       {/* Discard Draft Modal / Confirmation */}
       {confirmDiscardOpen && (
@@ -198,6 +271,7 @@ export function CreatePostPage() {
       </section>
 
       {/* 3. Main Composer Form */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)] xl:items-start">
       <form
         onSubmit={handleSubmit}
         data-testid="create-post-form"
@@ -411,6 +485,26 @@ export function CreatePostPage() {
           </Button>
         </div>
       </form>
+      <aside className="xl:sticky xl:top-6" aria-label="Live post preview">
+        {postType === 'visual' ? (
+          <PinPreview
+            imageUrl={imageLoaded && !imageError ? imageUrl : ''}
+            title={title}
+            caption={content}
+            communityName={selectedCommunityName}
+            tags={tags}
+            imageAlt={imageAlt}
+          />
+        ) : (
+          <DiscussionPreview
+            title={title}
+            content={content}
+            communityName={selectedCommunityName}
+            tags={tags}
+          />
+        )}
+      </aside>
+      </div>
     </div>
   );
 }

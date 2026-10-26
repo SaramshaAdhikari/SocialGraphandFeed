@@ -10,6 +10,8 @@ import {
   VisualPinUploader,
   CommunitySelect,
   TagInput,
+  PinPreview,
+  DiscussionPreview,
 } from '../components/composer';
 import { CreatePostPage } from '../pages/CreatePostPage';
 import { RouterProvider } from '../router/Router';
@@ -180,6 +182,32 @@ describe('Screen 7 — Create Post: API Contracts & In-Memory Persistence', () =
 });
 
 describe('Screen 7 — Create Post: UI Components & Authoring Workflow', () => {
+  it('renders live previews for both post types without unsafe HTML injection', () => {
+    const pinHtml = renderToString(
+      <PinPreview
+        imageUrl="https://example.com/image.jpg"
+        title="Datacenter architecture"
+        caption={'Line one\nLine two'}
+        communityName="Systems"
+        tags={['architecture']}
+      />,
+    );
+    expect(pinHtml).toContain('Datacenter architecture');
+    expect(pinHtml).toContain('Line one');
+    expect(pinHtml).toContain('Systems');
+    expect(pinHtml).toContain('data-testid="pin-live-preview"');
+
+    const discussionHtml = renderToString(
+      <DiscussionPreview
+        title="<script>alert(1)</script>"
+        content="A technical discussion"
+        tags={['systems']}
+      />,
+    );
+    expect(discussionHtml).toContain('&lt;script&gt;');
+    expect(discussionHtml).not.toContain('<script>alert(1)</script>');
+  });
+
   it('7. PostTypeSelector renders discussion and visual tabs with active states', () => {
     const htmlDiscussion = renderToString(
       <PostTypeSelector activeType="discussion" onChange={() => {}} />
