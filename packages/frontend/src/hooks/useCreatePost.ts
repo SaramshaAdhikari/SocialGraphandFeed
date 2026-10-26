@@ -427,7 +427,7 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
               id: `m_${Date.now()}`,
               url: imageUrl.trim(),
               aspect_ratio: imageAspectRatio || 1.0,
-              alt_text: imageAlt.trim() || title.trim(),
+              alt_text: imageAlt.trim() || undefined,
             },
           ]
         : [];

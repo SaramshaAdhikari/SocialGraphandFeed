@@ -63,6 +63,27 @@ export interface CommunityMembershipResult {
   members_count: number;
 }
 
+export interface GraphNode {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string;
+  bio?: string;
+  followers_count?: number;
+  following_count?: number;
+}
+
+export interface GraphEdge {
+  source: string;
+  target: string;
+}
+
+export interface GraphNeighborhoodData {
+  center: GraphNode;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
 export interface ISocialGraphApi {
   readonly dataSource: DataSourceType;
 
@@ -94,6 +115,7 @@ export interface ISocialGraphApi {
   getCommunities(): Promise<Community[]>;
   setCommunityMembership(communitySlug: string, isMember: boolean): Promise<CommunityMembershipResult>;
   getCommunityFeed(communitySlug: string, query?: FeedQuery): Promise<FeedResponse>;
+  getGraphNeighborhood(limit?: number): Promise<GraphNeighborhoodData>;
 
   // Search
   search(query: SearchQuery): Promise<UniversalSearchResults>;

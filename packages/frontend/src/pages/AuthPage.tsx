@@ -113,7 +113,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   }
 
   return (
-    <main className="mx-auto mt-8 sm:mt-14 w-full max-w-md rounded-2xl border border-border bg-surface-card p-6 sm:p-8 shadow-sm transition-colors">
+    <main className="w-full max-w-md rounded-2xl border border-border bg-surface-card p-6 sm:p-8 shadow-sm transition-colors">
       {/* Brand Header */}
       <div className="flex items-center gap-3 mb-6">
         <BrandLogo variant="symbol" size="md" />

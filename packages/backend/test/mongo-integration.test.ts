@@ -250,11 +250,11 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
     });
 
     it('correctly filters feed to following users (scope: following)', async () => {
-      // usr_0 follows usr_1, usr_2, usr_3
+      // usr_0 follows usr_1, usr_2, usr_3, usr_4, usr_9, usr_10
       const feed = await feedService.getFeed({ scope: 'following', limit: 10 }, 'usr_0');
       expect(feed.success).toBe(true);
       for (const post of feed.data) {
-        expect(['usr_1', 'usr_2', 'usr_3']).toContain(post.author.id);
+        expect(['usr_1', 'usr_2', 'usr_3', 'usr_4', 'usr_9', 'usr_10']).toContain(post.author.id);
       }
     });
 

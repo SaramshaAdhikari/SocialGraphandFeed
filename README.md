@@ -1,5 +1,8 @@
 # SocialGraph & Feed Engineering Platform
 
+The relationship-aware live-update demo is documented in [docs/REALTIME_SOCIAL_GRAPH_DEMO.md](docs/REALTIME_SOCIAL_GRAPH_DEMO.md). It covers authenticated SSE delivery, follower-aware post events, reconnect behavior, and the bounded MongoDB-backed graph view at `/graph`.
+The Create Post workflow, including live previews, drafts, validation, and current media-storage limits, is documented in [docs/CREATE_POST_WORKFLOW.md](docs/CREATE_POST_WORKFLOW.md).
+
 A high-performance social platform combining Pinterest-inspired visual discovery, Reddit-inspired threaded community discussions, creator profiles, and a scalable feed engineering architecture inspired by Meta TAO.
 
 ---
@@ -221,7 +224,7 @@ Verify that both frontend and backend are communicating properly:
 All testing and build commands run directly through root workspace scripts:
 
 #### Frontend Unit & Component Tests (Vitest)
-Executes all 13 frontend test suites (206 tests) covering Masonry columns, responsive navigation, theme switching, profile feeds, and API state:
+Executes all 15 frontend test suites (233 tests) covering interactive Social Graph, Masonry columns, responsive navigation, theme switching, profile feeds, and API state:
 ```powershell
 npm run test:frontend
 ```

@@ -891,6 +891,7 @@ export async function seedDatabase(
     { _id: 'flw_2_4', follower_id: 'usr_2', target_user_id: 'usr_4', created_at: new Date() },
     { _id: 'flw_2_8', follower_id: 'usr_2', target_user_id: 'usr_8', created_at: new Date() },
     { _id: 'flw_2_16', follower_id: 'usr_2', target_user_id: 'usr_16', created_at: new Date() },
+    { _id: 'flw_4_1', follower_id: 'usr_4', target_user_id: 'usr_1', created_at: new Date() },
     { _id: 'flw_3_11', follower_id: 'usr_3', target_user_id: 'usr_11', created_at: new Date() },
     { _id: 'flw_4_6', follower_id: 'usr_4', target_user_id: 'usr_6', created_at: new Date() },
     { _id: 'flw_4_10', follower_id: 'usr_4', target_user_id: 'usr_10', created_at: new Date() },
