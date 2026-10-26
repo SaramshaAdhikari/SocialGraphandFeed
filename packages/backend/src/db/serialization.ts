@@ -94,6 +94,7 @@ export function toPostCard(
     content: post.content || '',
     media: mediaArray,
     flair: post.flair ?? undefined,
+    destination_url: post.destination_url ?? undefined,
     tags: post.tags && post.tags.length > 0 ? post.tags : undefined,
   };
   return discussion;

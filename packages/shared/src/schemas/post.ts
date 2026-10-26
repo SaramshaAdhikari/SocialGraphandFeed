@@ -71,6 +71,7 @@ export const DiscussionPostCardSchema = Type.Object({
   content: Type.String({ maxLength: 40000, description: 'Markdown prose body' }),
   media: Type.Optional(Type.Array(MediaAttachmentSchema)),
   flair: Type.Optional(Type.String({ maxLength: 50 })),
+  destination_url: Type.Optional(Type.String()),
   tags: Type.Optional(Type.Array(TagSchema)),
 });
 

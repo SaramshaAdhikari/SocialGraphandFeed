@@ -1,42 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="100%" height="100%">
   <defs>
-    <clipPath id="circleClipSara">
-      <circle cx="80" cy="80" r="76" />
-    </clipPath>
     <linearGradient id="saraBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FDF4FF" />
-      <stop offset="100%" stop-color="#F5D0FE" />
+      <stop offset="0%" stop-color="#4c1d95" />
+      <stop offset="100%" stop-color="#2e1065" />
+    </linearGradient>
+    <linearGradient id="swatchRose" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f43f5e" />
+      <stop offset="100%" stop-color="#e11d48" />
+    </linearGradient>
+    <linearGradient id="swatchViolet" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#7c3aed" />
+    </linearGradient>
+    <linearGradient id="swatchAmber" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#f59e0b" />
     </linearGradient>
   </defs>
-  <circle cx="80" cy="80" r="76" fill="url(#saraBg)" />
-  <g clip-path="url(#circleClipSara)">
-    <!-- Lavender Knit Top -->
-    <path d="M22 160 C26 128, 48 116, 80 116 C112 116, 134 128, 138 160 Z" fill="#9333EA" />
-    <!-- Rounded Neckline -->
-    <path d="M64 116 C64 126, 96 126, 96 116 Z" fill="#7E22CE" />
-    <!-- Neck -->
-    <rect x="71" y="92" width="18" height="26" fill="#F8CEAB" />
-    <!-- Head / Chin -->
-    <path d="M55 62 C55 86, 65 102, 80 102 C95 102, 105 86, 105 62 C105 44, 95 38, 80 38 C65 38, 55 44, 55 62 Z" fill="#FDE2C8" />
-    <!-- Ears & Little Gold Hoops -->
-    <ellipse cx="53" cy="70" rx="4" ry="7" fill="#F8CEAB" />
-    <ellipse cx="107" cy="70" rx="4" ry="7" fill="#F8CEAB" />
-    <circle cx="53" cy="75" r="2.5" fill="none" stroke="#F59E0B" stroke-width="1.5" />
-    <circle cx="107" cy="75" r="2.5" fill="none" stroke="#F59E0B" stroke-width="1.5" />
-    <!-- Sparkly Expressive Eyes -->
-    <ellipse cx="69" cy="67" rx="3.5" ry="3.8" fill="#18181B" />
-    <ellipse cx="91" cy="67" rx="3.5" ry="3.8" fill="#18181B" />
-    <circle cx="68" cy="65.5" r="1.3" fill="#FFFFFF" />
-    <circle cx="90" cy="65.5" r="1.3" fill="#FFFFFF" />
-    <!-- Natural Eyebrows -->
-    <path d="M63 59 C67 57, 72 58, 75 60" stroke="#27272A" stroke-width="2" stroke-linecap="round" fill="none" />
-    <path d="M85 60 C88 58, 93 57, 97 59" stroke="#27272A" stroke-width="2" stroke-linecap="round" fill="none" />
-    <!-- Nose -->
-    <path d="M80 67 L80 75 L83 77" stroke="#DCA272" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-    <!-- Bright Cheerful Smile -->
-    <path d="M72 85 C76 92, 84 92, 88 85" stroke="#BE185D" stroke-width="2.5" stroke-linecap="round" fill="none" />
-    <!-- Dark Glossy Hair with Soft Wave -->
-    <path d="M46 56 C40 36, 52 22, 80 22 C108 22, 120 36, 114 56 C114 74, 110 88, 106 92 C104 74, 106 60, 104 48 C100 34, 90 30, 80 30 C70 30, 60 34, 56 48 C54 60, 56 74, 54 92 C50 88, 46 74, 46 56 Z" fill="#18181B" />
-    <path d="M58 40 C66 32, 78 30, 92 34 C82 36, 72 40, 64 46 Z" fill="#3F3F46" />
-  </g>
+  <!-- Background circle -->
+  <circle cx="80" cy="80" r="76" fill="url(#saraBg)" stroke="#c084fc" stroke-width="3" stroke-opacity="0.4" />
+  <!-- Design system layout grid lines -->
+  <rect x="36" y="36" width="88" height="88" rx="12" fill="#1e1b4b" stroke="#6b21a8" stroke-width="2" />
+  <line x1="80" y1="36" x2="80" y2="124" stroke="#4c1d95" stroke-width="1.5" stroke-dasharray="3 3" />
+  <line x1="36" y1="80" x2="124" y2="80" stroke="#4c1d95" stroke-width="1.5" stroke-dasharray="3 3" />
+  <!-- Overlapping geometric design token swatches -->
+  <rect x="46" y="46" width="30" height="30" rx="8" fill="url(#swatchRose)" />
+  <circle cx="98" cy="61" r="15" fill="url(#swatchAmber)" />
+  <polygon points="61,95 46,118 76,118" fill="#06b6d4" />
+  <rect x="83" y="88" width="30" height="30" rx="8" fill="url(#swatchViolet)" />
+  <!-- Subgrid alignment marker -->
+  <circle cx="80" cy="80" r="5" fill="#ffffff" />
 </svg>

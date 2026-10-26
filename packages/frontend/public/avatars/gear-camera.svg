@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="100%" height="100%">
+  <circle cx="80" cy="80" r="76" fill="#1c1917" stroke="#78716c" stroke-width="3" stroke-opacity="0.4"/>
+  <!-- Camera Body -->
+  <rect x="34" y="54" width="92" height="64" rx="8" fill="#292524" stroke="#57534e" stroke-width="2.5"/>
+  <rect x="34" y="54" width="92" height="18" fill="#44403c"/>
+  <!-- Viewfinder & Shutter Dial -->
+  <rect x="46" y="44" width="14" height="10" rx="2" fill="#78716c"/>
+  <rect x="98" y="46" width="18" height="8" rx="2" fill="#a8a29e"/>
+  <!-- Big Lens Element -->
+  <circle cx="80" cy="88" r="26" fill="#18181b" stroke="#a8a29e" stroke-width="3"/>
+  <circle cx="80" cy="88" r="20" fill="#0c0a09" stroke="#38bdf8" stroke-width="1.5"/>
+  <circle cx="80" cy="88" r="10" fill="#1e293b"/>
+  <!-- Lens Glare -->
+  <path d="M72 80 A 12 12 0 0 1 88 80" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
+</svg>

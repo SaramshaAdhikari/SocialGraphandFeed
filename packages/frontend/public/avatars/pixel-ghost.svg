@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="100%" height="100%">
+  <circle cx="80" cy="80" r="76" fill="#0f172a" stroke="#38bdf8" stroke-width="3" stroke-opacity="0.4"/>
+  <!-- Pixel Ghost Body -->
+  <path d="M52 56 C52 40 64 36 80 36 C96 36 108 40 108 56 L108 116 L98 106 L88 116 L80 106 L72 116 L62 106 L52 116 Z" fill="#38bdf8"/>
+  <!-- Ghost Eyes -->
+  <rect x="62" y="58" width="10" height="14" rx="2" fill="#ffffff"/>
+  <rect x="88" y="58" width="10" height="14" rx="2" fill="#ffffff"/>
+  <rect x="68" y="64" width="6" height="8" rx="1" fill="#0369a1"/>
+  <rect x="94" y="64" width="6" height="8" rx="1" fill="#0369a1"/>
+</svg>

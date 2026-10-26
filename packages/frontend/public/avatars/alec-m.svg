@@ -1,43 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="100%" height="100%">
   <defs>
-    <clipPath id="circleClipAlec">
-      <circle cx="80" cy="80" r="76" />
-    </clipPath>
     <linearGradient id="alecBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ECFDF5" />
-      <stop offset="100%" stop-color="#A7F3D0" />
+      <stop offset="0%" stop-color="#064e3b" />
+      <stop offset="100%" stop-color="#022c22" />
+    </linearGradient>
+    <linearGradient id="switchGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
     </linearGradient>
   </defs>
-  <circle cx="80" cy="80" r="76" fill="url(#alecBg)" />
-  <g clip-path="url(#circleClipAlec)">
-    <!-- Forest Green Crewneck Sweater -->
-    <path d="M22 160 C26 128, 48 116, 80 116 C112 116, 134 128, 138 160 Z" fill="#047857" />
-    <!-- Collar Trim -->
-    <path d="M66 116 C66 124, 94 124, 94 116 Z" fill="#065F46" />
-    <!-- Neck -->
-    <rect x="71" y="94" width="18" height="26" fill="#F8CBA6" />
-    <!-- Head / Jawline -->
-    <path d="M54 62 C54 88, 65 104, 80 104 C95 104, 106 88, 106 62 C106 44, 94 36, 80 36 C66 36, 54 44, 54 62 Z" fill="#FDE1C7" />
-    <!-- Beard & Stubble -->
-    <path d="M54 68 C54 94, 65 106, 80 106 C95 106, 106 94, 106 68 C102 76, 98 84, 80 84 C62 84, 58 76, 54 68 Z" fill="#4B382A" opacity="0.85" />
-    <path d="M72 82 C76 80, 84 80, 88 82" stroke="#4B382A" stroke-width="2.5" stroke-linecap="round" fill="none" />
-    <!-- Ears -->
-    <ellipse cx="52" cy="70" rx="5" ry="8" fill="#F8CBA6" />
-    <ellipse cx="108" cy="70" rx="5" ry="8" fill="#F8CBA6" />
-    <!-- Eyes -->
-    <ellipse cx="68" cy="67" rx="3.5" ry="3.8" fill="#292524" />
-    <ellipse cx="92" cy="67" rx="3.5" ry="3.8" fill="#292524" />
-    <circle cx="67" cy="65.5" r="1.2" fill="#FFFFFF" />
-    <circle cx="91" cy="65.5" r="1.2" fill="#FFFFFF" />
-    <!-- Eyebrows -->
-    <path d="M62 59 C66 57, 72 58, 75 60" stroke="#4B382A" stroke-width="2.5" stroke-linecap="round" fill="none" />
-    <path d="M85 60 C88 58, 94 57, 98 59" stroke="#4B382A" stroke-width="2.5" stroke-linecap="round" fill="none" />
-    <!-- Nose -->
-    <path d="M80 67 L80 76 L84 78" stroke="#D19F75" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-    <!-- Friendly Smile -->
-    <path d="M73 89 C77 93, 83 93, 87 89" stroke="#9A3412" stroke-width="2" stroke-linecap="round" fill="none" />
-    <!-- Natural Brown Hair with Side Part -->
-    <path d="M50 52 C46 32, 58 22, 78 20 C96 18, 110 26, 110 44 C110 52, 108 58, 106 60 C104 46, 100 36, 90 32 C80 28, 68 30, 58 36 C52 40, 50 46, 50 52 Z" fill="#4B382A" />
-    <path d="M60 30 C70 24, 84 26, 94 30 Z" fill="#5F4735" />
-  </g>
+  <!-- Background circle -->
+  <circle cx="80" cy="80" r="76" fill="url(#alecBg)" stroke="#10b981" stroke-width="3" stroke-opacity="0.4" />
+  <!-- Mechanical key switch housing base -->
+  <rect x="42" y="56" width="76" height="64" rx="10" fill="#0f172a" stroke="#334155" stroke-width="2.5" />
+  <!-- Switch top housing rim -->
+  <rect x="48" y="62" width="64" height="52" rx="6" fill="#1e293b" />
+  <!-- Switch cross-stem (Cherry MX cross stem) -->
+  <rect x="74" y="44" width="12" height="36" rx="2" fill="url(#switchGrad)" />
+  <rect x="62" y="56" width="36" height="12" rx="2" fill="url(#switchGrad)" />
+  <!-- Center stem hole -->
+  <rect x="76" y="58" width="8" height="8" rx="1" fill="#047857" />
+  <!-- eBPF / Kernel socket wave symbols -->
+  <path d="M50 126 C60 120 70 120 80 126 C90 132 100 132 110 126" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" />
+  <path d="M54 132 C62 128 72 128 80 132 C88 136 98 136 106 132" fill="none" stroke="#10b981" stroke-width="1.5" stroke-linecap="round" opacity="0.6" />
 </svg>

@@ -1,45 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="100%" height="100%">
   <defs>
-    <clipPath id="circleClipElena">
-      <circle cx="80" cy="80" r="76" />
-    </clipPath>
     <linearGradient id="elenaBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FFF1F2" />
-      <stop offset="100%" stop-color="#FECDD3" />
+      <stop offset="0%" stop-color="#18181b" />
+      <stop offset="100%" stop-color="#27272a" />
+    </linearGradient>
+    <linearGradient id="lensAmber" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
     </linearGradient>
   </defs>
-  <circle cx="80" cy="80" r="76" fill="url(#elenaBg)" />
-  <g clip-path="url(#circleClipElena)">
-    <!-- Terracotta Jacket -->
-    <path d="M22 160 C26 128, 48 116, 80 116 C112 116, 134 128, 138 160 Z" fill="#991B1B" />
-    <!-- Cream Inner Shirt -->
-    <path d="M66 116 L80 138 L94 116 Z" fill="#FEF3C7" />
-    <!-- Camera Neck Strap -->
-    <path d="M48 160 L62 116" stroke="#18181B" stroke-width="4.5" stroke-linecap="round" />
-    <path d="M112 160 L98 116" stroke="#18181B" stroke-width="4.5" stroke-linecap="round" />
-    <!-- Neck -->
-    <rect x="72" y="92" width="16" height="26" fill="#FBCFB0" />
-    <!-- Head / Jawline -->
-    <path d="M56 62 C56 86, 66 102, 80 102 C94 102, 104 86, 104 62 C104 46, 94 38, 80 38 C66 38, 56 46, 56 62 Z" fill="#FDE3CE" />
-    <!-- Ears & Little Silver Earrings -->
-    <ellipse cx="54" cy="70" rx="4" ry="7" fill="#FBCFB0" />
-    <ellipse cx="106" cy="70" rx="4" ry="7" fill="#FBCFB0" />
-    <circle cx="54" cy="75" r="1.5" fill="#94A3B8" />
-    <circle cx="106" cy="75" r="1.5" fill="#94A3B8" />
-    <!-- Almond Eyes -->
-    <ellipse cx="69" cy="67" rx="3.5" ry="3.5" fill="#27272A" />
-    <ellipse cx="91" cy="67" rx="3.5" ry="3.5" fill="#27272A" />
-    <circle cx="68" cy="65.5" r="1.2" fill="#FFFFFF" />
-    <circle cx="90" cy="65.5" r="1.2" fill="#FFFFFF" />
-    <!-- Delicately Arched Eyebrows -->
-    <path d="M63 59 C67 57, 72 58, 75 60" stroke="#3F3F46" stroke-width="2" stroke-linecap="round" fill="none" />
-    <path d="M85 60 C88 58, 93 57, 97 59" stroke="#3F3F46" stroke-width="2" stroke-linecap="round" fill="none" />
-    <!-- Nose -->
-    <path d="M80 67 L80 76 L83 78" stroke="#DCA272" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-    <!-- Warm Confident Smile -->
-    <path d="M73 86 C77 90, 83 90, 87 86" stroke="#B91C1C" stroke-width="2.2" stroke-linecap="round" fill="none" />
-    <!-- Chic Dark Bob with Bangs -->
-    <path d="M46 58 C42 40, 52 24, 80 24 C108 24, 118 40, 114 58 C114 74, 108 86, 104 88 C102 70, 104 56, 102 46 C98 32, 88 30, 80 30 C72 30, 62 32, 58 46 C56 56, 58 70, 56 88 C52 86, 46 74, 46 58 Z" fill="#27272A" />
-    <path d="M58 44 C66 40, 78 40, 86 42 C94 40, 98 42, 102 46 C94 42, 84 44, 76 46 C68 44, 62 46, 58 44 Z" fill="#3F3F46" />
-  </g>
+  <!-- Background circle -->
+  <circle cx="80" cy="80" r="76" fill="url(#elenaBg)" stroke="#f59e0b" stroke-width="3" stroke-opacity="0.35" />
+  <!-- Architectural perspective framing -->
+  <polygon points="26,134 80,44 134,134" fill="none" stroke="#52525b" stroke-width="2" />
+  <polygon points="44,134 80,72 116,134" fill="none" stroke="#3f3f46" stroke-width="2" />
+  <line x1="80" y1="44" x2="80" y2="134" stroke="#71717a" stroke-width="1.5" stroke-dasharray="2 2" />
+  <!-- Aperture ring outer -->
+  <circle cx="80" cy="80" r="42" fill="#09090b" stroke="#a1a1aa" stroke-width="2" />
+  <circle cx="80" cy="80" r="38" fill="none" stroke="url(#lensAmber)" stroke-width="1.5" />
+  <!-- Aperture blades -->
+  <path d="M80 48 L96 68 L78 74 Z" fill="#27272a" stroke="#18181b" stroke-width="1.5" />
+  <path d="M108 68 L104 92 L88 82 Z" fill="#27272a" stroke="#18181b" stroke-width="1.5" />
+  <path d="M104 104 L80 112 L82 92 Z" fill="#27272a" stroke="#18181b" stroke-width="1.5" />
+  <path d="M68 112 L52 92 L72 86 Z" fill="#27272a" stroke="#18181b" stroke-width="1.5" />
+  <path d="M52 76 L56 52 L72 62 Z" fill="#27272a" stroke="#18181b" stroke-width="1.5" />
+  <!-- Center lens element -->
+  <circle cx="80" cy="80" r="16" fill="#18181b" stroke="#f59e0b" stroke-width="2" />
+  <circle cx="80" cy="80" r="8" fill="url(#lensAmber)" />
+  <ellipse cx="76" cy="76" rx="3" ry="2" fill="#ffffff" opacity="0.8" />
 </svg>

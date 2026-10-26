@@ -23,7 +23,7 @@ async function fetchFeed(params = {}) {
   });
 }
 
-async function verifySortMode(sortName, pageSize = 4) {
+async function verifySortMode(sortName, pageSize = 25, maxPages = 35) {
   console.log(`\n--- Testing Pagination & Invariants for sort='${sortName}' (limit=${pageSize}) ---`);
   let cursor = null;
   let page = 1;
@@ -31,7 +31,7 @@ async function verifySortMode(sortName, pageSize = 4) {
   const allPosts = [];
   let reachedEnd = false;
 
-  while (page <= 10) {
+  while (page <= maxPages) {
     const res = await fetchFeed({ sort: sortName, limit: pageSize, cursor });
     if (res.status !== 200) {
       throw new Error(`Feed request failed on page ${page} with status ${res.status}: ${JSON.stringify(res.body)}`);
@@ -59,7 +59,7 @@ async function verifySortMode(sortName, pageSize = 4) {
   }
 
   if (!reachedEnd) {
-    throw new Error(`Failed to reach end of feed within 10 pages for sort='${sortName}'`);
+    throw new Error(`Failed to reach end of feed within ${maxPages} pages for sort='${sortName}'`);
   }
 
   // Verify ordering
@@ -100,9 +100,9 @@ async function verifySortMode(sortName, pageSize = 4) {
 async function main() {
   console.log('=== Feed Engineering & Cursor Pagination Live Verification ===');
 
-  const newCount = await verifySortMode('new', 5);
-  const topCount = await verifySortMode('top', 5);
-  const hotCount = await verifySortMode('hot', 5);
+  const newCount = await verifySortMode('new', 25, 30);
+  const topCount = await verifySortMode('top', 25, 30);
+  const hotCount = await verifySortMode('hot', 25, 30);
 
   console.log(`\nVerified counts match: new=${newCount}, top=${topCount}, hot=${hotCount}`);
 
