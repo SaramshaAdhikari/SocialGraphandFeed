@@ -69,6 +69,9 @@ export function PostModal() {
     }
     if (post.post_type === 'visual') {
       const pin = post as VisualPinCard;
+      if (pin.media_list && pin.media_list.length > 0) {
+        return pin.media_list;
+      }
       return pin.media ? [pin.media] : [];
     }
     const disc = post as DiscussionPostCard;

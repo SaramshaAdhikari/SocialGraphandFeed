@@ -14,6 +14,7 @@ import type {
   FollowListResponse,
   Community,
   CreatePostInput,
+  MediaAttachment,
 } from '@socialgraph/shared';
 
 export type DataSourceType = 'mock' | 'live';
@@ -75,6 +76,7 @@ export interface ISocialGraphApi {
   getSavedPosts(query?: SavedPostsQuery): Promise<FeedResponse>;
 
   // Posts & Interactions
+  uploadMedia(files: File[]): Promise<MediaAttachment[]>;
   getPost(postId: string): Promise<PostCard>;
   getComments(postId: string): Promise<CommentNode[]>;
   createPost(input: CreatePostInput, idempotencyKey?: string): Promise<PostCard>;

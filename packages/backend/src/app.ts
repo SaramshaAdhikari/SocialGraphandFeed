@@ -1,6 +1,9 @@
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from 'fastify';
 import cors from '@fastify/cors';
 import sensible from '@fastify/sensible';
+import multipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import { mediaStorage } from './services/storage/MediaStorageService.js';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import { randomUUID } from 'node:crypto';
 import errorHandlerPlugin from './plugins/error-handler.js';
@@ -44,6 +47,17 @@ export function buildApp(
 
   // Register Core Fastify Plugins
   app.register(sensible);
+  app.register(multipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024,
+      files: 10,
+    },
+  });
+  app.register(fastifyStatic, {
+    root: mediaStorage.getUploadDir(),
+    prefix: '/uploads/',
+    decorateReply: false,
+  });
   app.register(cors, {
     origin: config.WEB_ORIGIN,
     credentials: true,

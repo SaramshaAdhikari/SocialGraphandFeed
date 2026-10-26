@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { VisualPinCard as IVisualPinCard } from '@socialgraph/shared';
-import { Heart, MessageSquare, Bookmark, Share2, Check, ImageOff } from 'lucide-react';
+import { Heart, MessageSquare, Bookmark, Share2, Check, ImageOff, Layers } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { Link } from '../../router/Router';
 import { formatRelativeTime } from '../../utils/date';
@@ -150,6 +150,17 @@ export function VisualPinCard({
             </div>
           )}
         </Link>
+
+        {/* Album Indicator Badge */}
+        {post.media_list && post.media_list.length > 1 && (
+          <div
+            data-testid="album-indicator"
+            className="absolute bottom-3 left-3 px-2 py-1 rounded-md bg-black/70 backdrop-blur-xs text-white text-[11px] font-medium flex items-center gap-1.5 shadow-xs pointer-events-none"
+          >
+            <Layers size={13} />
+            <span>1/{post.media_list.length}</span>
+          </div>
+        )}
 
         {/* Floating Quick Save Button */}
         <button

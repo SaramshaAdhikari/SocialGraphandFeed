@@ -92,18 +92,23 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
         const mediaList = Array.isArray(body.media) ? body.media : [body.media];
         for (const item of mediaList) {
           if (item?.url) {
-            try {
-              const u = new URL(item.url);
-              if (!['http:', 'https:'].includes(u.protocol) || u.username || u.password) {
-                throw new Error();
+            if (item.url.startsWith('/')) {
+              if (item.url.startsWith('//') || item.url.includes('..')) {
+                throw AppError.badRequest('media.url must not contain path traversal or protocol-relative slashes.');
               }
-            } catch {
-              throw AppError.badRequest('media.url must be a valid http or https URL without credentials.');
+            } else {
+              try {
+                const u = new URL(item.url);
+                if (!['http:', 'https:'].includes(u.protocol) || u.username || u.password) {
+                  throw new Error();
+                }
+              } catch {
+                throw AppError.badRequest('media.url must be a valid root-relative path or http/https URL without credentials.');
+              }
             }
           }
         }
       }
-
       // 2. Atomic Idempotency check: cached replays do not consume rate limit quota
       const rawIdempKey = request.headers['idempotency-key'];
       const idempKey = typeof rawIdempKey === 'string' && rawIdempKey.trim() ? rawIdempKey.trim() : null;

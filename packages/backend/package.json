@@ -19,7 +19,9 @@
   },
   "dependencies": {
     "@fastify/cors": "^10.0.2",
+    "@fastify/multipart": "^10.1.6",
     "@fastify/sensible": "^6.0.3",
+    "@fastify/static": "^10.1.7",
     "@fastify/type-provider-typebox": "^5.1.0",
     "@sinclair/typebox": "^0.34.28",
     "@socialgraph/shared": "*",

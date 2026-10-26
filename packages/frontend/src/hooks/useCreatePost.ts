@@ -21,6 +21,7 @@ export interface UseCreatePostReturn {
   setImageUrl: (url: string) => void;
   mediaList: MediaAttachment[];
   addMediaItem: (item: { url: string; aspect_ratio?: number; alt_text?: string }) => void;
+  addMultipleMedia: (items: MediaAttachment[]) => void;
   removeMediaItem: (index: number) => void;
   reorderMediaItem: (fromIndex: number, toIndex: number) => void;
   setCoverMedia: (index: number) => void;
@@ -161,6 +162,23 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
     [refreshIdempotencyKey]
   );
 
+  const addMultipleMedia = useCallback(
+    (items: MediaAttachment[]) => {
+      if (!items || items.length === 0) return;
+      setMediaList((prev) => {
+        const combined = [...prev, ...items].slice(0, 10);
+        if (combined.length > 0) {
+          setImageUrl(combined[0].url);
+          setImageAspectRatio(combined[0].aspect_ratio);
+          setImageAlt(combined[0].alt_text || '');
+        }
+        return combined;
+      });
+      refreshIdempotencyKey();
+    },
+    [refreshIdempotencyKey]
+  );
+
   const removeMediaItem = useCallback(
     (index: number) => {
       setMediaList((prev) => {
@@ -262,47 +280,30 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
   }, [api]);
 
   // Handle local file preview
-  const handleLocalFileSelect = useCallback((file: File) => {
-    if (api.dataSource === 'live') {
-      setErrors((prev) => ({
-        ...prev,
-        imageUrl: 'Local file upload is not supported in live mode without cloud media storage. Please provide an externally accessible image URL.',
-      }));
-      return;
-    }
-
+  const handleLocalFileSelect = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
       setErrors((prev) => ({ ...prev, imageUrl: 'Please select a valid image file (PNG, JPG, WebP, SVG).' }));
       return;
     }
+    if (file.size > 10 * 1024 * 1024) {
+      setErrors((prev) => ({ ...prev, imageUrl: 'File size exceeds the 10MB limit.' }));
+      return;
+    }
 
-    const objectUrl = URL.createObjectURL(file);
-    setImageUrl(objectUrl);
-    setIsLocalFile(true);
-    refreshIdempotencyKey();
-    setImageError(false);
-    setImageLoaded(false);
-
-    // Calculate natural aspect ratio
-    const img = new Image();
-    img.onload = () => {
-      if (img.naturalHeight > 0) {
-        const ratio = parseFloat((img.naturalWidth / img.naturalHeight).toFixed(3));
-        setImageAspectRatio(ratio);
-        setImageLoaded(true);
+    try {
+      const uploaded = await api.uploadMedia([file]);
+      if (uploaded && uploaded.length > 0) {
+        addMultipleMedia(uploaded);
+        setErrors((prev) => {
+          const next = { ...prev };
+          delete next.imageUrl;
+          return next;
+        });
       }
-    };
-    img.onerror = () => {
-      setImageError(true);
-    };
-    img.src = objectUrl;
-
-    setErrors((prev) => {
-      const next = { ...prev };
-      delete next.imageUrl;
-      return next;
-    });
-  }, [api]);
+    } catch (err: any) {
+      setErrors((prev) => ({ ...prev, imageUrl: err.message || 'Failed to upload image.' }));
+    }
+  }, [api, addMultipleMedia]);
 
   const clearImage = useCallback(() => {
     setImageUrl('');
@@ -363,54 +364,38 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
     );
   }, [title, content, communityId, tags, imageUrl, mediaList.length, destinationUrl]);
 
-  // Form validation
+  // Form validation for unified composer
   const validateForm = useCallback((): boolean => {
     const newErrors: Record<string, string> = {};
+    const hasMedia = mediaList.length > 0 || Boolean(imageUrl.trim());
+    const hasText = Boolean(title.trim() || content.trim());
 
-    if (!title.trim()) {
-      newErrors.title = 'Title is required.';
-    } else if (postType === 'discussion' && title.trim().length < 3) {
-      newErrors.title = 'Discussion title must be at least 3 characters.';
-    } else if (title.trim().length > 300) {
+    if (!hasMedia && !hasText) {
+      newErrors.content = 'Post must contain either text content or at least one image.';
+    }
+
+    if (title.trim().length > 300) {
       newErrors.title = 'Title must be 300 characters or fewer.';
     }
 
-    if (postType === 'discussion') {
-      if (!content.trim()) {
-        newErrors.content = 'Discussion body is required.';
-      } else if (content.trim().length < 5) {
-        newErrors.content = 'Discussion body should provide more context (at least 5 characters).';
-      }
+    if (content.trim().length > 40000) {
+      newErrors.content = 'Content must be 40,000 characters or fewer.';
     }
 
-    if (postType === 'visual') {
-      const isLive = api.dataSource === 'live';
-      const effectiveUrl = imageUrl.trim() || (mediaList.length > 0 ? mediaList[0].url : '');
-      if (!effectiveUrl) {
-        newErrors.imageUrl = isLive
-          ? 'An externally accessible image URL is required.'
-          : 'An image URL or local file preview is required.';
-      } else if (isLive && (isLocalFile || effectiveUrl.startsWith('blob:'))) {
-        newErrors.imageUrl = 'Local file upload requires cloud media storage which is not yet configured. Please provide an externally accessible image URL (e.g. https://...).';
-      } else if (imageError && mediaList.length <= 1) {
-        newErrors.imageUrl = 'The provided image could not be loaded. Please check the URL.';
-      }
-
-      if (destinationUrl.trim()) {
-        try {
-          const urlObj = new URL(destinationUrl.trim());
-          if (!['http:', 'https:'].includes(urlObj.protocol)) {
-            newErrors.destinationUrl = 'Destination link must start with http:// or https://';
-          }
-        } catch {
-          newErrors.destinationUrl = 'Please enter a valid destination URL (e.g. https://example.com)';
+    if (destinationUrl.trim()) {
+      try {
+        const urlObj = new URL(destinationUrl.trim());
+        if (!['http:', 'https:'].includes(urlObj.protocol)) {
+          newErrors.destinationUrl = 'Destination link must start with http:// or https://';
         }
+      } catch {
+        newErrors.destinationUrl = 'Please enter a valid destination URL (e.g. https://example.com)';
       }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [postType, title, content, imageUrl, mediaList, isLocalFile, imageError, destinationUrl, api]);
+  }, [mediaList.length, imageUrl, title, content, destinationUrl]);
 
   // Submission handler
   const submitPost = useCallback(async (): Promise<PostCard | null> => {
@@ -447,28 +432,20 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
           ]
         : [];
 
-      if (postType === 'discussion') {
-        input = {
-          post_type: 'discussion',
-          title: title.trim(),
-          content: content.trim(),
-          community_id: communityId || undefined,
-          tags: finalTags,
-          flair: finalFlair,
-          media: mediaItems.length > 0 ? mediaItems : undefined,
-        };
-      } else {
-        input = {
-          post_type: 'visual',
-          title: title.trim(),
-          caption: content.trim() || undefined,
-          content: content.trim() || undefined,
-          community_id: communityId || undefined,
-          destination_url: destinationUrl.trim() || undefined,
-          tags: finalTags,
-          media: mediaItems.length > 0 ? mediaItems : undefined,
-        };
-      }
+      const hasMedia = mediaItems.length > 0;
+      const inferredPostType: 'discussion' | 'visual' = hasMedia ? 'visual' : 'discussion';
+
+      input = {
+        post_type: inferredPostType,
+        title: title.trim() || undefined,
+        content: content.trim() || undefined,
+        caption: content.trim() || undefined,
+        community_id: communityId || undefined,
+        destination_url: destinationUrl.trim() || undefined,
+        tags: finalTags,
+        flair: finalFlair,
+        media: mediaItems.length > 0 ? mediaItems : undefined,
+      };
 
       const post = await api.createPost(input, idempotencyKey);
       setCreatedPost(post);
@@ -558,6 +535,7 @@ export function useCreatePost(optionsOrType: UseCreatePostOptions | PostComposer
     setImageUrl: handleSetImageUrl,
     mediaList,
     addMediaItem,
+    addMultipleMedia,
     removeMediaItem,
     reorderMediaItem,
     setCoverMedia,

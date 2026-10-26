@@ -14,6 +14,7 @@ import type {
   Community,
   ApiErrorResponse,
   CreatePostInput,
+  MediaAttachment,
 } from '@socialgraph/shared';
 import type {
   ISocialGraphApi,
@@ -310,22 +311,75 @@ export class MockAdapter implements ISocialGraphApi {
     return this.comments[postId] || [];
   }
 
-  public async createPost(input: CreatePostInput, _idempotencyKey?: string): Promise<PostCard> {
-    await this.delay('/api/v1/posts');
-
-    if (!input.title || input.title.trim().length === 0) {
+  public async uploadMedia(files: File[]): Promise<MediaAttachment[]> {
+    await this.delay('/api/v1/media/upload');
+    if (!files || files.length === 0) return [];
+    if (files.length > 10) {
       throw new ApiClientError({
         type: 'https://socialgraph.dev/errors/validation',
         title: 'Validation Error',
         status: 400,
-        detail: 'Post title is required and cannot be empty.',
+        detail: 'Cannot upload more than 10 images per post.',
+        code: 'VALIDATION_ERROR',
+        timestamp: new Date().toISOString(),
+      });
+    }
+    return files.map((file, idx) => ({
+      id: `mock_med_${Date.now()}_${idx}`,
+      url: `/uploads/med_${Date.now()}_${idx}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`,
+      aspect_ratio: 1.33,
+      alt_text: file.name.replace(/\.[^/.]+$/, ''),
+    }));
+  }
+
+  public async createPost(input: CreatePostInput, _idempotencyKey?: string): Promise<PostCard> {
+    await this.delay('/api/v1/posts');
+
+    const hasMedia = Boolean(input.media && input.media.length > 0 && input.media.some((m) => m.url?.trim()));
+    const hasText = Boolean(input.title?.trim() || input.content?.trim() || input.caption?.trim());
+    if (!hasText && !hasMedia) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/validation',
+        title: 'Validation Error',
+        status: 400,
+        detail: 'Post must contain either text content or media attachments.',
         code: 'VALIDATION_ERROR',
         timestamp: new Date().toISOString(),
       });
     }
 
-    if (input.post_type === 'discussion') {
-      if (input.title.trim().length < 3) {
+    if (input.media && input.media.length > 10) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/validation',
+        title: 'Validation Error',
+        status: 400,
+        detail: 'A post cannot contain more than 10 images.',
+        code: 'VALIDATION_ERROR',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    let postType: 'visual' | 'discussion';
+    if (input.post_type) {
+      postType = input.post_type;
+    } else if (hasMedia) {
+      postType = 'visual';
+    } else {
+      postType = 'discussion';
+    }
+
+    if (postType === 'discussion') {
+      if (input.post_type === 'discussion' && (!input.title || input.title.trim().length === 0)) {
+        throw new ApiClientError({
+          type: 'https://socialgraph.dev/errors/validation',
+          title: 'Validation Error',
+          status: 400,
+          detail: 'Post title is required and cannot be empty.',
+          code: 'VALIDATION_ERROR',
+          timestamp: new Date().toISOString(),
+        });
+      }
+      if (input.title && input.title.trim().length < 3) {
         throw new ApiClientError({
           type: 'https://socialgraph.dev/errors/validation',
           title: 'Validation Error',
@@ -335,7 +389,7 @@ export class MockAdapter implements ISocialGraphApi {
           timestamp: new Date().toISOString(),
         });
       }
-      if (!input.content || input.content.trim().length === 0) {
+      if (!hasMedia && (!input.content || input.content.trim().length === 0)) {
         throw new ApiClientError({
           type: 'https://socialgraph.dev/errors/validation',
           title: 'Validation Error',
@@ -347,7 +401,7 @@ export class MockAdapter implements ISocialGraphApi {
       }
     }
 
-    if (input.post_type === 'visual') {
+    if (postType === 'visual') {
       const mediaItem = input.media?.[0];
       if (!mediaItem || !mediaItem.url || mediaItem.url.trim().length === 0) {
         throw new ApiClientError({
@@ -376,7 +430,7 @@ export class MockAdapter implements ISocialGraphApi {
     const now = new Date().toISOString();
     let createdPost: DiscussionPostCard | VisualPinCard;
 
-    if (input.post_type === 'discussion') {
+    if (postType === 'discussion') {
       const postId = `post_disc_${Date.now()}`;
       createdPost = {
         id: postId,
@@ -390,7 +444,7 @@ export class MockAdapter implements ISocialGraphApi {
         user_vote: 1,
         comments_count: 0,
         is_saved: false,
-        title: input.title.trim(),
+        title: input.title?.trim() || (input.content?.slice(0, 60) || 'Untitled Post'),
         content: input.content?.trim() || '',
         flair: input.flair?.trim().replace(/^#+/, '') || (input.tags && input.tags.length > 0 ? input.tags[0].trim().replace(/^#+/, '').toLowerCase() : undefined),
         tags: input.tags && input.tags.length > 0
@@ -400,7 +454,9 @@ export class MockAdapter implements ISocialGraphApi {
       };
     } else {
       const pinId = `pin_vis_${Date.now()}`;
-      const mediaItem = input.media![0];
+      const mediaList = input.media || [];
+      const mediaItem = mediaList[0];
+      const visualTitle = input.title?.trim() || (input.caption?.slice(0, 50) || input.content?.slice(0, 50) || 'Photo');
       createdPost = {
         id: pinId,
         post_type: 'visual',
@@ -413,7 +469,7 @@ export class MockAdapter implements ISocialGraphApi {
         user_vote: 1,
         comments_count: 0,
         is_saved: false,
-        title: input.title.trim(),
+        title: visualTitle,
         caption: input.caption?.trim() || input.content?.trim() || '',
         destination_url: input.destination_url?.trim() || undefined,
         tags: input.tags && input.tags.length > 0 ? input.tags : undefined,
@@ -421,10 +477,11 @@ export class MockAdapter implements ISocialGraphApi {
           id: mediaItem.id || `m_${Date.now()}`,
           url: mediaItem.url.trim(),
           aspect_ratio: mediaItem.aspect_ratio || 1.0,
-          alt_text: mediaItem.alt_text || input.title.trim(),
+          alt_text: mediaItem.alt_text || visualTitle,
           width: mediaItem.width,
           height: mediaItem.height,
         },
+        media_list: mediaList.length > 1 ? mediaList : undefined,
         dominant_color: '#3B82F6',
       };
     }

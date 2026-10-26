@@ -13,6 +13,7 @@ import type {
   Community,
   ApiErrorResponse,
   CreatePostInput,
+  MediaAttachment,
 } from '@socialgraph/shared';
 import type {
   ISocialGraphApi,
@@ -158,6 +159,50 @@ export class LiveClient implements ISocialGraphApi {
       method: 'POST',
       body: JSON.stringify(input),
     });
+  }
+
+  public async uploadMedia(files: File[]): Promise<MediaAttachment[]> {
+    if (!files || files.length === 0) return [];
+    if (files.length > 10) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/validation',
+        title: 'Validation Error',
+        status: 400,
+        detail: 'Cannot upload more than 10 images per post.',
+        code: 'VALIDATION_ERROR',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const formData = new FormData();
+    for (const f of files) {
+      formData.append('file', f);
+    }
+
+    const headers: Record<string, string> = {};
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+    }
+
+    const res = await fetch(`${this.baseUrl}/api/v1/media/upload`, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: formData,
+    });
+
+    if (!res.ok) {
+      let problem: any;
+      try {
+        problem = await res.json();
+      } catch {
+        problem = { status: res.status, title: 'Upload Failed', detail: res.statusText };
+      }
+      throw new ApiClientError(problem);
+    }
+
+    const data = await res.json();
+    return data.media || [];
   }
 
   public async createPost(input: CreatePostInput, idempotencyKey?: string): Promise<PostCard> {

@@ -141,13 +141,44 @@ export class PostService {
         ? finalTags[0]
         : undefined;
 
+      if (input.media && input.media.length > 10) {
+        throw AppError.badRequest('A post cannot contain more than 10 images.');
+      }
+
+      const hasText = Boolean(input.title?.trim() || input.content?.trim() || input.caption?.trim());
+      const hasMedia = Boolean(input.media && input.media.length > 0);
+      if (!hasText && !hasMedia) {
+        throw AppError.badRequest('Post must contain either text content or media attachments.');
+      }
+
+      let postType: 'visual' | 'discussion';
+      if (input.post_type) {
+        postType = input.post_type;
+      } else if (hasMedia) {
+        postType = 'visual';
+      } else {
+        postType = 'discussion';
+      }
+
+      let finalTitle = input.title?.trim();
+      if (!finalTitle) {
+        const text = input.content?.trim() || input.caption?.trim();
+        if (text) {
+          finalTitle = text.slice(0, 80).split('\n')[0].trim();
+        } else if (hasMedia) {
+          finalTitle = 'Photo';
+        } else {
+          finalTitle = 'Untitled Post';
+        }
+      }
+
       const postDoc: PostDoc = {
         _id: `post_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        post_type: input.post_type,
+        post_type: postType,
         author_id: authorId,
-        title: input.title,
+        title: finalTitle || (hasMedia ? 'Photo' : 'Untitled Post'),
         content: input.content,
-        caption: input.caption || (input.post_type === 'visual' ? input.content : undefined),
+        caption: input.caption || input.content || undefined,
         community_id: input.community_id,
         community_slug: communitySlug,
         collection_id: input.collection_id,

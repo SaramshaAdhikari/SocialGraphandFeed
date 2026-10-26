@@ -49,3 +49,7 @@ packages/frontend/vite.config.d.ts
 # Local Database and Cache dumps
 dump.rdb
 *.rdb
+
+# Uploaded media in local dev
+packages/backend/public/uploads/*
+!packages/backend/public/uploads/.gitkeep
