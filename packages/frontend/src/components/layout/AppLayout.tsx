@@ -5,6 +5,8 @@ import { MobileBottomNav } from './MobileBottomNav';
 import { RightRail } from './RightRail';
 import { PostModal } from '../post/PostModal';
 import { useRouter } from '../../router/Router';
+import { BrandLogo } from '../brand/BrandLogo';
+import { ArrowLeft } from 'lucide-react';
 
 export interface AppLayoutProps {
   children: React.ReactNode;
@@ -12,8 +14,9 @@ export interface AppLayoutProps {
 }
 
 export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
-  const { currentPath } = useRouter();
+  const { currentPath, navigate } = useRouter();
 
+  const isAuth = currentPath === '/login' || currentPath === '/register';
   const isDiscover = currentPath === '/explore';
   const isSettings = currentPath.startsWith('/settings');
   const isCommunity = currentPath.startsWith('/c/');
@@ -23,7 +26,33 @@ export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
   const isCreate = currentPath === '/create';
   const isCommunities = currentPath === '/communities';
   const isSaved = currentPath === '/saved';
-  const isDedicatedCanvas = isCommunity || isPostDetail || isProfile || isSearch || isCommunities || isSaved;
+  const isGraph = currentPath === '/graph';
+  const isDedicatedCanvas =
+    isCommunity || isPostDetail || isProfile || isSearch || isCommunities || isSaved || isGraph;
+
+  // Focused Authentication Layout: clean distraction-free card with clear return navigation
+  if (isAuth) {
+    return (
+      <div className="min-h-screen bg-canvas text-text-primary flex flex-col justify-between w-full transition-colors">
+        <header className="px-6 py-4 flex items-center justify-between border-b border-border/40 bg-surface-card/60 backdrop-blur-md">
+          <BrandLogo size="md" />
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="text-xs font-semibold text-text-muted hover:text-text-primary flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <ArrowLeft size={14} /> Back to feed
+          </button>
+        </header>
+        <main className="flex-1 flex items-center justify-center px-4 py-10">
+          <div className="w-full max-w-md">{children}</div>
+        </main>
+        <footer className="py-4 px-4 text-center text-xs text-text-muted border-t border-border/30">
+          SocialGraph &copy; 2026 &bull; Technical Community &amp; Knowledge Network
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-canvas text-text-primary flex flex-col w-full max-w-full transition-colors">

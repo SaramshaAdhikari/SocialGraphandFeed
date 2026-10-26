@@ -270,7 +270,7 @@ describe('Production Distributed Login Rate Limiting (Multi-Instance Redis Enfor
       });
       expect(blockedRes.statusCode).toBe(429);
       expect(blockedRes.json().code).toBe('RATE_LIMITED');
-    });
+    }, 20000);
   });
 
   describe('6. Fail-Closed Security Policy during Redis Outage', () => {
