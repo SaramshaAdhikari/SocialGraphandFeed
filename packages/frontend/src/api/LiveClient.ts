@@ -21,6 +21,7 @@ import type {
   SearchQuery,
   UniversalSearchResults,
   SavedPostsQuery,
+  GraphNeighborhoodData,
 } from './types';
 import { ApiClientError } from './client';
 
@@ -259,5 +260,12 @@ export class LiveClient implements ISocialGraphApi {
 
     const qs = params.toString() ? `?${params.toString()}` : '';
     return this.request<UniversalSearchResults>(`/api/v1/search${qs}`);
+  }
+
+  public async getGraphNeighborhood(limit = 24): Promise<GraphNeighborhoodData> {
+    const params = new URLSearchParams();
+    if (limit) params.set('limit', String(limit));
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return this.request<GraphNeighborhoodData>(`/api/v1/graph/neighborhood${qs}`);
   }
 }

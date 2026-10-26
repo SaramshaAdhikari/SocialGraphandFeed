@@ -250,11 +250,11 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
     });
 
     it('correctly filters feed to following users (scope: following)', async () => {
-      // usr_0 follows usr_1, usr_2, usr_3
+      // usr_0 follows usr_1, usr_2, usr_3, usr_4, usr_9, usr_10
       const feed = await feedService.getFeed({ scope: 'following', limit: 10 }, 'usr_0');
       expect(feed.success).toBe(true);
       for (const post of feed.data) {
-        expect(['usr_1', 'usr_2', 'usr_3']).toContain(post.author.id);
+        expect(['usr_1', 'usr_2', 'usr_3', 'usr_4', 'usr_9', 'usr_10']).toContain(post.author.id);
       }
     });
 
@@ -707,7 +707,7 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
       for (const community of communities) {
         expect(community.members_count).toBe(await db.collection(COLLECTIONS.COMMUNITY_MEMBERSHIPS).countDocuments({ community_id: community._id }));
       }
-      const posts = await db.collection(COLLECTIONS.POSTS).find({ _id: { $in: ['post_101', 'post_102', 'post_103', 'post_104', 'post_tie_301', 'post_tie_302'] } }).toArray();
+      const posts = await db.collection(COLLECTIONS.POSTS).find({ _id: { $in: ['post_101', 'post_102', 'post_103', 'post_104', 'post_105', 'post_106', 'post_107', 'post_108', 'post_109', 'post_110', 'post_111', 'post_112', 'post_113', 'post_114', 'post_tie_301', 'post_tie_302'] } }).toArray();
       for (const post of posts) {
         const votes = await db.collection(COLLECTIONS.POST_VOTES).find({ post_id: post._id }).toArray();
         expect(post.score).toBe(votes.reduce((score, vote) => score + vote.direction, 0));
@@ -718,9 +718,9 @@ describe('Real MongoDB Integration Suite (Local Database)', () => {
     it('re-executing seedDatabase is clean and deterministic', async () => {
       const stats = await seedDatabase(db);
       expect(stats.usersCount).toBe(20);
-      expect(stats.postsCount).toBe(6);
-      expect(stats.commentsCount).toBe(4);
-      expect(stats.followsCount).toBe(5);
+      expect(stats.postsCount).toBe(16);
+      expect(stats.commentsCount).toBe(10);
+      expect(stats.followsCount).toBe(24);
       expect(stats.communitiesCount).toBe(5);
     });
 

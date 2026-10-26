@@ -22,7 +22,7 @@ describe('Screen 5 — Community Hub: API Contracts & Data Layer', () => {
 
   it('retrieves community details by slug with metadata, rules, and membership status', async () => {
     const community = await adapter.getCommunity('systems');
-    expect(community.id).toBe('c_systems');
+    expect(community.id).toBe('comm_systems');
     expect(community.name).toBe('Distributed Systems');
     expect(community.slug).toBe('systems');
     expect(community.description).toContain('Architectures for scale');
@@ -34,9 +34,13 @@ describe('Screen 5 — Community Hub: API Contracts & Data Layer', () => {
   });
 
   it('retrieves community details by ID as fallback', async () => {
-    const community = await adapter.getCommunity('c_systems');
+    const community = await adapter.getCommunity('comm_systems');
     expect(community.slug).toBe('systems');
     expect(community.name).toBe('Distributed Systems');
+
+    // Also supports legacy alias c_systems
+    const legacy = await adapter.getCommunity('c_systems');
+    expect(legacy.slug).toBe('systems');
   });
 
   it('retrieves community details case-insensitively', async () => {
@@ -101,7 +105,7 @@ describe('Screen 5 — Community Hub: API Contracts & Data Layer', () => {
     expect(feedResponse.data.length).toBeGreaterThan(0);
 
     for (const post of feedResponse.data) {
-      expect(post.community_id).toBe('c_systems');
+      expect(post.community_id).toBe('comm_systems');
     }
   });
 

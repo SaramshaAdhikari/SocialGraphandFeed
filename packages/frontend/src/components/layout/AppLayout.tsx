@@ -3,7 +3,10 @@ import { SidebarNav } from './SidebarNav';
 import { TopHeader } from './TopHeader';
 import { MobileBottomNav } from './MobileBottomNav';
 import { RightRail } from './RightRail';
+import { PostModal } from '../post/PostModal';
 import { useRouter } from '../../router/Router';
+import { BrandLogo } from '../brand/BrandLogo';
+import { ArrowLeft } from 'lucide-react';
 
 export interface AppLayoutProps {
   children: React.ReactNode;
@@ -11,8 +14,9 @@ export interface AppLayoutProps {
 }
 
 export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
-  const { currentPath } = useRouter();
+  const { currentPath, navigate } = useRouter();
 
+  const isAuth = currentPath === '/login' || currentPath === '/register';
   const isDiscover = currentPath === '/explore';
   const isSettings = currentPath.startsWith('/settings');
   const isCommunity = currentPath.startsWith('/c/');
@@ -20,22 +24,50 @@ export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
   const isProfile = currentPath.startsWith('/u/');
   const isSearch = currentPath === '/search';
   const isCreate = currentPath === '/create';
-  const isDedicatedCanvas = isCommunity || isPostDetail || isProfile || isSearch;
+  const isCommunities = currentPath === '/communities';
+  const isSaved = currentPath === '/saved';
+  const isGraph = currentPath === '/graph';
+  const isDedicatedCanvas =
+    isCommunity || isPostDetail || isProfile || isSearch || isCommunities || isSaved || isGraph;
+
+  // Focused Authentication Layout: clean distraction-free card with clear return navigation
+  if (isAuth) {
+    return (
+      <div className="min-h-screen bg-canvas text-text-primary flex flex-col justify-between w-full transition-colors">
+        <header className="px-6 py-4 flex items-center justify-between border-b border-border/40 bg-surface-card/60 backdrop-blur-md">
+          <BrandLogo size="md" />
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="text-xs font-semibold text-text-muted hover:text-text-primary flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <ArrowLeft size={14} /> Back to feed
+          </button>
+        </header>
+        <main className="flex-1 flex items-center justify-center px-4 py-10">
+          <div className="w-full max-w-md">{children}</div>
+        </main>
+        <footer className="py-4 px-4 text-center text-xs text-text-muted border-t border-border/30">
+          SocialGraph &copy; 2026 &bull; Technical Community &amp; Knowledge Network
+        </footer>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-canvas dark:bg-[#0F1117] text-[#0F172A] dark:text-[#F8FAFC] flex flex-col w-full max-w-full overflow-x-hidden transition-colors">
+    <div className="min-h-screen bg-canvas text-text-primary flex flex-col w-full max-w-full transition-colors">
       <div className="flex flex-1 w-full max-w-full">
-        {/* Left Navigation Rail (Desktop & Tablet) */}
+        {/* Left Navigation Rail (Desktop & Tablet) - Fixed in Viewport */}
         <SidebarNav />
 
-        {/* Central Work Canvas */}
-        <div className="flex-1 flex flex-col min-w-0 max-w-full pb-16 md:pb-0">
-          {/* Top Header */}
+        {/* Central Work Canvas - Padded on left to offset fixed navigation */}
+        <div className="flex-1 flex flex-col min-w-0 max-w-full md:pl-18 lg:pl-64 pb-16 md:pb-0 transition-all bg-canvas">
+          {/* Top Header - Anchored Sticky at Top */}
           <TopHeader />
 
           {/* Body Content */}
           <main
-            className={`flex-1 flex justify-center w-full max-w-full overflow-x-hidden ${
+            className={`relative flex-1 flex justify-center w-full max-w-full bg-canvas ${
               isDiscover
                 ? 'px-3 sm:px-6 lg:px-8 py-6'
                 : isSettings || isCreate
@@ -43,41 +75,48 @@ export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
                 : 'px-4 sm:px-6 lg:px-8 py-6'
             }`}
           >
-            {isDiscover ? (
-              // Discover Layout: Expands to full desktop width without artificial max-w-2xl bottleneck
-              <div className="w-full max-w-[1750px] flex justify-center gap-6 2xl:gap-8">
-                <div className="flex-1 min-w-0 w-full">{children}</div>
-                {/* On Discover, RightRail collapses at intermediate widths and only displays on 2xl+ */}
-                {showRightRail && (
-                  <div className="hidden 2xl:block shrink-0">
-                    <RightRail />
-                  </div>
-                )}
-              </div>
-            ) : isSettings || isCreate ? (
-              // Settings & Create Post Layout: Focused comfortable form layout
-              <div className="w-full max-w-4xl mx-auto">{children}</div>
-            ) : isDedicatedCanvas ? (
-              // Dedicated Surface Canvas (Community Hub, Post Detail, Profile, Universal Search):
-              // Full-width max-w-5xl xl:max-w-6xl without global RightRail bottleneck
-              <div className="w-full max-w-5xl xl:max-w-6xl mx-auto">{children}</div>
-            ) : (
-              // Default / Home Feed Layout: Focused reading column + Right Rail
-              <div className="w-full max-w-5xl xl:max-w-6xl flex justify-center gap-8">
-                <div className="flex-1 min-w-0 max-w-2xl xl:max-w-3xl">{children}</div>
-                {showRightRail && (
-                  <div className="hidden xl:block shrink-0">
-                    <RightRail />
-                  </div>
-                )}
-              </div>
-            )}
+            <div className="relative z-10 w-full flex justify-center">
+              {isDiscover ? (
+                // Discover Layout: Expands to full desktop width without artificial max-w-2xl bottleneck
+                <div className="w-full max-w-[1750px] flex justify-center gap-6 2xl:gap-8">
+                  <div className="flex-1 min-w-0 w-full">{children}</div>
+                  {/* On Discover, RightRail collapses at intermediate widths and only displays on 2xl+ */}
+                  {showRightRail && (
+                    <div className="hidden 2xl:block shrink-0">
+                      <RightRail />
+                    </div>
+                  )}
+                </div>
+              ) : isSettings || isCreate ? (
+                // Settings & Create Post Layout: Focused comfortable form layout
+                <div className="w-full max-w-4xl mx-auto">{children}</div>
+              ) : isDedicatedCanvas ? (
+                // Dedicated Surface Canvas (Community Hub, Post Detail, Profile, Universal Search):
+                // Full-width max-w-5xl xl:max-w-6xl without global RightRail bottleneck
+                <div className="w-full max-w-5xl xl:max-w-6xl mx-auto">{children}</div>
+              ) : (
+                // Default / Home Feed Layout: Focused reading column + Right Rail
+                <div className="w-full max-w-5xl xl:max-w-6xl flex justify-center gap-8">
+                  <div className="flex-1 min-w-0 max-w-2xl xl:max-w-3xl overflow-x-hidden">{children}</div>
+                  {showRightRail && (
+                    <div className="hidden xl:block shrink-0">
+                      <RightRail />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </main>
         </div>
       </div>
+
+      {/* Shared Instagram-Style Post & Comment Modal */}
+      <PostModal />
 
       {/* Mobile Bottom Navigation (Hidden on Tablet and Desktop) */}
       <MobileBottomNav />
     </div>
   );
 }
+
+export default AppLayout;

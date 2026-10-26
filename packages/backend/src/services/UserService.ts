@@ -16,6 +16,7 @@ import { buildCursorFilter, encodePostCursor } from '../utils/pagination.js';
 import { getCached, setCachedWithTag, invalidateCachePattern } from '../cache/redis.js';
 import { NotificationService } from './NotificationService.js';
 import { config } from '../config/env.js';
+import { realtimeEventBus } from '../realtime/EventBus.js';
 
 export class UserService {
   private notificationService = new NotificationService();
@@ -223,6 +224,7 @@ export class UserService {
         followers_count: followersCount,
         target_username: targetUser.username,
         current_username: currentUser.username,
+        current_user_id: currentUserId,
       };
     });
 
@@ -230,6 +232,11 @@ export class UserService {
       this.invalidateUserProfileCache(res.target_username),
       this.invalidateUserProfileCache(res.current_username),
     ]);
+    realtimeEventBus.publish({
+      type: res.is_following ? 'follow.created' : 'follow.deleted',
+      actor_id: res.current_user_id,
+      target_user_id: res.target_user_id,
+    });
 
     return {
       target_user_id: res.target_user_id,
@@ -285,6 +292,11 @@ export class UserService {
       this.invalidateUserProfileCache(target.username),
       this.invalidateUserProfileCache(current.username),
     ]);
+    realtimeEventBus.publish({
+      type: isFollowing ? 'follow.created' : 'follow.deleted',
+      actor_id: currentUserId,
+      target_user_id: targetUserId,
+    });
 
     return { target_user_id: targetUserId, is_following: isFollowing, followers_count: followersCount };
   }
@@ -314,5 +326,44 @@ export class UserService {
     const data = ids.flatMap((id) => { const user = byId.get(id); return user ? [{ ...toUserSummary(user), is_following: viewerFollowing.has(id) }] : []; });
     const last = page[page.length - 1];
     return { data, total_count: total, has_more: hasMore, next_cursor: hasMore && last ? Buffer.from(JSON.stringify({ created_at: last.created_at.toISOString(), id: last._id })).toString('base64url') : null };
+  }
+
+  public async getGraphNeighborhood(userId: string, requestedLimit = 20): Promise<{
+    center: ReturnType<typeof toUserSummary>;
+    nodes: ReturnType<typeof toUserSummary>[];
+    edges: Array<{ source: string; target: string }>;
+  }> {
+    const users = this.db.collection<UserDoc>(COLLECTIONS.USERS);
+    const follows = this.db.collection<FollowDoc>(COLLECTIONS.FOLLOWS);
+    const center = await users.findOne({ _id: userId });
+    if (!center) throw AppError.notFound(`User ${userId} not found`);
+    const limit = Math.min(Math.max(requestedLimit, 1), 50);
+    const directEdges = await follows.find({ $or: [{ follower_id: userId }, { target_user_id: userId }] }).limit(limit * 2).toArray();
+    const directIds = new Set<string>([userId]);
+    for (const edge of directEdges) {
+      directIds.add(edge.follower_id);
+      directIds.add(edge.target_user_id);
+    }
+    const edges = await follows.find({
+      $or: [
+        { follower_id: { $in: Array.from(directIds) } },
+        { target_user_id: { $in: Array.from(directIds) } },
+      ],
+    }).limit(limit * 4).toArray();
+    const nodeIds = new Set<string>([userId]);
+    for (const edge of edges) {
+      nodeIds.add(edge.follower_id);
+      nodeIds.add(edge.target_user_id);
+      if (nodeIds.size >= limit + 1) break;
+    }
+    const boundedIds = new Set(Array.from(nodeIds).slice(0, limit + 1));
+    const nodeDocs = await users.find({ _id: { $in: Array.from(boundedIds) } }).toArray();
+    const uniqueEdges = new Map<string, { source: string; target: string }>();
+    for (const edge of edges) {
+      if (boundedIds.has(edge.follower_id) && boundedIds.has(edge.target_user_id)) {
+        uniqueEdges.set(edge._id, { source: edge.follower_id, target: edge.target_user_id });
+      }
+    }
+    return { center: toUserSummary(center), nodes: nodeDocs.map(toUserSummary), edges: Array.from(uniqueEdges.values()) };
   }
 }

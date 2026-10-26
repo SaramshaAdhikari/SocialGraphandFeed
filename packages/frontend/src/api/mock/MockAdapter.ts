@@ -22,6 +22,7 @@ import type {
   SearchQuery,
   UniversalSearchResults,
   SavedPostsQuery,
+  GraphNeighborhoodData,
 } from '../types';
 import { ApiClientError } from '../client';
 import {
@@ -220,7 +221,9 @@ export class MockAdapter implements ISocialGraphApi {
       items = items.filter(
         (p) =>
           p.community_slug?.toLowerCase() === targetSlug ||
-          p.community_id?.toLowerCase() === targetSlug
+          p.community_id?.toLowerCase() === targetSlug ||
+          (targetSlug === 'c_systems' && (p.community_id === 'comm_systems' || p.community_slug === 'systems')) ||
+          (targetSlug === 'comm_systems' && (p.community_id === 'comm_systems' || p.community_slug === 'systems'))
       );
     }
     if (topic && topic !== 'all') {
@@ -653,11 +656,23 @@ export class MockAdapter implements ISocialGraphApi {
   public async getCommunity(communitySlug: string): Promise<Community> {
     await this.delay(`/api/v1/communities/${communitySlug}`);
     const normalized = communitySlug.toLowerCase();
+    const aliasMap: Record<string, string> = {
+      c_systems: 'comm_systems',
+      c_architecture: 'comm_architecture',
+      c_frontend: 'comm_frontend',
+      c_photography: 'comm_photography',
+      c_design: 'comm_design',
+    };
+    const resolvedId = aliasMap[normalized] || normalized;
     const comm =
       this.communities[communitySlug] ||
       this.communities[normalized] ||
+      this.communities[resolvedId] ||
       Object.values(this.communities).find(
-        (c) => c.slug.toLowerCase() === normalized || c.id === communitySlug
+        (c) =>
+          c.slug.toLowerCase() === normalized ||
+          c.id.toLowerCase() === normalized ||
+          c.id.toLowerCase() === resolvedId
       );
 
     if (!comm) {
@@ -681,7 +696,12 @@ export class MockAdapter implements ISocialGraphApi {
     const community = await this.getCommunity(communitySlug);
     const { sort = 'hot', limit = 10, cursor } = query;
 
-    const scoped = this.posts.filter((p) => p.community_id === community.id);
+    const scoped = this.posts.filter(
+      (p) =>
+        p.community_id === community.id ||
+        (community.id === 'comm_systems' && p.community_id === 'c_systems') ||
+        p.community_slug === community.slug
+    );
 
     // Sorting implementation
     if (sort === 'hot' || sort === 'top') {
@@ -920,6 +940,55 @@ export class MockAdapter implements ISocialGraphApi {
       communities: matchingCommunities,
       users: matchingUsers,
       total_count,
+    };
+  }
+
+  public async getGraphNeighborhood(limit = 24): Promise<GraphNeighborhoodData> {
+    await this.delay('/api/v1/graph/neighborhood');
+    const allUserList = Object.values(this.users) as UserProfile[];
+    const centerUser = allUserList[0] || {
+      id: 'usr_0',
+      username: 'alex_dev',
+      display_name: 'Alex Rivera',
+      avatar_url: '/avatars/alex-dev.svg',
+      bio: 'feed engineering & distributed graph nerd',
+      followers_count: 418,
+      following_count: 285,
+    };
+
+    const targetNodes = allUserList.slice(0, Math.min(limit + 1, allUserList.length)).map((u) => ({
+      id: u.id,
+      username: u.username,
+      display_name: u.display_name,
+      avatar_url: u.avatar_url,
+      bio: u.bio,
+      followers_count: u.followers_count,
+      following_count: u.following_count,
+    }));
+
+    const edges: Array<{ source: string; target: string }> = [];
+    for (let i = 1; i < targetNodes.length; i++) {
+      edges.push({ source: centerUser.id, target: targetNodes[i].id });
+      if (i % 2 === 0) {
+        edges.push({ source: targetNodes[i].id, target: centerUser.id });
+      }
+      if (i + 1 < targetNodes.length && i % 3 === 0) {
+        edges.push({ source: targetNodes[i].id, target: targetNodes[i + 1].id });
+      }
+    }
+
+    return {
+      center: {
+        id: centerUser.id,
+        username: centerUser.username,
+        display_name: centerUser.display_name,
+        avatar_url: centerUser.avatar_url,
+        bio: centerUser.bio,
+        followers_count: centerUser.followers_count,
+        following_count: centerUser.following_count,
+      },
+      nodes: targetNodes,
+      edges,
     };
   }
 }

@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { setCsrfToken } from '../api/LiveClient';
+import { api } from '../api';
 
 export interface AuthUser { id: string; username: string; display_name: string; avatar_url: string; role: 'user' | 'admin' }
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
@@ -41,6 +42,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const logout = useCallback(async () => {
     setLogoutError('');
+    if (api.dataSource === 'mock') {
+      setCsrfToken(undefined);
+      setUser(null);
+      setStatus('unauthenticated');
+      return true;
+    }
     try {
       const current = await fetch('/api/v1/auth/session', { credentials: 'include' });
       if (current.status === 401) {

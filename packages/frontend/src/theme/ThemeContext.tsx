@@ -26,7 +26,7 @@ function getStoredMode(): AppearanceMode {
   } catch {
     // Ignore storage errors
   }
-  return 'light';
+  return 'dark';
 }
 
 function getStoredPalette(): PaletteId {
@@ -89,23 +89,63 @@ export function ThemeProvider({
 
     const root = document.documentElement;
     root.setAttribute('data-theme', resolvedTheme);
+    if (resolvedTheme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
     root.setAttribute('data-palette', paletteId);
 
     // Apply active tokens
-    const tokens = resolvedTheme === 'dark' ? palette.dark : palette.light;
-    root.style.setProperty('--color-primary', tokens.primary);
-    root.style.setProperty('--color-primary-hover', tokens.primaryHover);
-    root.style.setProperty('--color-primary-soft', tokens.primarySoft);
-    root.style.setProperty('--color-primary-border', tokens.primaryBorder);
-    root.style.setProperty('--color-focus-ring', tokens.focusRing);
-    root.style.setProperty('--color-canvas', tokens.canvas);
-    root.style.setProperty('--color-surface-card', tokens.surfaceCard);
-    root.style.setProperty('--color-surface-subtle', tokens.surfaceSubtle);
-    root.style.setProperty('--color-text-primary', tokens.textPrimary);
-    root.style.setProperty('--color-text-secondary', tokens.textSecondary);
-    root.style.setProperty('--color-text-muted', tokens.textMuted);
-    root.style.setProperty('--color-border', tokens.border);
-    root.style.setProperty('--color-border-subtle', tokens.borderSubtle);
+    if (resolvedTheme === 'dark') {
+      root.style.setProperty('--color-canvas', '#000000');
+      root.style.setProperty('--color-surface-card', '#0B0B0F');
+      root.style.setProperty('--color-surface-subtle', '#14141A');
+      root.style.setProperty('--color-border', '#262630');
+      root.style.setProperty('--color-border-strong', '#393944');
+      root.style.setProperty('--color-border-subtle', '#1C1C24');
+      root.style.setProperty('--color-text-primary', '#F7F7FB');
+      root.style.setProperty('--color-text-secondary', '#B4B4C2');
+      root.style.setProperty('--color-text-muted', '#858595');
+
+      if (paletteId === 'royal-blue') {
+        root.style.setProperty('--color-primary', '#FF3CAC');
+        root.style.setProperty('--color-primary-hover', '#FF5CB8');
+        root.style.setProperty('--color-primary-soft', '#291322');
+        root.style.setProperty('--color-primary-border', '#FF3CAC');
+        root.style.setProperty('--color-focus-ring', '#C084FC');
+      } else {
+        root.style.setProperty('--color-primary', palette.dark.primary);
+        root.style.setProperty('--color-primary-hover', palette.dark.primaryHover);
+        root.style.setProperty('--color-primary-soft', palette.dark.primarySoft);
+        root.style.setProperty('--color-primary-border', palette.dark.primaryBorder);
+        root.style.setProperty('--color-focus-ring', palette.dark.focusRing);
+      }
+    } else {
+      root.style.setProperty('--color-canvas', '#FFFFFF');
+      root.style.setProperty('--color-surface-card', '#F7F7FA');
+      root.style.setProperty('--color-surface-subtle', '#F5F5F5');
+      root.style.setProperty('--color-border', '#E5E5E5');
+      root.style.setProperty('--color-border-strong', '#D4CEDF');
+      root.style.setProperty('--color-border-subtle', '#EFEFEF');
+      root.style.setProperty('--color-text-primary', '#17131D');
+      root.style.setProperty('--color-text-secondary', '#625B6D');
+      root.style.setProperty('--color-text-muted', '#716A7E');
+
+      if (paletteId === 'royal-blue') {
+        root.style.setProperty('--color-primary', '#D92691');
+        root.style.setProperty('--color-primary-hover', '#BC1E7C');
+        root.style.setProperty('--color-primary-soft', '#FCE7F4');
+        root.style.setProperty('--color-primary-border', '#F7C0E4');
+        root.style.setProperty('--color-focus-ring', '#8B5CF6');
+      } else {
+        root.style.setProperty('--color-primary', palette.light.primary);
+        root.style.setProperty('--color-primary-hover', palette.light.primaryHover);
+        root.style.setProperty('--color-primary-soft', palette.light.primarySoft);
+        root.style.setProperty('--color-primary-border', palette.light.primaryBorder);
+        root.style.setProperty('--color-focus-ring', palette.light.focusRing);
+      }
+    }
   }, [resolvedTheme, paletteId, palette]);
 
   const setMode = useCallback((newMode: AppearanceMode) => {
@@ -131,6 +171,17 @@ export function ThemeProvider({
     }
   }, []);
 
+  const resetToDefault = useCallback(() => {
+    setPaletteIdState('royal-blue');
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        window.localStorage.setItem(THEME_PALETTE_STORAGE_KEY, 'royal-blue');
+      } catch {
+        // Ignore storage errors
+      }
+    }
+  }, []);
+
   const value: ThemeContextValue = useMemo(
     () => ({
       mode,
@@ -140,8 +191,9 @@ export function ThemeProvider({
       allPalettes: PALETTE_LIST,
       setMode,
       setPaletteId,
+      resetToDefault,
     }),
-    [mode, resolvedTheme, paletteId, palette, setMode, setPaletteId]
+    [mode, resolvedTheme, paletteId, palette, setMode, setPaletteId, resetToDefault]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
@@ -155,6 +207,7 @@ const DEFAULT_THEME_VALUE: ThemeContextValue = {
   allPalettes: PALETTE_LIST,
   setMode: () => {},
   setPaletteId: () => {},
+  resetToDefault: () => {},
 };
 
 export function useTheme(): ThemeContextValue {

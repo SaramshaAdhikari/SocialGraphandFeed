@@ -1,4 +1,4 @@
-import { Home, Compass, PlusCircle, Search, User } from 'lucide-react';
+import { Home, Compass, PlusCircle, Search, User, LogIn } from 'lucide-react';
 import { Link, useRouter } from '../../router/Router';
 import { useAuth } from '../../auth/AuthContext';
 
@@ -11,12 +11,14 @@ export function MobileBottomNav() {
     { label: 'Discover', to: '/explore', icon: Compass },
     { label: 'Create', to: '/create', icon: PlusCircle },
     { label: 'Search', to: '/search', icon: Search },
-    ...(user && status === 'authenticated' ? [{ label: 'Profile', to: `/u/${user.username}`, icon: User }] : []),
+    ...(user && status === 'authenticated'
+      ? [{ label: 'Profile', to: `/u/${user.username}`, icon: User }]
+      : [{ label: 'Sign In', to: '/login', icon: LogIn }]),
   ];
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-14 bg-white/95 dark:bg-[#181B22]/95 backdrop-blur-md border-t border-[#E2E8F0] dark:border-[#2E3544] px-2 flex items-center justify-around select-none transition-colors"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-14 bg-surface-card/95 backdrop-blur-md border-t border-border px-2 flex items-center justify-around select-none transition-colors"
       aria-label="Mobile Navigation"
     >
       {items.map((item) => {
@@ -34,7 +36,7 @@ export function MobileBottomNav() {
             exact={item.exact}
             aria-label={item.label}
             className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              isActive ? 'text-primary' : 'text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white'
+              isActive ? 'text-primary font-bold' : 'text-text-muted hover:text-text-primary'
             }`}
           >
             <Icon size={22} className={isActive ? 'stroke-[2.5px]' : 'stroke-2'} />
@@ -45,3 +47,5 @@ export function MobileBottomNav() {
     </nav>
   );
 }
+
+export default MobileBottomNav;

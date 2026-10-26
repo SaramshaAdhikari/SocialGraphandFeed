@@ -52,7 +52,7 @@ export function FeedList({
       },
       {
         root: null,
-        rootMargin: '200px', // Pre-fetch 200px before reaching bottom
+        rootMargin: '200px',
         threshold: 0.1,
       }
     );
@@ -80,14 +80,14 @@ export function FeedList({
     return (
       <div
         role="alert"
-        className={`bg-white dark:bg-[#181B22] rounded-xl border border-red-200 dark:border-red-900/40 p-6 sm:p-8 text-center shadow-sm space-y-4 transition-colors ${className}`}
+        className={`bg-surface-card rounded-2xl border border-rose-500/25 p-6 sm:p-8 text-center shadow-xs space-y-4 transition-colors ${className}`}
       >
-        <div className="w-12 h-12 mx-auto rounded-full bg-red-50 dark:bg-red-950/40 flex items-center justify-center text-red-600 dark:text-red-400">
+        <div className="w-12 h-12 mx-auto rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400">
           <AlertCircle size={24} />
         </div>
         <div>
-          <h2 className="text-base font-bold text-[#0F172A] dark:text-[#F8FAFC] mb-1">Failed to load feed</h2>
-          <p className="text-sm text-[#64748B] dark:text-[#94A3B8] max-w-md mx-auto">
+          <h2 className="text-base font-bold text-text-primary mb-1">Failed to load feed</h2>
+          <p className="text-sm text-text-muted max-w-md mx-auto leading-relaxed">
             {error.message || 'An unexpected error occurred while communicating with the feed service.'}
           </p>
         </div>
@@ -96,6 +96,7 @@ export function FeedList({
           variant="primary"
           size="sm"
           leftIcon={<RefreshCw size={14} />}
+          className="font-semibold"
         >
           Try Again
         </Button>
@@ -107,9 +108,9 @@ export function FeedList({
   if (!loading && posts.length === 0) {
     return (
       <div
-        className={`bg-white dark:bg-[#181B22] rounded-xl border border-[#E2E8F0] dark:border-[#2E3544] p-8 sm:p-12 text-center shadow-sm space-y-4 transition-colors ${className}`}
+        className={`bg-surface-card rounded-3xl border border-border p-8 sm:p-12 text-center shadow-xs space-y-4 transition-colors ${className}`}
       >
-        <div className="w-14 h-14 mx-auto rounded-full bg-[#F1F5F9] dark:bg-[#262B36] flex items-center justify-center text-[#64748B] dark:text-[#94A3B8]">
+        <div className="w-14 h-14 mx-auto rounded-2xl bg-surface-subtle flex items-center justify-center text-text-muted">
           {scope === 'following' ? (
             <Users size={28} />
           ) : (
@@ -118,14 +119,14 @@ export function FeedList({
         </div>
 
         <div className="max-w-md mx-auto">
-          <h2 className="text-base sm:text-lg font-bold text-[#0F172A] dark:text-[#F8FAFC] mb-1">
+          <h2 className="text-base sm:text-lg font-bold text-text-primary mb-1">
             {scope === 'following'
               ? 'No posts from creators you follow'
               : scope === 'communities'
               ? 'No community posts in this feed'
               : 'No posts in this feed yet'}
           </h2>
-          <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+          <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
             {scope === 'following'
               ? 'Follow creators and engineers in the Discover feed to see their latest work here.'
               : scope === 'communities'
@@ -136,19 +137,26 @@ export function FeedList({
 
         <div className="pt-2">
           {scope === 'following' ? (
-            <Link to="/explore">
-              <Button variant="primary" size="sm" leftIcon={<Compass size={15} />}>
-                Explore Creators
-              </Button>
-            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Link to="/explore">
+                <Button variant="primary" size="sm" leftIcon={<Compass size={15} />} className="font-semibold">
+                  Explore Creators
+                </Button>
+              </Link>
+              <Link to="/communities">
+                <Button variant="outline" size="sm" leftIcon={<Users size={15} />} className="font-semibold">
+                  Browse Communities
+                </Button>
+              </Link>
+            </div>
           ) : scope === 'communities' ? (
             <Link to="/communities">
-              <Button variant="primary" size="sm" leftIcon={<Users size={15} />}>
+              <Button variant="primary" size="sm" leftIcon={<Users size={15} />} className="font-semibold">
                 Browse Communities
               </Button>
             </Link>
           ) : (
-            <Button variant="outline" size="sm" onClick={onRetry} leftIcon={<RefreshCw size={14} />}>
+            <Button variant="outline" size="sm" onClick={onRetry} leftIcon={<RefreshCw size={14} />} className="font-semibold">
               Refresh Feed
             </Button>
           )}
@@ -158,7 +166,7 @@ export function FeedList({
   }
 
   return (
-    <div className={`space-y-4 ${className}`} id="feed-content">
+    <div className={`space-y-4 sm:space-y-5 ${className}`} id="feed-content">
       {/* Stream of Mixed Posts */}
       {posts.map((post) => {
         if (post.post_type === 'discussion') {
@@ -202,7 +210,7 @@ export function FeedList({
             variant="outline"
             size="sm"
             onClick={onLoadMore}
-            className="w-full sm:w-auto min-w-[200px]"
+            className="w-full sm:w-auto min-w-[200px] font-semibold"
           >
             Load More Posts
           </Button>
@@ -213,13 +221,13 @@ export function FeedList({
       {!hasMore && posts.length > 0 && (
         <div
           role="status"
-          className="py-8 px-4 text-center border-t border-[#E2E8F0] dark:border-[#2E3544] text-[#64748B] dark:text-[#94A3B8] space-y-1 transition-colors"
+          className="py-8 px-4 text-center border-t border-border text-text-muted space-y-1 transition-colors"
         >
-          <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 mb-1">
+          <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-500 mb-1">
             <CheckCircle2 size={18} />
           </div>
-          <p className="text-sm font-semibold text-[#0F172A] dark:text-[#F8FAFC]">You're all caught up!</p>
-          <p className="text-xs text-[#94A3B8]">
+          <p className="text-sm font-bold text-text-primary">You're all caught up!</p>
+          <p className="text-xs text-text-muted">
             You've viewed all posts currently available in this feed.
           </p>
         </div>
@@ -227,3 +235,4 @@ export function FeedList({
     </div>
   );
 }
+export default FeedList;

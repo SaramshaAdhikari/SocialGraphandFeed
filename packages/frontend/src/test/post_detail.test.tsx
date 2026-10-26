@@ -204,6 +204,7 @@ describe('Screen 3 — Post Detail: Comment Components UI', () => {
     );
 
     expect(html).toContain('Collapse thread');
+    expect(html).toContain('aria-expanded="true"');
     expect(html).toContain(childComment.content);
   });
 

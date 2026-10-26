@@ -9,12 +9,12 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
-  neutral: 'bg-[#F4F4F5] dark:bg-[#262B36] text-[#475569] dark:text-[#CBD5E1] border border-[#E2E8F0] dark:border-[#2E3544]',
+  neutral: 'bg-surface-subtle text-text-secondary border border-border',
   brand: 'bg-[#EFF6FF] dark:bg-primary/20 text-primary border border-primary/30',
   success: 'bg-[#ECFDF5] dark:bg-emerald-950/30 text-[#059669] dark:text-emerald-400 border border-[#A7F3D0] dark:border-emerald-800',
   warning: 'bg-[#FFFBEB] dark:bg-amber-950/30 text-[#D97706] dark:text-amber-400 border border-[#FDE68A] dark:border-amber-800',
   error: 'bg-[#FEF2F2] dark:bg-rose-950/30 text-[#DC2626] dark:text-rose-400 border border-[#FECACA] dark:border-rose-800',
-  outline: 'bg-transparent text-[#64748B] dark:text-[#94A3B8] border border-[#CBD5E1] dark:border-[#3F3F46]',
+  outline: 'bg-transparent text-text-muted border border-border',
 };
 
 const sizeStyles: Record<BadgeSize, string> = {
@@ -56,7 +56,7 @@ export function Pill({
 
   const stateClasses = selected
     ? 'bg-primary text-white border-transparent shadow-sm'
-    : 'bg-[#F4F4F5] dark:bg-[#262B36] text-[#475569] dark:text-[#CBD5E1] hover:bg-[#E4E4E7] dark:hover:bg-[#323846] hover:text-[#0F172A] dark:hover:text-white border-transparent';
+    : 'bg-surface-subtle text-text-muted hover:bg-surface-card hover:text-text-primary border border-border';
 
   return (
     <button

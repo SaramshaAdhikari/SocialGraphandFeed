@@ -60,7 +60,7 @@ export function MarkdownEditor({
   const renderMarkdown = (text: string) => {
     if (!text.trim()) {
       return (
-        <div className="py-12 text-center text-[#94A3B8] italic text-sm">
+        <div className="py-12 text-center text-text-muted italic text-sm">
           Nothing to preview yet. Switch back to &ldquo;Write&rdquo; to author your discussion.
         </div>
       );
@@ -87,10 +87,10 @@ export function MarkdownEditor({
           elements.push(
             <div
               key={`code-${i}`}
-              className="my-3 rounded-xl bg-slate-900 text-slate-100 p-4 font-mono text-xs overflow-x-auto border border-slate-800"
+              className="my-3 rounded-xl bg-surface-subtle text-text-primary p-4 font-mono text-xs overflow-x-auto border border-border"
             >
               {codeBlockLang && (
-                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2 border-b border-slate-800 pb-1">
+                <div className="text-[10px] text-text-muted font-bold uppercase tracking-wider mb-2 border-b border-border pb-1">
                   {codeBlockLang}
                 </div>
               )}
@@ -111,7 +111,7 @@ export function MarkdownEditor({
       // Headings
       if (line.startsWith('### ')) {
         elements.push(
-          <h4 key={i} className="text-sm font-bold text-[#0F172A] dark:text-[#F8FAFC] mt-3 mb-1">
+          <h4 key={i} className="text-sm font-bold text-text-primary mt-3 mb-1">
             {formatInline(line.slice(4))}
           </h4>
         );
@@ -119,7 +119,7 @@ export function MarkdownEditor({
       }
       if (line.startsWith('## ')) {
         elements.push(
-          <h3 key={i} className="text-base font-bold text-[#0F172A] dark:text-[#F8FAFC] mt-4 mb-1.5">
+          <h3 key={i} className="text-base font-bold text-text-primary mt-4 mb-1.5">
             {formatInline(line.slice(3))}
           </h3>
         );
@@ -127,7 +127,7 @@ export function MarkdownEditor({
       }
       if (line.startsWith('# ')) {
         elements.push(
-          <h2 key={i} className="text-lg font-bold text-[#0F172A] dark:text-[#F8FAFC] mt-4 mb-2">
+          <h2 key={i} className="text-lg font-bold text-text-primary mt-4 mb-2">
             {formatInline(line.slice(2))}
           </h2>
         );
@@ -139,7 +139,7 @@ export function MarkdownEditor({
         elements.push(
           <blockquote
             key={i}
-            className="my-2 pl-3.5 border-l-2 border-primary/60 italic text-sm text-[#475569] dark:text-[#94A3B8]"
+            className="my-2 pl-3.5 border-l-2 border-primary/60 italic text-sm text-text-muted"
           >
             {formatInline(line.slice(2))}
           </blockquote>
@@ -150,7 +150,7 @@ export function MarkdownEditor({
       // Bullet lists
       if (line.startsWith('- ') || line.startsWith('* ')) {
         elements.push(
-          <li key={i} className="ml-4 list-disc text-sm text-[#334155] dark:text-[#CBD5E1] my-0.5">
+          <li key={i} className="ml-4 list-disc text-sm text-text-secondary my-0.5">
             {formatInline(line.slice(2))}
           </li>
         );
@@ -165,7 +165,7 @@ export function MarkdownEditor({
 
       // Standard paragraphs
       elements.push(
-        <p key={i} className="text-sm text-[#334155] dark:text-[#CBD5E1] leading-relaxed my-1">
+        <p key={i} className="text-sm text-text-secondary leading-relaxed my-1">
           {formatInline(line)}
         </p>
       );
@@ -188,7 +188,7 @@ export function MarkdownEditor({
         parts.push(
           <code
             key={keyIdx++}
-            className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-primary text-xs font-mono font-medium"
+            className="px-1.5 py-0.5 rounded bg-surface-subtle text-primary text-xs font-mono font-medium border border-border/40"
           >
             {codeMatch[1]}
           </code>
@@ -201,7 +201,7 @@ export function MarkdownEditor({
       const boldMatch = remaining.match(/^\*\*([^*]+)\*\*/);
       if (boldMatch) {
         parts.push(
-          <strong key={keyIdx++} className="font-bold text-[#0F172A] dark:text-[#F8FAFC]">
+          <strong key={keyIdx++} className="font-bold text-text-primary">
             {boldMatch[1]}
           </strong>
         );
@@ -252,7 +252,7 @@ export function MarkdownEditor({
       <div className="flex items-center justify-between mb-1.5">
         <label
           htmlFor={editorId}
-          className="block text-xs font-semibold text-[#0F172A] dark:text-[#CBD5E1] uppercase tracking-wider"
+          className="block text-xs font-semibold text-text-primary uppercase tracking-wider"
         >
           Discussion Body <span className="text-red-500">*</span>
         </label>
@@ -261,7 +261,7 @@ export function MarkdownEditor({
         <div
           role="tablist"
           aria-label="Discussion Editor Modes"
-          className="inline-flex rounded-lg bg-slate-100 dark:bg-[#1E222B] p-0.5 border border-[#E2E8F0] dark:border-[#2E3544]"
+          className="inline-flex rounded-lg bg-surface-subtle p-0.5 border border-border"
         >
           <button
             type="button"
@@ -272,8 +272,8 @@ export function MarkdownEditor({
             onClick={() => setActiveTab('write')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'write'
-                ? 'bg-white dark:bg-[#262B36] text-primary shadow-xs'
-                : 'text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white'
+                ? 'bg-surface-card text-primary shadow-xs border border-border/40'
+                : 'text-text-muted hover:text-text-primary'
             }`}
           >
             <Edit3 size={13} />
@@ -288,8 +288,8 @@ export function MarkdownEditor({
             onClick={() => setActiveTab('preview')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'preview'
-                ? 'bg-white dark:bg-[#262B36] text-primary shadow-xs'
-                : 'text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white'
+                ? 'bg-surface-card text-primary shadow-xs border border-border/40'
+                : 'text-text-muted hover:text-text-primary'
             }`}
           >
             <Eye size={13} />
@@ -303,22 +303,22 @@ export function MarkdownEditor({
         className={`rounded-2xl border transition-all overflow-hidden ${
           error
             ? 'border-red-500 ring-1 ring-red-500'
-            : 'border-[#E2E8F0] dark:border-[#2E3544] focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent'
-        } bg-white dark:bg-[#181B22]`}
+            : 'border-border focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent'
+        } bg-surface-card`}
       >
         {/* Markdown Toolbar (Only visible in Write mode) */}
         {activeTab === 'write' && (
           <div
             role="toolbar"
             aria-label="Markdown formatting tools"
-            className="flex flex-wrap items-center gap-1 p-2 border-b border-[#F1F5F9] dark:border-[#262B36] bg-[#FAFAFA] dark:bg-[#15181F] text-[#475569] dark:text-[#94A3B8]"
+            className="flex flex-wrap items-center gap-1 p-2 border-b border-border bg-surface-subtle text-text-secondary"
           >
             <button
               type="button"
               title="Bold (**text**)"
               aria-label="Bold"
               onClick={() => insertSyntax('**', '**', 'bold text')}
-              className="p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-[#262B36] hover:text-[#0F172A] dark:hover:text-white transition-colors"
+              className="p-1.5 rounded-md hover:bg-surface-card hover:text-text-primary transition-colors"
             >
               <Bold size={15} />
             </button>
@@ -327,7 +327,7 @@ export function MarkdownEditor({
               title="Italic (*text*)"
               aria-label="Italic"
               onClick={() => insertSyntax('*', '*', 'italic text')}
-              className="p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-[#262B36] hover:text-[#0F172A] dark:hover:text-white transition-colors"
+              className="p-1.5 rounded-md hover:bg-surface-card hover:text-text-primary transition-colors"
             >
               <Italic size={15} />
             </button>
@@ -336,19 +336,19 @@ export function MarkdownEditor({
               title="Heading (## Heading)"
               aria-label="Heading"
               onClick={() => insertSyntax('\n## ', '\n', 'Heading')}
-              className="p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-[#262B36] hover:text-[#0F172A] dark:hover:text-white transition-colors"
+              className="p-1.5 rounded-md hover:bg-surface-card hover:text-text-primary transition-colors"
             >
               <Heading2 size={15} />
             </button>
 
-            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-1" aria-hidden="true" />
+            <div className="h-4 w-px bg-border mx-1" aria-hidden="true" />
 
             <button
               type="button"
               title="Inline Code (`code`)"
               aria-label="Inline Code"
               onClick={() => insertSyntax('`', '`', 'code')}
-              className="p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-[#262B36] hover:text-[#0F172A] dark:hover:text-white transition-colors"
+              className="p-1.5 rounded-md hover:bg-surface-card hover:text-text-primary transition-colors"
             >
               <Code size={15} />
             </button>
@@ -357,19 +357,19 @@ export function MarkdownEditor({
               title="Code Block (```language)"
               aria-label="Code Block"
               onClick={() => insertSyntax('\n```typescript\n', '\n```\n', '// code snippet')}
-              className="p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-[#262B36] hover:text-[#0F172A] dark:hover:text-white transition-colors"
+              className="p-1.5 rounded-md hover:bg-surface-card hover:text-text-primary transition-colors"
             >
               <SquareCode size={15} />
             </button>
 
-            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-1" aria-hidden="true" />
+            <div className="h-4 w-px bg-border mx-1" aria-hidden="true" />
 
             <button
               type="button"
               title="Quote (> quote)"
               aria-label="Quote"
               onClick={() => insertSyntax('\n> ', '\n', 'quote')}
-              className="p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-[#262B36] hover:text-[#0F172A] dark:hover:text-white transition-colors"
+              className="p-1.5 rounded-md hover:bg-surface-card hover:text-text-primary transition-colors"
             >
               <Quote size={15} />
             </button>
@@ -378,7 +378,7 @@ export function MarkdownEditor({
               title="Bullet List (- item)"
               aria-label="Bullet List"
               onClick={() => insertSyntax('\n- ', '\n', 'List item')}
-              className="p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-[#262B36] hover:text-[#0F172A] dark:hover:text-white transition-colors"
+              className="p-1.5 rounded-md hover:bg-surface-card hover:text-text-primary transition-colors"
             >
               <List size={15} />
             </button>
@@ -387,7 +387,7 @@ export function MarkdownEditor({
               title="Link ([title](url))"
               aria-label="Link"
               onClick={() => insertSyntax('[', '](https://example.com)', 'link title')}
-              className="p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-[#262B36] hover:text-[#0F172A] dark:hover:text-white transition-colors"
+              className="p-1.5 rounded-md hover:bg-surface-card hover:text-text-primary transition-colors"
             >
               <LinkIcon size={15} />
             </button>
@@ -409,7 +409,7 @@ export function MarkdownEditor({
               placeholder={placeholder}
               rows={12}
               maxLength={maxLength}
-              className="w-full p-4 text-sm bg-transparent text-[#0F172A] dark:text-[#F8FAFC] placeholder-[#94A3B8] border-0 focus:outline-none resize-y min-h-[220px] font-sans leading-relaxed"
+              className="w-full p-4 text-sm bg-transparent text-text-primary placeholder-text-muted border-0 focus:outline-none resize-y min-h-[220px] font-sans leading-relaxed"
             />
           </div>
         ) : (
@@ -418,14 +418,14 @@ export function MarkdownEditor({
             role="tabpanel"
             aria-labelledby={`${editorId}-preview-tab`}
             data-testid="markdown-preview-pane"
-            className="p-5 min-h-[220px] max-h-[500px] overflow-y-auto bg-slate-50/50 dark:bg-[#12141A]/50 border-t sm:border-t-0"
+            className="p-5 min-h-[220px] max-h-[500px] overflow-y-auto bg-surface-subtle/50 border-t sm:border-t-0 border-border"
           >
             {renderMarkdown(value)}
           </div>
         )}
 
         {/* Footer info: character guidance */}
-        <div className="flex items-center justify-between px-4 py-2 border-t border-[#F1F5F9] dark:border-[#262B36] bg-[#FAFAFA] dark:bg-[#15181F] text-[11px] text-[#94A3B8]">
+        <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-surface-subtle text-[11px] text-text-muted">
           <span>Markdown syntax supported</span>
           <span className={value.length > maxLength * 0.9 ? 'text-amber-500 font-bold' : ''}>
             {value.length.toLocaleString()} / {maxLength.toLocaleString()} characters
@@ -441,3 +441,5 @@ export function MarkdownEditor({
     </div>
   );
 }
+
+export default MarkdownEditor;

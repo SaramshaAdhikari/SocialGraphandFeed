@@ -298,7 +298,7 @@ describe('Screen 2 — Discover: Components & Visual Layout', () => {
     updated_at: new Date().toISOString(),
     score: 842,
     comments_count: 56,
-    community_id: 'c_systems',
+    community_id: 'comm_systems',
     community_slug: 'systems',
     post_type: 'visual',
     media: {
@@ -346,7 +346,7 @@ describe('Screen 2 — Discover: Components & Visual Layout', () => {
 
     // Aspect ratio style matches 0.75 exactly
     expect(html).toContain('aspect-ratio:0.75');
-    expect(html).toContain('background-color:#1E293B');
+        expect(html).toContain('background-color:#1E293B');
     expect(html).toContain('Consensus Architecture Diagram');
   });
 
@@ -364,6 +364,8 @@ describe('Screen 2 — Discover: Components & Visual Layout', () => {
     // Save button
     expect(html).toContain('aria-label="Save pin to collection"');
     expect(html).toContain('Save');
+    expect(html).toContain('opacity-100 sm:opacity-0 sm:group-hover/pin:opacity-100');
+    expect(html).toContain('focus-visible:ring-primary');
 
     // Author metadata
     expect(html).toContain('Sarah Chen');
@@ -388,8 +390,8 @@ describe('Screen 2 — Discover: Components & Visual Layout', () => {
     expect(html).toContain('aria-pressed="true"');
   });
 
-  it('MasonryGrid applies multi-column responsive classes and renders all pins', () => {
-    const html = renderToString(
+  it('MasonryGrid renders greedy flex columns by default and supports CSS columns layout', () => {
+    const htmlGreedy = renderToString(
       <RouterProvider initialPath="/explore">
         <MasonryGrid
           pins={[samplePin]}
@@ -399,9 +401,24 @@ describe('Screen 2 — Discover: Components & Visual Layout', () => {
       </RouterProvider>
     );
 
-    expect(html).toContain('columns-2 sm:columns-2 md:columns-3 lg:columns-4 2xl:columns-5 3xl:columns-6');
-    expect(html).toContain('break-inside-avoid');
-    expect(html).toContain(samplePin.title);
+    expect(htmlGreedy).toContain('data-testid="masonry-grid"');
+    expect(htmlGreedy).toContain('flex flex-row items-start');
+    expect(htmlGreedy).toContain(samplePin.title);
+
+    const htmlColumns = renderToString(
+      <RouterProvider initialPath="/explore">
+        <MasonryGrid
+          pins={[samplePin]}
+          layout="columns"
+          onVote={() => {}}
+          onToggleSave={() => {}}
+        />
+      </RouterProvider>
+    );
+
+    expect(htmlColumns).toContain('columns-2 sm:columns-2 md:columns-3 lg:columns-4 2xl:columns-5 3xl:columns-6');
+    expect(htmlColumns).toContain('break-inside-avoid');
+    expect(htmlColumns).toContain(samplePin.title);
   });
 
   it('DiscoverySkeleton renders multiple card skeletons with variable aspect ratios', () => {
@@ -410,6 +427,8 @@ describe('Screen 2 — Discover: Components & Visual Layout', () => {
     expect(html).toContain('aria-label="Loading discovery pins"');
     expect(html).toContain('aspect-ratio:1.33');
     expect(html).toContain('aspect-ratio:0.75');
+    expect(html).toContain('hidden sm:flex');
+    expect(html).toContain('hidden lg:flex');
     expect(html).toContain('animate-pulse');
   });
 

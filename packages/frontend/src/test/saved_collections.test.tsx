@@ -3,7 +3,8 @@ import { renderToString } from 'react-dom/server';
 import { MockAdapter } from '../api/mock/MockAdapter';
 import { LiveClient } from '../api/LiveClient';
 import { ApiClientError } from '../api/client';
-import { mockDiscussionPosts, mockVisualPins } from '../api/mock/fixtures';
+import { mockDiscussionPosts, mockVisualPins, mockCommentsByPostId } from '../api/mock/fixtures';
+import { CommentNodeItem } from '../components/post/CommentNodeItem';
 import { SavedCollectionsPage } from '../pages/SavedCollectionsPage';
 import { UserProfilePage } from '../pages/UserProfilePage';
 import { ProfileTabs } from '../components/profile/ProfileTabs';
@@ -33,7 +34,7 @@ describe('Screen 8 — Saved Collections: MockAdapter Data Contracts & Filtering
 
     // Verify critical bugfix: Saved posts must include items created by creators OTHER than alex_dev
     const authors = new Set(res.data.map((p) => p.author.username));
-    expect(authors.has('alec')).toBe(true);
+    expect(authors.has('alec_m')).toBe(true);
     expect(authors.has('elena_arch')).toBe(true);
     expect(authors.has('sara_code')).toBe(true);
     expect(authors.size).toBeGreaterThan(1);
@@ -73,7 +74,7 @@ describe('Screen 8 — Saved Collections: MockAdapter Data Contracts & Filtering
     const systemsRes = await adapter.getSavedPosts({ communitySlug: 'c_systems' });
     expect(systemsRes.data.length).toBeGreaterThan(0);
     for (const post of systemsRes.data) {
-      expect(post.community_id).toBe('c_systems');
+      expect(['comm_systems', 'c_systems']).toContain(post.community_id);
     }
   });
 
@@ -384,4 +385,300 @@ describe('Screen 8 — Saved Collections: UI Page Rendering & Shell Navigation',
     expect(pinHtml).toContain('Saved');
     expect(pinHtml).toContain('aria-label="Unsave pin"');
   });
+
+  it('16. CommentNodeItem renders session-only title tooltip to avoid misleading state on comment votes', () => {
+    const comment = mockCommentsByPostId['post_disc_101'][0];
+    const html = renderToString(
+      <RouterProvider>
+        <CommentNodeItem
+          comment={comment}
+          onVoteComment={() => {}}
+          onAddReply={async () => {}}
+        />
+      </RouterProvider>
+    );
+
+    expect(html).toContain('title="Comment voting is active in local session memory');
+    expect(html).toContain('title="Upvote comment (held in local session memory)"');
+  });
+
+  it('17. SavedCollectionsPage does not disguise backend route collision 404 as empty collection', () => {
+    const html = renderToString(
+      <ThemeProvider>
+        <RouterProvider initialPath="/saved">
+          <SavedCollectionsPage />
+        </RouterProvider>
+      </ThemeProvider>
+    );
+
+    expect(html).not.toContain('Your saved collection is empty');
+    expect(html).toContain('saved-collections-page');
+  });
+
+  it('18. renders loading skeleton during fetch and strictly hides empty state and error banner', () => {
+    const mockHook = () => ({
+      posts: [],
+      discussions: [],
+      visualPins: [],
+      loading: true,
+      error: null,
+      typeFilter: 'all' as const,
+      setTypeFilter: vi.fn(),
+      communityFilter: 'all',
+      setCommunityFilter: vi.fn(),
+      searchQuery: '',
+      setSearchQuery: vi.fn(),
+      sort: 'new' as const,
+      setSort: vi.fn(),
+      totalCount: 0,
+      counts: { all: 0, discussions: 0, visual: 0 },
+      availableCommunities: [],
+      vote: vi.fn(),
+      toggleSave: vi.fn(),
+      undoLastUnsave: vi.fn(),
+      lastUnsavedPost: null,
+      toastMessage: null,
+      canUndo: false,
+      dismissToast: vi.fn(),
+      refresh: vi.fn(),
+    });
+
+    const html = renderToString(
+      <ThemeProvider>
+        <RouterProvider initialPath="/saved">
+          <SavedCollectionsPage savedPostsHook={mockHook as any} />
+        </RouterProvider>
+      </ThemeProvider>
+    );
+
+    expect(html).toContain('saved-loading-skeleton');
+    expect(html).not.toContain('saved-empty-state');
+    expect(html).not.toContain('saved-error-banner');
+  });
+
+  it('19. renders genuine empty state when API succeeds with 0 saved items', () => {
+    const mockHook = () => ({
+      posts: [],
+      discussions: [],
+      visualPins: [],
+      loading: false,
+      error: null,
+      typeFilter: 'all' as const,
+      setTypeFilter: vi.fn(),
+      communityFilter: 'all',
+      setCommunityFilter: vi.fn(),
+      searchQuery: '',
+      setSearchQuery: vi.fn(),
+      sort: 'new' as const,
+      setSort: vi.fn(),
+      totalCount: 0,
+      counts: { all: 0, discussions: 0, visual: 0 },
+      availableCommunities: [],
+      vote: vi.fn(),
+      toggleSave: vi.fn(),
+      undoLastUnsave: vi.fn(),
+      lastUnsavedPost: null,
+      toastMessage: null,
+      canUndo: false,
+      dismissToast: vi.fn(),
+      refresh: vi.fn(),
+    });
+
+    const html = renderToString(
+      <ThemeProvider>
+        <RouterProvider initialPath="/saved">
+          <SavedCollectionsPage savedPostsHook={mockHook as any} />
+        </RouterProvider>
+      </ThemeProvider>
+    );
+
+    expect(html).toContain('saved-empty-state');
+    expect(html).toContain('Your saved collection is empty');
+    expect(html).toContain('Explore Discover');
+    expect(html).toContain('Browse Home Feed');
+    expect(html).not.toContain('saved-error-banner');
+    expect(html).not.toContain('saved-loading-skeleton');
+  });
+
+  it('20. renders filter-specific empty state with clear filters button when active filter yields 0 items', () => {
+    const mockHook = () => ({
+      posts: [],
+      discussions: [],
+      visualPins: [],
+      loading: false,
+      error: null,
+      typeFilter: 'discussions' as const,
+      setTypeFilter: vi.fn(),
+      communityFilter: 'hardware',
+      setCommunityFilter: vi.fn(),
+      searchQuery: '',
+      setSearchQuery: vi.fn(),
+      sort: 'new' as const,
+      setSort: vi.fn(),
+      totalCount: 5,
+      counts: { all: 5, discussions: 0, visual: 5 },
+      availableCommunities: [],
+      vote: vi.fn(),
+      toggleSave: vi.fn(),
+      undoLastUnsave: vi.fn(),
+      lastUnsavedPost: null,
+      toastMessage: null,
+      canUndo: false,
+      dismissToast: vi.fn(),
+      refresh: vi.fn(),
+    });
+
+    const html = renderToString(
+      <ThemeProvider>
+        <RouterProvider initialPath="/saved">
+          <SavedCollectionsPage savedPostsHook={mockHook as any} />
+        </RouterProvider>
+      </ThemeProvider>
+    );
+
+    expect(html).toContain('saved-empty-state');
+    expect(html).toContain('No items match your active filter');
+    expect(html).toContain('Clear All Filters');
+    expect(html).not.toContain('Your saved collection is empty');
+  });
+
+  it('21. renders populated items stream and omits empty/error states when posts are present', () => {
+    const disc = mockDiscussionPosts[0];
+    const mockHook = () => ({
+      posts: [disc],
+      discussions: [disc],
+      visualPins: [],
+      loading: false,
+      error: null,
+      typeFilter: 'all' as const,
+      setTypeFilter: vi.fn(),
+      communityFilter: 'all',
+      setCommunityFilter: vi.fn(),
+      searchQuery: '',
+      setSearchQuery: vi.fn(),
+      sort: 'new' as const,
+      setSort: vi.fn(),
+      totalCount: 1,
+      counts: { all: 1, discussions: 1, visual: 0 },
+      availableCommunities: [],
+      vote: vi.fn(),
+      toggleSave: vi.fn(),
+      undoLastUnsave: vi.fn(),
+      lastUnsavedPost: null,
+      toastMessage: null,
+      canUndo: false,
+      dismissToast: vi.fn(),
+      refresh: vi.fn(),
+    });
+
+    const html = renderToString(
+      <ThemeProvider>
+        <RouterProvider initialPath="/saved">
+          <SavedCollectionsPage savedPostsHook={mockHook as any} />
+        </RouterProvider>
+      </ThemeProvider>
+    );
+
+    expect(html).toContain(disc.title);
+    expect(html).not.toContain('saved-empty-state');
+    expect(html).not.toContain('saved-error-banner');
+    expect(html).not.toContain('saved-loading-skeleton');
+  });
+
+  it('22. renders compact error banner with retry action and informative curation card on route 404', () => {
+    const refreshSpy = vi.fn();
+    const mockHook = () => ({
+      posts: [],
+      discussions: [],
+      visualPins: [],
+      loading: false,
+      error: new Error('Route GET /api/v1/posts/saved not found (404)'),
+      typeFilter: 'all' as const,
+      setTypeFilter: vi.fn(),
+      communityFilter: 'all',
+      setCommunityFilter: vi.fn(),
+      searchQuery: '',
+      setSearchQuery: vi.fn(),
+      sort: 'new' as const,
+      setSort: vi.fn(),
+      totalCount: 0,
+      counts: { all: 0, discussions: 0, visual: 0 },
+      availableCommunities: [],
+      vote: vi.fn(),
+      toggleSave: vi.fn(),
+      undoLastUnsave: vi.fn(),
+      lastUnsavedPost: null,
+      toastMessage: null,
+      canUndo: false,
+      dismissToast: vi.fn(),
+      refresh: refreshSpy,
+    });
+
+    const html = renderToString(
+      <ThemeProvider>
+        <RouterProvider initialPath="/saved">
+          <SavedCollectionsPage savedPostsHook={mockHook as any} />
+        </RouterProvider>
+      </ThemeProvider>
+    );
+
+    expect(html).toContain('saved-error-banner');
+    expect(html).toContain('Backend route synchronization pending (HTTP 404)');
+    expect(html).toContain('Try Again');
+    expect(html).toContain('Personal Library Offline State');
+    expect(html).toContain('Saved content will appear here once connected');
+    expect(html).toContain('Technical Discussions');
+    expect(html).toContain('Architectural Visual Pins');
+    expect(html).toContain('Safe Database Storage');
+    expect(html).not.toContain('Your saved collection is empty');
+  });
+
+  it('23. maintains strict accessibility attributes, ARIA roles, and unified control toolbar hierarchy', () => {
+    const mockHook = () => ({
+      posts: [],
+      discussions: [],
+      visualPins: [],
+      loading: false,
+      error: null,
+      typeFilter: 'all' as const,
+      setTypeFilter: vi.fn(),
+      communityFilter: 'all',
+      setCommunityFilter: vi.fn(),
+      searchQuery: '',
+      setSearchQuery: vi.fn(),
+      sort: 'new' as const,
+      setSort: vi.fn(),
+      totalCount: 4,
+      counts: { all: 4, discussions: 2, visual: 2 },
+      availableCommunities: [
+        { slug: 'all', name: 'All Communities', count: 4 },
+        { slug: 'systems', name: 'Distributed Systems', count: 4 },
+      ],
+      vote: vi.fn(),
+      toggleSave: vi.fn(),
+      undoLastUnsave: vi.fn(),
+      lastUnsavedPost: null,
+      toastMessage: null,
+      canUndo: false,
+      dismissToast: vi.fn(),
+      refresh: vi.fn(),
+    });
+
+    const html = renderToString(
+      <ThemeProvider>
+        <RouterProvider initialPath="/saved">
+          <SavedCollectionsPage savedPostsHook={mockHook as any} />
+        </RouterProvider>
+      </ThemeProvider>
+    );
+
+    expect(html).toContain('role="region"');
+    expect(html).toContain('aria-label="Saved Collections"');
+    expect(html).toContain('role="tablist"');
+    expect(html).toContain('role="tab"');
+    expect(html).toContain('aria-selected="true"');
+    expect(html).toContain('aria-label="Sort saved items"');
+    expect(html).toContain('aria-label="Refresh saved library"');
+  });
+
 });

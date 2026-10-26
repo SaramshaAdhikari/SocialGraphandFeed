@@ -25,6 +25,8 @@ export function CommentComposer({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = content.trim();
@@ -55,11 +57,11 @@ export function CommentComposer({
     <form
       onSubmit={handleSubmit}
       data-testid="comment-composer"
-      className={`rounded-xl border border-[#E2E8F0] dark:border-[#2E3544] bg-white dark:bg-[#181B22] p-3 shadow-xs focus-within:border-primary/60 dark:focus-within:border-primary/60 transition-colors ${className}`}
+      className={`rounded-xl border border-border bg-surface-card p-3 shadow-xs focus-within:border-primary/60 transition-colors ${className}`}
     >
       <div className="flex items-start gap-2">
         {isNestedReply && (
-          <CornerDownRight size={16} className="text-[#94A3B8] shrink-0 mt-2" aria-hidden="true" />
+          <CornerDownRight size={16} className="text-text-muted shrink-0 mt-2" aria-hidden="true" />
         )}
         <textarea
           value={content}
@@ -70,7 +72,7 @@ export function CommentComposer({
           rows={isNestedReply ? 2 : 3}
           aria-label={placeholder}
           disabled={isSubmitting}
-          className="w-full resize-y bg-transparent text-sm text-[#0F172A] dark:text-[#F8FAFC] placeholder:text-[#94A3B8] focus:outline-none min-h-[50px] leading-relaxed"
+          className="w-full resize-y bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none min-h-[50px] leading-relaxed"
         />
       </div>
 
@@ -80,9 +82,9 @@ export function CommentComposer({
         </p>
       )}
 
-      <div className="mt-2.5 pt-2 border-t border-[#F1F5F9] dark:border-[#262B36] flex items-center justify-between gap-2">
-        <span className="text-[11px] text-[#94A3B8]">
-          Press <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-mono border border-slate-200 dark:border-slate-700">Ctrl+Enter</kbd> to send
+      <div className="mt-2.5 pt-2 border-t border-border flex items-center justify-between gap-2">
+        <span className="text-[11px] text-text-muted hidden sm:inline-block">
+          Press <kbd className="px-1.5 py-0.5 rounded bg-surface-subtle text-text-secondary text-[10px] font-mono border border-border">{isMac ? '⌘+Enter' : 'Ctrl+Enter'}</kbd> to send
         </span>
 
         <div className="flex items-center gap-2">
@@ -93,7 +95,7 @@ export function CommentComposer({
               size="sm"
               onClick={onCancel}
               disabled={isSubmitting}
-              className="text-xs text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white"
+              className="text-xs text-text-muted hover:text-text-primary"
             >
               Cancel
             </Button>
@@ -108,7 +110,7 @@ export function CommentComposer({
             leftIcon={!isSubmitting ? <Send size={13} /> : undefined}
             className="text-xs font-semibold px-3"
           >
-            {submitLabel}
+            {isSubmitting ? 'Posting...' : submitLabel}
           </Button>
         </div>
       </div>
