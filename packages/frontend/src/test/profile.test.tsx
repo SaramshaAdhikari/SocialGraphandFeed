@@ -155,7 +155,7 @@ describe('Screen 4 — User Profile: Header & Tabs UI Components', () => {
     );
 
     expect(html).toContain('Edit Profile');
-    expect(html).toContain('href="/settings"');
+    expect(html).toContain('data-testid="edit-profile-button"');
     expect(html).not.toContain('UserPlus');
   });
 

@@ -23,7 +23,7 @@ const variantStyles: Record<ButtonVariant, string> = {
   pill:
     'bg-surface-card text-text-primary hover:bg-surface-subtle border border-border rounded-full shadow-sm btn-interaction',
   danger:
-    'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-sm border border-transparent btn-interaction',
+    'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 shadow-sm border border-transparent btn-interaction',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -60,7 +60,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const baseClasses =
       'inline-flex items-center justify-center font-medium transition-all select-none cursor-pointer whitespace-nowrap ' +
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0B0B0F] ' +
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-canvas ' +
       'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none active:scale-[0.98]';
 
     return (
@@ -100,7 +100,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             {leftIcon}
           </span>
         )}
-        <span className="inline-flex items-center justify-center leading-none whitespace-nowrap">{children}</span>
+        <span className="truncate inline-flex items-center justify-center gap-1.5 leading-none">{children}</span>
         {!isLoading && rightIcon && (
           <span className="inline-flex items-center justify-center shrink-0 leading-none" aria-hidden="true">
             {rightIcon}
@@ -112,4 +112,3 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 Button.displayName = 'Button';
-export default Button;

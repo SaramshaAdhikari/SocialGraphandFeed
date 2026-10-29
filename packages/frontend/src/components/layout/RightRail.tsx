@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Community } from '@socialgraph/shared';
-import { TrendingUp, Sparkles, ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { Link } from '../../router/Router';
 import { api } from '../../api';
 import { RecommendedHubs } from './RecommendedHubs';
@@ -69,11 +69,11 @@ export function RightRail() {
   };
 
   const trendingTopics = [
-    { tag: '#CacheInvalidation', posts: '1.2k discussions' },
-    { tag: '#TAOArchitecture', posts: '840 discussions' },
-    { tag: '#BrutalistCompute', posts: '520 pins' },
-    { tag: '#ConsensusProtocols', posts: '390 discussions' },
-    { tag: '#DistributedState', posts: '280 discussions' },
+    { tag: '#CacheInvalidation', topic: 'Systems & Memory' },
+    { tag: '#TAOArchitecture', topic: 'Data & Scale' },
+    { tag: '#BrutalistCompute', topic: 'Design & UI' },
+    { tag: '#ConsensusProtocols', topic: 'Distributed Networks' },
+    { tag: '#DistributedState', topic: 'Database Engines' },
   ];
 
   return (
@@ -90,31 +90,28 @@ export function RightRail() {
       />
 
       {/* 2. Trending Discussions */}
-      <div className="bg-surface-card rounded-2xl border border-border p-4 shadow-xs transition-colors">
-        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/60">
-          <div className="w-6 h-6 rounded-lg bg-orange-500/10 text-upvote flex items-center justify-center">
-            <TrendingUp size={14} />
-          </div>
-          <h2 className="text-xs font-bold uppercase tracking-wider text-text-primary">
+      <div className="py-2 px-1 transition-colors">
+        <div className="flex items-center justify-between mb-3 pb-1">
+          <h2 className="text-xs font-bold text-text-muted uppercase tracking-wider">
             Trending Discussions
           </h2>
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           {trendingTopics.map((t, index) => (
             <Link
               key={t.tag}
               to={`/search?q=${encodeURIComponent(t.tag)}`}
-              className="flex items-center justify-between p-2 -mx-1 rounded-xl hover:bg-surface-subtle transition-colors group"
+              className="flex items-center justify-between p-2 -mx-1.5 rounded-xl hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-colors group"
             >
               <div className="flex items-start gap-2.5 min-w-0">
-                <span className="text-xs font-mono font-bold text-text-muted/70 group-hover:text-primary transition-colors w-4 pt-0.5">
+                <span className="text-xs font-mono font-bold text-text-muted/60 group-hover:text-text-primary transition-colors w-4 pt-0.5">
                   {index + 1}
                 </span>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-text-primary group-hover:text-primary transition-colors truncate">
                     {t.tag}
                   </p>
-                  <p className="text-[11px] text-text-muted mt-0.5">{t.posts}</p>
+                  <p className="text-[11px] text-text-muted mt-0.5">{t.topic}</p>
                 </div>
               </div>
               <ArrowUpRight size={14} className="text-text-muted group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all shrink-0" />
@@ -124,18 +121,15 @@ export function RightRail() {
       </div>
 
       {/* 3. Suggested Creators to Follow */}
-      <div className="bg-surface-card rounded-2xl border border-border p-4 shadow-xs transition-colors">
-        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/60">
-          <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-            <Sparkles size={14} />
-          </div>
-          <h2 className="text-xs font-bold uppercase tracking-wider text-text-primary">
-            Featured Creators
+      <div className="py-2 px-1 transition-colors">
+        <div className="flex items-center justify-between mb-3 pb-1">
+          <h2 className="text-xs font-bold text-text-muted uppercase tracking-wider">
+            Suggested for you
           </h2>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {RECOMMENDED_CREATORS.map((creator) => (
-            <div key={creator.username} className="flex items-center justify-between gap-2.5">
+            <div key={creator.username} className="flex items-center justify-between gap-2.5 p-1.5 -mx-1.5 rounded-xl hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-colors">
               <Link
                 to={`/u/${creator.username}`}
                 className="flex items-center gap-2.5 min-w-0 group/creator"
@@ -157,9 +151,9 @@ export function RightRail() {
               </Link>
               <Link
                 to={`/u/${creator.username}`}
-                className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-surface-subtle border border-border text-text-secondary hover:text-text-primary hover:border-border-strong transition-colors shrink-0"
+                className="text-xs font-semibold text-primary hover:text-primary-hover shrink-0"
               >
-                View
+                Follow
               </Link>
             </div>
           ))}
@@ -167,15 +161,18 @@ export function RightRail() {
       </div>
 
       {/* 4. Platform Legal & Settings Footer */}
-      <footer className="px-2 text-[11px] text-text-muted space-y-1.5 leading-relaxed pb-4">
-        <div className="flex flex-wrap gap-x-3 gap-y-1">
-          <Link to="/explore" className="hover:text-text-primary hover:underline">Discover</Link>
-          <Link to="/communities" className="hover:text-text-primary hover:underline">Communities</Link>
-          <Link to="/saved" className="hover:text-text-primary hover:underline">Saved</Link>
-          <Link to="/settings/appearance" className="hover:text-text-primary hover:underline">Appearance</Link>
+      <footer className="px-1 text-[11px] text-text-muted/70 space-y-2 leading-relaxed pt-2 pb-6">
+        <div className="flex flex-wrap gap-x-2.5 gap-y-1 text-[11px]">
+          <Link to="/explore" className="hover:text-text-primary transition-colors">Discover</Link>
+          <span>•</span>
+          <Link to="/communities" className="hover:text-text-primary transition-colors">Communities</Link>
+          <span>•</span>
+          <Link to="/saved" className="hover:text-text-primary transition-colors">Saved</Link>
+          <span>•</span>
+          <Link to="/settings/appearance" className="hover:text-text-primary transition-colors">Appearance</Link>
         </div>
-        <p className="text-[10px] text-text-muted/80">
-          SocialGraph &amp; Feed Engineering &copy; 2026. All rights reserved.
+        <p className="text-[11px] text-text-muted/60">
+          &copy; 2026 SOCIALGRAPH &bull; KNOWLEDGE &amp; FEED
         </p>
       </footer>
     </aside>

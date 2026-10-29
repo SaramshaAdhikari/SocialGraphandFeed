@@ -11,6 +11,9 @@ import { CreatePostPage } from './pages/CreatePostPage';
 import { SavedCollectionsPage } from './pages/SavedCollectionsPage';
 import { CommunitiesPage } from './pages/CommunitiesPage';
 import { SettingsAppearancePage } from './pages/SettingsAppearancePage';
+import { SettingsProfilePage } from './pages/SettingsProfilePage';
+import { MessagesPage } from './pages/MessagesPage';
+import { NotificationsPage } from './pages/NotificationsPage';
 import { DiagnosticsView } from './components/common/DiagnosticsView';
 import { PlaceholderPage } from './components/common/PlaceholderPage';
 import { ThemeProvider } from './theme';
@@ -63,6 +66,11 @@ export function App() {
               {/* Screen 7: Create Post Composer */}
               <Route path="/create" element={<AuthGate><CreatePostPage /></AuthGate>} />
 
+              {/* Direct Messaging */}
+              <Route path="/messages" element={<AuthGate><MessagesPage /></AuthGate>} />
+              <Route path="/messages/:conversationId" element={<AuthGate><MessagesPage /></AuthGate>} />
+              <Route path="/notifications" element={<AuthGate><NotificationsPage /></AuthGate>} />
+
               {/* Supporting Surface: Saved Collections */}
               <Route path="/saved" element={<AuthGate><SavedCollectionsPage /></AuthGate>} />
 
@@ -70,7 +78,8 @@ export function App() {
               <Route path="/communities" element={<CommunitiesPage />} />
 
             {/* Settings & Appearance Personalization */}
-            <Route path="/settings" element={<SettingsAppearancePage />} />
+            <Route path="/settings" element={<AuthGate><SettingsProfilePage /></AuthGate>} />
+            <Route path="/settings/profile" element={<AuthGate><SettingsProfilePage /></AuthGate>} />
             <Route path="/settings/appearance" element={<SettingsAppearancePage />} />
 
             {/* Repurposed Milestone 1 Diagnostics */}
@@ -82,7 +91,7 @@ export function App() {
       </RouterProvider>
     </ThemeProvider>
   </ErrorBoundary>
-);
+  );
 }
 
 export default App;

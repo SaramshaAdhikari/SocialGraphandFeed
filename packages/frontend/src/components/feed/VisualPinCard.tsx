@@ -5,6 +5,7 @@ import { Avatar } from '../ui/Avatar';
 import { Link } from '../../router/Router';
 import { formatRelativeTime } from '../../utils/date';
 import { usePostModal } from '../../context/PostModalContext';
+import { PostActionMenu } from './PostActionMenu';
 
 export interface VisualPinCardProps {
   post: IVisualPinCard;
@@ -70,7 +71,7 @@ export function VisualPinCard({
     <article
       data-testid={`post-visual-${post.id}`}
       onClick={handleCardClick}
-      className={`bg-surface-card rounded-2xl border border-border shadow-xs hover:border-border-strong transition-all duration-150 overflow-hidden cursor-pointer ${className}`}
+      className={`bg-surface-card rounded-2xl border border-border/50 shadow-xs hover:border-border transition-all duration-150 overflow-hidden cursor-pointer ${className}`}
     >
       {/* Author & Context Header */}
       <div className="p-3.5 sm:p-4 flex items-center justify-between gap-3 border-b border-border/60">
@@ -109,14 +110,17 @@ export function VisualPinCard({
           </Link>
         </div>
 
-        {post.community_slug && (
-          <Link
-            to={`/c/${post.community_slug}`}
-            className="text-xs font-bold text-text-secondary hover:text-primary bg-surface-subtle border border-border/60 px-2.5 py-0.5 rounded-full transition-colors shrink-0"
-          >
-            c/{post.community_slug}
-          </Link>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {post.community_slug && (
+            <Link
+              to={`/c/${post.community_slug}`}
+              className="text-xs font-bold text-text-secondary hover:text-primary bg-surface-subtle border border-border/60 px-2.5 py-0.5 rounded-full transition-colors"
+            >
+              c/{post.community_slug}
+            </Link>
+          )}
+          <PostActionMenu post={post} />
+        </div>
       </div>
 
       {/* Media Box with CLS Aspect Ratio Reservation */}
@@ -167,10 +171,11 @@ export function VisualPinCard({
           type="button"
           onClick={handleSave}
           aria-label={post.is_saved ? 'Unsave pin' : 'Save pin'}
+          aria-pressed={post.is_saved}
           className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-bold shadow-md transition-all duration-150 cursor-pointer ${
             post.is_saved
               ? 'bg-ink-button text-white hover:bg-ink-button-hover opacity-100'
-              : 'bg-primary text-white hover:bg-primary-hover opacity-0 group-hover:opacity-100 focus:opacity-100'
+              : 'bg-primary text-white hover:bg-primary-hover opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100'
           }`}
         >
           {post.is_saved ? 'Saved' : 'Save'}
@@ -245,17 +250,17 @@ export function VisualPinCard({
           <button
             type="button"
             onClick={handleSave}
-            aria-label="Save pin"
+            aria-label={post.is_saved ? 'Unsave pin' : 'Save pin'}
             aria-pressed={post.is_saved}
             className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
               post.is_saved
-                ? 'text-primary bg-primary/10'
-                : 'text-text-muted hover:text-text-primary hover:bg-surface-subtle'
+                ? 'text-text-primary bg-black/[0.05] dark:bg-white/[0.1]'
+                : 'text-text-muted hover:text-text-primary hover:bg-black/[0.04] dark:hover:bg-white/[0.08]'
             }`}
           >
             <Bookmark
               size={16}
-              className={post.is_saved ? 'fill-current text-primary' : ''}
+              className={post.is_saved ? 'fill-current text-text-primary' : ''}
             />
           </button>
         </div>

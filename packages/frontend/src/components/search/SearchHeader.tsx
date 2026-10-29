@@ -57,7 +57,7 @@ export function SearchHeader({
 
       {/* Suggested Quick Topics Strip */}
       <div className="mt-3 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
-        <span className="text-[#64748B] dark:text-[#94A3B8] flex items-center gap-1 shrink-0 font-medium mr-1">
+        <span className="text-text-muted flex items-center gap-1 shrink-0 font-medium mr-1">
           <Sparkles size={12} className="text-primary" />
           <span>Trending:</span>
         </span>
@@ -69,7 +69,7 @@ export function SearchHeader({
               onQueryChange(topic);
               onSubmit(topic);
             }}
-            className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-[#262B36] text-[#475569] dark:text-[#CBD5E1] hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/20 dark:hover:text-primary transition-colors shrink-0 font-medium cursor-pointer"
+            className="px-2.5 py-1 rounded-full bg-surface-subtle text-text-secondary hover:text-text-primary hover:bg-black/[0.06] dark:hover:bg-white/[0.1] transition-colors shrink-0 font-medium cursor-pointer"
           >
             {topic}
           </button>

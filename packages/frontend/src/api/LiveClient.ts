@@ -8,12 +8,19 @@ import type {
   CommentNode,
   CreateCommentInput,
   UserProfile,
+  UpdateUserProfileInput,
   FollowToggleResponse,
   FollowListResponse,
   Community,
   ApiErrorResponse,
   CreatePostInput,
   MediaAttachment,
+  ConversationSummary,
+  DirectMessage,
+  NotificationsQuery,
+  NotificationsResponse,
+  MarkReadResponse,
+  MarkAllReadResponse,
 } from '@socialgraph/shared';
 import type {
   ISocialGraphApi,
@@ -92,7 +99,7 @@ export class LiveClient implements ISocialGraphApi {
     return this.request<HealthStatus>('/api/v1/health');
   }
 
-  public async getMetrics(): Promise<{ uptime_seconds: number; node_version: string }> {
+  public async getMetrics(): Promise<{ uptime_seconds: number; node_version: string; memory?: { rss_mb: number; heap_used_mb: number; heap_total_mb: number } }> {
     return this.request('/api/v1/metrics');
   }
 
@@ -234,6 +241,13 @@ export class LiveClient implements ISocialGraphApi {
     return this.request<UserProfile>(`/api/v1/users/${username}`);
   }
 
+  public async updateProfile(input: UpdateUserProfileInput): Promise<UserProfile> {
+    return this.request<UserProfile>('/api/v1/users/me', {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    });
+  }
+
   public async getUserPosts(username: string, query: FeedQuery = {}): Promise<FeedResponse> {
     const params = new URLSearchParams();
     if (query.cursor) params.set('cursor', query.cursor);
@@ -312,5 +326,134 @@ export class LiveClient implements ISocialGraphApi {
     if (limit) params.set('limit', String(limit));
     const qs = params.toString() ? `?${params.toString()}` : '';
     return this.request<GraphNeighborhoodData>(`/api/v1/graph/neighborhood${qs}`);
+  }
+
+  // Direct Messaging
+  public async getConversations(
+    cursor?: string | null,
+    limit = 20
+  ): Promise<{ data: ConversationSummary[]; next_cursor: string | null; has_more: boolean }> {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (cursor) params.set('cursor', cursor);
+    return this.request(`/api/v1/conversations?${params.toString()}`);
+  }
+
+  public async getOrCreateConversation(
+    recipientId: string,
+    initialMessage?: string
+  ): Promise<ConversationSummary> {
+    const res = await this.request<{ success: boolean; data: ConversationSummary }>('/api/v1/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ recipient_id: recipientId, initial_message: initialMessage }),
+    });
+    return res.data;
+  }
+
+  public async getConversation(conversationId: string): Promise<ConversationSummary> {
+    const res = await this.request<{ success: boolean; data: ConversationSummary }>(
+      `/api/v1/conversations/${encodeURIComponent(conversationId)}`
+    );
+    return res.data;
+  }
+
+  public async getMessages(
+    conversationId: string,
+    cursor?: string | null,
+    limit = 50
+  ): Promise<{ data: DirectMessage[]; next_cursor: string | null; has_more: boolean }> {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (cursor) params.set('cursor', cursor);
+    return this.request(`/api/v1/conversations/${encodeURIComponent(conversationId)}/messages?${params.toString()}`);
+  }
+
+  public async sendMessage(conversationId: string, content: string): Promise<DirectMessage> {
+    const res = await this.request<{ success: boolean; data: DirectMessage }>(
+      `/api/v1/conversations/${encodeURIComponent(conversationId)}/messages`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      }
+    );
+    return res.data;
+  }
+
+  public async deleteMessage(conversationId: string, messageId: string): Promise<DirectMessage> {
+    const res = await this.request<{ success: boolean; data: DirectMessage }>(
+      `/api/v1/conversations/${encodeURIComponent(conversationId)}/messages/${encodeURIComponent(messageId)}`,
+      {
+        method: 'DELETE',
+      }
+    );
+    return res.data;
+  }
+
+  public async deleteConversation(conversationId: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(
+      `/api/v1/conversations/${encodeURIComponent(conversationId)}`,
+      {
+        method: 'DELETE',
+      }
+    );
+  }
+
+  public async markConversationAsRead(conversationId: string): Promise<void> {
+    await this.request(`/api/v1/conversations/${encodeURIComponent(conversationId)}/read`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
+
+  public async getUnreadMessagesCount(): Promise<number> {
+    const res = await this.request<{ success: boolean; unread_count: number }>('/api/v1/conversations/unread-count');
+    return res.unread_count || 0;
+  }
+  public async editPost(
+    postId: string,
+    input: { title?: string; body?: string; media_urls?: string[]; community_id?: string }
+  ): Promise<PostCard> {
+    return this.request<PostCard>(`/api/v1/posts/${encodeURIComponent(postId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    });
+  }
+
+  public async deletePost(postId: string): Promise<{ success: boolean; post_id: string }> {
+    return this.request<{ success: boolean; post_id: string }>(
+      `/api/v1/posts/${encodeURIComponent(postId)}`,
+      {
+        method: 'DELETE',
+      }
+    );
+  }
+
+  public async getNotifications(query?: NotificationsQuery): Promise<NotificationsResponse> {
+    const params = new URLSearchParams();
+    if (query?.cursor) params.set('cursor', query.cursor);
+    if (query?.limit) params.set('limit', String(query.limit));
+    if (query?.unread_only) params.set('unread_only', 'true');
+    const qs = params.toString();
+    return this.request<NotificationsResponse>(`/api/v1/notifications${qs ? `?${qs}` : ''}`);
+  }
+
+  public async getUnreadNotificationCount(): Promise<number> {
+    const res = await this.request<{ unread_count: number }>('/api/v1/notifications/unread-count');
+    return res.unread_count || 0;
+  }
+
+  public async markNotificationAsRead(notificationId: string): Promise<MarkReadResponse> {
+    return this.request<MarkReadResponse>(
+      `/api/v1/notifications/${encodeURIComponent(notificationId)}/read`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({}),
+      }
+    );
+  }
+
+  public async markAllNotificationsAsRead(): Promise<MarkAllReadResponse> {
+    return this.request<MarkAllReadResponse>('/api/v1/notifications/read-all', {
+      method: 'PATCH',
+      body: JSON.stringify({}),
+    });
   }
 }

@@ -99,52 +99,48 @@ export function ThemeProvider({
     // Apply active tokens
     if (resolvedTheme === 'dark') {
       root.style.setProperty('--color-canvas', '#000000');
-      root.style.setProperty('--color-surface-card', '#0B0B0F');
-      root.style.setProperty('--color-surface-subtle', '#14141A');
-      root.style.setProperty('--color-border', '#262630');
-      root.style.setProperty('--color-border-strong', '#393944');
-      root.style.setProperty('--color-border-subtle', '#1C1C24');
-      root.style.setProperty('--color-text-primary', '#F7F7FB');
-      root.style.setProperty('--color-text-secondary', '#B4B4C2');
-      root.style.setProperty('--color-text-muted', '#858595');
+      root.style.setProperty('--color-surface-card', '#0A0A0A');
+      root.style.setProperty('--color-surface-elevated', '#141414');
+      root.style.setProperty('--color-surface-subtle', 'rgba(255, 255, 255, 0.05)');
+      root.style.setProperty('--surface-hover', 'rgba(255, 255, 255, 0.06)');
+      root.style.setProperty('--color-border', 'rgba(255, 255, 255, 0.10)');
+      root.style.setProperty('--color-border-strong', 'rgba(255, 255, 255, 0.18)');
+      root.style.setProperty('--color-border-subtle', 'rgba(255, 255, 255, 0.05)');
+      root.style.setProperty('--color-text-primary', '#F5F5F5');
+      root.style.setProperty('--color-text-secondary', '#A8A8A8');
+      root.style.setProperty('--color-text-muted', '#737373');
 
-      if (paletteId === 'royal-blue') {
-        root.style.setProperty('--color-primary', '#FF3CAC');
-        root.style.setProperty('--color-primary-hover', '#FF5CB8');
-        root.style.setProperty('--color-primary-soft', '#291322');
-        root.style.setProperty('--color-primary-border', '#FF3CAC');
-        root.style.setProperty('--color-focus-ring', '#C084FC');
-      } else {
-        root.style.setProperty('--color-primary', palette.dark.primary);
-        root.style.setProperty('--color-primary-hover', palette.dark.primaryHover);
-        root.style.setProperty('--color-primary-soft', palette.dark.primarySoft);
-        root.style.setProperty('--color-primary-border', palette.dark.primaryBorder);
-        root.style.setProperty('--color-focus-ring', palette.dark.focusRing);
-      }
+      root.style.setProperty('--color-primary', palette.dark.primary);
+      root.style.setProperty('--color-primary-hover', palette.dark.primaryHover);
+      root.style.setProperty('--color-primary-soft', palette.dark.primarySoft);
+      root.style.setProperty('--color-primary-border', palette.dark.primaryBorder);
+      root.style.setProperty('--color-focus-ring', palette.dark.focusRing);
+      root.style.setProperty(
+        '--gradient-accent',
+        `linear-gradient(135deg, ${palette.dark.primary} 0%, ${palette.dark.primaryHover} 100%)`
+      );
     } else {
       root.style.setProperty('--color-canvas', '#FFFFFF');
-      root.style.setProperty('--color-surface-card', '#F7F7FA');
-      root.style.setProperty('--color-surface-subtle', '#F5F5F5');
-      root.style.setProperty('--color-border', '#E5E5E5');
-      root.style.setProperty('--color-border-strong', '#D4CEDF');
-      root.style.setProperty('--color-border-subtle', '#EFEFEF');
-      root.style.setProperty('--color-text-primary', '#17131D');
-      root.style.setProperty('--color-text-secondary', '#625B6D');
-      root.style.setProperty('--color-text-muted', '#716A7E');
+      root.style.setProperty('--color-surface-card', '#FFFFFF');
+      root.style.setProperty('--color-surface-elevated', '#FFFFFF');
+      root.style.setProperty('--color-surface-subtle', 'rgba(0, 0, 0, 0.04)');
+      root.style.setProperty('--surface-hover', 'rgba(0, 0, 0, 0.04)');
+      root.style.setProperty('--color-border', 'rgba(0, 0, 0, 0.08)');
+      root.style.setProperty('--color-border-strong', 'rgba(0, 0, 0, 0.16)');
+      root.style.setProperty('--color-border-subtle', 'rgba(0, 0, 0, 0.04)');
+      root.style.setProperty('--color-text-primary', '#000000');
+      root.style.setProperty('--color-text-secondary', '#525252');
+      root.style.setProperty('--color-text-muted', '#737373');
 
-      if (paletteId === 'royal-blue') {
-        root.style.setProperty('--color-primary', '#D92691');
-        root.style.setProperty('--color-primary-hover', '#BC1E7C');
-        root.style.setProperty('--color-primary-soft', '#FCE7F4');
-        root.style.setProperty('--color-primary-border', '#F7C0E4');
-        root.style.setProperty('--color-focus-ring', '#8B5CF6');
-      } else {
-        root.style.setProperty('--color-primary', palette.light.primary);
-        root.style.setProperty('--color-primary-hover', palette.light.primaryHover);
-        root.style.setProperty('--color-primary-soft', palette.light.primarySoft);
-        root.style.setProperty('--color-primary-border', palette.light.primaryBorder);
-        root.style.setProperty('--color-focus-ring', palette.light.focusRing);
-      }
+      root.style.setProperty('--color-primary', palette.light.primary);
+      root.style.setProperty('--color-primary-hover', palette.light.primaryHover);
+      root.style.setProperty('--color-primary-soft', palette.light.primarySoft);
+      root.style.setProperty('--color-primary-border', palette.light.primaryBorder);
+      root.style.setProperty('--color-focus-ring', palette.light.focusRing);
+      root.style.setProperty(
+        '--gradient-accent',
+        `linear-gradient(135deg, ${palette.light.primary} 0%, ${palette.light.primaryHover} 100%)`
+      );
     }
   }, [resolvedTheme, paletteId, palette]);
 

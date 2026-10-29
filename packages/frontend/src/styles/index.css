@@ -2,27 +2,27 @@
 @config "../../tailwind.config.ts";
 
 :root {
-  /* Exact SocialGraph Noir Light Theme Specification */
+  /* Instagram-Inspired Light Theme Specification */
   --background: #FFFFFF;
-  --surface: #F7F7FA;
+  --surface: #FFFFFF;
   --surface-elevated: #FFFFFF;
-  --surface-hover: #F0EDF5;
-  --border: #E7E4ED;
-  --border-strong: #D4CEDF;
-  --text-primary: #17131D;
-  --text-secondary: #625B6D;
-  --text-muted: #625B6D;
-  --accent-primary: #D92691;
-  --accent-hover: #BC1E7C;
-  --accent-pressed: #A8196E;
-  --accent-secondary: #7040D8;
-  --accent-secondary-hover: #5C31BF;
-  --accent-soft: #FCE7F4;
-  --accent-secondary-soft: #EFE8FF;
-  --focus-ring: #7040D8;
-  --success: #047857;
-  --warning: #92400E;
-  --danger: #BE123C;
+  --surface-hover: rgba(0, 0, 0, 0.04);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.16);
+  --text-primary: #000000;
+  --text-secondary: #525252;
+  --text-muted: #737373;
+  --accent-primary: #3B82F6;
+  --accent-hover: #2563EB;
+  --accent-pressed: #1D4ED8;
+  --accent-secondary: #8B5CF6;
+  --accent-secondary-hover: #7C3AED;
+  --accent-soft: rgba(59, 130, 246, 0.1);
+  --accent-secondary-soft: rgba(139, 92, 246, 0.1);
+  --focus-ring: #000000;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
 
   /* Semantic Component Mappings */
   --color-canvas: var(--background);
@@ -30,7 +30,7 @@
   --color-surface-subtle: var(--surface-hover);
   --color-surface-elevated: var(--surface-elevated);
   --color-border: var(--border);
-  --color-border-subtle: #F3F0F7;
+  --color-border-subtle: rgba(0, 0, 0, 0.04);
   --color-border-strong: var(--border-strong);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
@@ -38,31 +38,32 @@
   --color-primary: var(--accent-primary);
   --color-primary-hover: var(--accent-hover);
   --color-primary-soft: var(--accent-soft);
-  --color-primary-border: #F7C0E4;
+  --color-primary-border: rgba(59, 130, 246, 0.3);
   --color-focus-ring: var(--focus-ring);
   --color-upvote: #FF4500;
   --color-downvote: var(--accent-secondary);
 }
 
 [data-theme="dark"] {
-  /* Exact SocialGraph Noir Dark Theme Specification */
+  /* Instagram-Inspired Dark Theme Specification */
   --background: #000000;
-  --surface: #0B0B0F;
-  --surface-elevated: #14141A;
-  --surface-hover: #1B1B23;
-  --border: #262630;
-  --border-strong: #393944;
-  --text-primary: #F7F7FB;
-  --text-secondary: #B4B4C2;
-  --text-muted: #858595;
-  --accent-primary: #FF3CAC;
-  --accent-hover: #FF5CB8;
-  --accent-pressed: #E82E99;
-  --accent-secondary: #8B5CF6;
-  --accent-secondary-hover: #A78BFA;
-  --accent-soft: #291322;
-  --accent-secondary-soft: #1D1434;
-  --focus-ring: #C084FC;
+  --surface: #0A0A0A;
+  --surface-elevated: #141414;
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --text-primary: #F5F5F5;
+  --text-secondary: #A8A8A8;
+  --text-muted: #737373;
+  --accent-primary: #60A5FA;
+  --accent-hover: #3B82F6;
+  --accent-pressed: #2563EB;
+  --accent-secondary: #A78BFA;
+  --accent-secondary-hover: #8B5CF6;
+  --accent-soft: rgba(96, 165, 250, 0.15);
+  --accent-secondary-soft: rgba(167, 139, 250, 0.15);
+  --focus-ring: #FFFFFF;
   --success: #34D399;
   --warning: #FBBF24;
   --danger: #FB7185;
@@ -70,10 +71,10 @@
   /* Semantic Component Mappings */
   --color-canvas: var(--background);
   --color-surface-card: var(--surface);
-  --color-surface-subtle: var(--surface-elevated);
+  --color-surface-subtle: var(--surface-hover);
   --color-surface-elevated: var(--surface-elevated);
   --color-border: var(--border);
-  --color-border-subtle: #1C1C24;
+  --color-border-subtle: var(--border-subtle);
   --color-border-strong: var(--border-strong);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
@@ -81,7 +82,7 @@
   --color-primary: var(--accent-primary);
   --color-primary-hover: var(--accent-hover);
   --color-primary-soft: var(--accent-soft);
-  --color-primary-border: rgba(255, 60, 172, 0.4);
+  --color-primary-border: rgba(96, 165, 250, 0.3);
   --color-focus-ring: var(--focus-ring);
   --color-upvote: #FF4500;
   --color-downvote: var(--accent-secondary);
@@ -126,7 +127,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: #393944;
+  background: #333333;
 }
 
 /* Hide scrollbars when requested (internal scrolling rails) */

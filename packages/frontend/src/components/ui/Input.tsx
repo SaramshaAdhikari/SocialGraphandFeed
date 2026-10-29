@@ -60,7 +60,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             </span>
           )}
         </div>
-        {error && <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>}
+        {error && <p role="alert" className="mt-1 text-xs text-red-500 font-medium">{error}</p>}
         {!error && helperText && <p className="mt-1 text-xs text-text-muted">{helperText}</p>}
       </div>
     );
@@ -107,14 +107,14 @@ export function SearchBar({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         aria-label={ariaLabel}
-        className="w-full h-10 pl-10 pr-16 text-sm bg-surface-subtle text-text-primary placeholder:text-text-muted rounded-full border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+        className="w-full h-10 pl-10 pr-16 text-sm bg-surface-subtle text-text-primary placeholder:text-text-muted rounded-xl border border-transparent focus:border-border hover:bg-black/5 dark:hover:bg-white/10 focus:outline-none focus:ring-1 focus:ring-text-primary transition-all"
       />
       {value ? (
         <button
           type="button"
           onClick={() => onChange('')}
           aria-label="Clear search query"
-          className="absolute right-2.5 p-1 rounded-full text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors"
+          className="absolute right-2.5 p-1 rounded-full text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer"
         >
           <X size={14} />
         </button>

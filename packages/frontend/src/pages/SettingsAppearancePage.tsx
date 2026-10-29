@@ -6,6 +6,8 @@ import {
   Check,
   Sparkles,
   ArrowLeft,
+  User,
+  Palette,
 } from 'lucide-react';
 import { useTheme } from '../theme/ThemeContext';
 import { PALETTES, PALETTE_LIST } from '../theme/palettes';
@@ -36,7 +38,7 @@ export function SettingsAppearancePage() {
     {
       id: 'dark',
       label: 'Dark',
-      description: 'Deep and immersive (#000000 canvas, #0B0B0F cards)',
+      description: 'Deep and immersive (#000000 canvas, #0A0A0A cards)',
       icon: Moon,
     },
     {
@@ -55,10 +57,8 @@ export function SettingsAppearancePage() {
   ];
 
   const activeCanvas = resolvedTheme === 'dark' ? '#000000' : '#FFFFFF';
-  const activeSurfaceCard = resolvedTheme === 'dark' ? '#0B0B0F' : '#F7F7FA';
-  const activePrimary = resolvedTheme === 'dark'
-    ? (paletteId === 'royal-blue' ? '#FF3CAC' : palette.dark.primary)
-    : (paletteId === 'royal-blue' ? '#D92691' : palette.light.primary);
+  const activeSurfaceCard = resolvedTheme === 'dark' ? '#0A0A0A' : '#FFFFFF';
+  const activePrimary = resolvedTheme === 'dark' ? palette.dark.primary : palette.light.primary;
 
   return (
     <div className="max-w-4xl mx-auto space-y-10 pb-16">
@@ -101,6 +101,24 @@ export function SettingsAppearancePage() {
             </Badge>
           </div>
         </div>
+      </div>
+
+      {/* Settings Sub-Tabs Navigation */}
+      <div className="flex items-center gap-2 border-b border-border">
+        <Link
+          to="/settings/profile"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+        >
+          <User size={15} className="shrink-0" />
+          <span>Profile &amp; Identity</span>
+        </Link>
+        <Link
+          to="/settings/appearance"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-primary text-primary transition-colors cursor-pointer"
+        >
+          <Palette size={15} className="shrink-0" />
+          <span>Appearance &amp; Themes</span>
+        </Link>
       </div>
 
       {/* Section 1: Appearance Mode */}
@@ -191,7 +209,7 @@ export function SettingsAppearancePage() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-text-primary">Default Monochrome</h3>
+                <h3 className="text-sm font-bold text-text-primary">Default Palette</h3>
                 {paletteId === 'royal-blue' && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
                     Active Default
@@ -199,7 +217,7 @@ export function SettingsAppearancePage() {
                 )}
               </div>
               <p className="text-xs text-text-muted mt-0.5">
-                Restores pure monochrome foundation (#000000 / #FFFFFF) with signature Pink-Violet brand accents (#FF3CAC / #8B5CF6).
+                Restores the standard Royal Blue sapphire accent palette on the pure monochrome foundation.
               </p>
             </div>
           </div>
@@ -212,7 +230,7 @@ export function SettingsAppearancePage() {
             }}
             className="shrink-0"
           >
-            {paletteId === 'royal-blue' ? 'Default Active' : 'Restore Default Monochrome'}
+            {paletteId === 'royal-blue' ? 'Default Active' : 'Restore Default Palette'}
           </Button>
         </div>
 

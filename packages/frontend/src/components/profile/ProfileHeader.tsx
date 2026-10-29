@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { UserProfile } from '@socialgraph/shared';
-import { Calendar, Link2, Settings, UserPlus, UserCheck, Share2, Check, X } from 'lucide-react';
+import { Calendar, Link2, Settings, UserPlus, UserCheck, Share2, Check, X, MessageSquare } from 'lucide-react';
 import { Avatar, Button } from '../ui';
-import { Link } from '../../router/Router';
+import { Link, useRouter } from '../../router/Router';
 import { api } from '../../api';
 import { useAuth } from '../../auth/AuthContext';
 import type { FollowListResponse } from '@socialgraph/shared';
@@ -34,6 +34,24 @@ export function ProfileHeader({
   const dialogRef = useRef<HTMLElement>(null);
   const openerRef = useRef<HTMLButtonElement | null>(null);
   const { user } = useAuth();
+  const { navigate } = useRouter();
+  const [startingMessage, setStartingMessage] = useState(false);
+
+  const handleStartMessage = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setStartingMessage(true);
+    try {
+      const conv = await api.getOrCreateConversation(profile.id);
+      navigate('/messages/' + conv.id);
+    } catch (err) {
+      console.error('Failed to initiate conversation:', err);
+    } finally {
+      setStartingMessage(false);
+    }
+  };
 
   useEffect(() => {
     if (!listType) return;
@@ -236,34 +254,48 @@ export function ProfileHeader({
           {/* Action Row: Follow / Edit Profile & Share */}
           <div className="flex items-center gap-2.5 sm:mb-2 self-start sm:self-end">
             {isSelf ? (
-              <Link
-                to="/settings"
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold border border-border text-text-primary hover:bg-surface-subtle transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer shadow-xs"
-              >
-                <Settings size={15} />
-                <span>Edit Profile</span>
-              </Link>
-            ) : (
               <Button
-                variant={profile.is_following ? 'secondary' : 'primary'}
+                type="button"
+                data-testid="edit-profile-button"
+                variant="outline"
                 size="sm"
-                onClick={handleFollowClick}
-                disabled={followSubmitting}
-                className="min-w-[108px] font-bold rounded-xl"
-                aria-pressed={profile.is_following}
+                onClick={() => navigate('/settings/profile')}
+                leftIcon={<Settings size={15} className="shrink-0" />}
+                className="font-semibold rounded-xl shadow-xs"
               >
-                {profile.is_following ? (
-                  <>
-                    <UserCheck size={16} />
-                    <span>Following</span>
-                  </>
-                ) : (
-                  <>
-                    <UserPlus size={16} />
-                    <span>Follow</span>
-                  </>
-                )}
+                Edit Profile
               </Button>
+            ) : (
+              <>
+                <Button
+                  variant={profile.is_following ? 'secondary' : 'primary'}
+                  size="sm"
+                  onClick={handleFollowClick}
+                  disabled={followSubmitting}
+                  className="min-w-[108px] font-bold rounded-xl"
+                  aria-pressed={profile.is_following}
+                  leftIcon={
+                    profile.is_following ? (
+                      <UserCheck size={16} className="shrink-0" />
+                    ) : (
+                      <UserPlus size={16} className="shrink-0" />
+                    )
+                  }
+                >
+                  {profile.is_following ? 'Following' : 'Follow'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  data-testid="message-creator-button"
+                  onClick={handleStartMessage}
+                  disabled={startingMessage}
+                  className="font-bold rounded-xl"
+                  leftIcon={<MessageSquare size={16} className="shrink-0" />}
+                >
+                  Message
+                </Button>
+              </>
             )}
 
             {/* Share Profile Button */}
@@ -271,13 +303,13 @@ export function ProfileHeader({
               type="button"
               onClick={handleShareProfile}
               aria-label="Share profile link"
-              className="p-2 sm:p-2.5 rounded-xl border border-border text-text-muted hover:text-text-primary hover:bg-surface-subtle transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="inline-flex items-center justify-center h-8 w-8 min-h-[32px] min-w-[32px] rounded-xl border border-border text-text-muted hover:text-text-primary hover:bg-surface-subtle transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary shadow-xs"
               title="Copy profile link"
             >
               {copiedLink ? (
-                <Check size={16} className="text-emerald-500" />
+                <Check size={16} className="text-emerald-500 shrink-0" />
               ) : (
-                <Share2 size={16} />
+                <Share2 size={16} className="shrink-0" />
               )}
             </button>
           </div>
@@ -434,6 +466,8 @@ export function ProfileHeader({
           </section>
         </div>
       )}
+
+
     </div>
   );
 }

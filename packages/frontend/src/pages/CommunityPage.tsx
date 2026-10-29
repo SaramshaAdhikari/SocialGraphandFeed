@@ -68,7 +68,7 @@ export function CommunityPage() {
     return (
       <div className="max-w-xl mx-auto px-4 py-16 text-center" role="region" aria-label="Community Not Found">
         <div className="rounded-2xl border border-border bg-surface-card p-8 shadow-sm">
-          <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400 mb-4">
+          <div className="w-14 h-14 rounded-full bg-surface-subtle flex items-center justify-center mx-auto text-text-muted mb-4">
             <AlertCircle size={28} />
           </div>
           <h1 className="text-xl font-bold text-text-primary">
@@ -158,7 +158,7 @@ export function CommunityPage() {
           </button>
 
           {mobileRulesOpen && (
-            <ol className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+            <ol className="mt-3 pt-2 border-t border-border/40 space-y-2">
               {community.rules.map((rule, idx) => (
                 <li key={rule.id} className="text-xs text-text-secondary">
                   <span className="font-semibold text-text-primary">
@@ -198,7 +198,7 @@ export function CommunityPage() {
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="h-36 rounded-xl bg-slate-100 dark:bg-slate-800/60 animate-pulse border border-slate-200 dark:border-slate-800"
+                  className="h-36 rounded-xl bg-surface-subtle animate-pulse border border-border/40"
                 />
               ))}
             </div>
@@ -207,7 +207,7 @@ export function CommunityPage() {
               data-testid="community-feed-empty"
               className="text-center py-12 px-4 rounded-2xl border border-dashed border-border bg-surface-card/60"
             >
-              <Layers size={32} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+              <Layers size={32} className="mx-auto text-text-muted opacity-50 mb-2" />
               <h3 className="text-base font-bold text-text-primary">
                 No posts in this view yet
               </h3>

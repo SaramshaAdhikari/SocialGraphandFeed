@@ -33,7 +33,7 @@ export function Skeleton({
   return (
     <div
       aria-hidden="true"
-      className={`animate-pulse bg-[#E2E8F0] ${variantClasses} ${className}`}
+      className={`animate-pulse bg-surface-subtle ${variantClasses} ${className}`}
       style={inlineStyle}
       {...rest}
     />
@@ -42,7 +42,7 @@ export function Skeleton({
 
 export function PostCardSkeleton() {
   return (
-    <div className="bg-white rounded-xl border border-[#E2E8F0] p-4 mb-4">
+    <div className="bg-surface-card rounded-2xl border border-border p-4 sm:p-5 mb-4 shadow-xs">
       <div className="flex items-center gap-3 mb-4">
         <Skeleton variant="circle" width={36} height={36} />
         <div className="space-y-1.5 flex-1">
@@ -54,7 +54,7 @@ export function PostCardSkeleton() {
       <Skeleton variant="text" width="95%" height={14} className="mb-1.5" />
       <Skeleton variant="text" width="60%" height={14} className="mb-4" />
       <Skeleton variant="media" aspectRatio="16/9" className="mb-4" />
-      <div className="flex items-center gap-4 pt-2 border-t border-[#F1F5F9]">
+      <div className="flex items-center gap-4 pt-2 border-t border-border-subtle">
         <Skeleton variant="rect" width={80} height={28} className="rounded-full" />
         <Skeleton variant="rect" width={90} height={28} className="rounded-full" />
       </div>

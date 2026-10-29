@@ -111,3 +111,5 @@ export function VoteControl({
     </div>
   );
 }
+
+export default VoteControl;

@@ -20,6 +20,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { VoteControl } from '../components/ui/VoteControl';
 import { CommentTree, PostDetailSkeleton } from '../components/post';
+import { PostActionMenu } from '../components/feed/PostActionMenu';
 import { formatRelativeTime } from '../utils/date';
 import { useAuth } from '../auth/AuthContext';
 
@@ -343,6 +344,7 @@ export function PostDetailPage() {
                     <span className="font-mono tabular-nums">{visualPost.score}</span>
                   </Button>
 
+                  <PostActionMenu post={visualPost} onPostDeleted={() => navigate('/')} />
                   {/* Share Button */}
                   <Button
                     variant="ghost"
@@ -534,6 +536,7 @@ export function PostDetailPage() {
                       <span className="font-mono tabular-nums">{discussionPost.comments_count} Comments</span>
                     </div>
 
+                    <PostActionMenu post={discussionPost} onPostDeleted={() => navigate('/')} />
                     <Button
                       variant="ghost"
                       size="sm"

@@ -10,13 +10,27 @@ interface AuthContextValue {
   logoutError: string;
   refresh: () => Promise<void>;
   acceptSession: (user: AuthUser, csrf: string) => void;
+  updateCurrentUser: (updated: Partial<AuthUser>) => void;
   logout: () => Promise<boolean>;
 }
-const AuthContext = createContext<AuthContextValue>({ user: null, status: 'loading', logoutError: '', refresh: async () => {}, acceptSession: () => {}, logout: async () => false });
+const AuthContext = createContext<AuthContextValue>({
+  user: null,
+  status: 'loading',
+  logoutError: '',
+  refresh: async () => {},
+  acceptSession: () => {},
+  updateCurrentUser: () => {},
+  logout: async () => false,
+});
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [status, setStatus] = useState<AuthStatus>('loading');
+export interface AuthProviderProps {
+  children: React.ReactNode;
+  initialUser?: AuthUser | null;
+}
+
+export function AuthProvider({ children, initialUser }: AuthProviderProps) {
+  const [user, setUser] = useState<AuthUser | null>(initialUser ?? null);
+  const [status, setStatus] = useState<AuthStatus>(initialUser ? 'authenticated' : 'loading');
   const [logoutError, setLogoutError] = useState('');
   const refresh = useCallback(async () => {
     setStatus('loading');
@@ -30,7 +44,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCsrfToken(undefined); setUser(null); setStatus('unauthenticated');
     }
   }, []);
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    if (!initialUser) {
+      void refresh();
+    }
+  }, [refresh, initialUser]);
   useEffect(() => {
     const clearInvalidSession = () => { setCsrfToken(undefined); setUser(null); setStatus('unauthenticated'); };
     window.addEventListener('socialgraph:unauthorized', clearInvalidSession);
@@ -39,6 +57,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const acceptSession = useCallback((nextUser: AuthUser, csrf: string) => {
     // Replacing user state also invalidates any component-local account-specific views by remounting the tree key.
     setLogoutError(''); setCsrfToken(csrf); setUser(nextUser); setStatus('authenticated');
+  }, []);
+  const updateCurrentUser = useCallback((updated: Partial<AuthUser>) => {
+    setUser((prev) => (prev ? { ...prev, ...updated } : null));
   }, []);
   const logout = useCallback(async () => {
     setLogoutError('');
@@ -65,8 +86,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
   }, []);
-  const value = useMemo(() => ({ user, status, logoutError, refresh, acceptSession, logout }), [user, status, logoutError, refresh, acceptSession, logout]);
-  return <AuthContext.Provider value={value}><React.Fragment key={user?.id ?? 'anonymous'}>{children}</React.Fragment></AuthContext.Provider>;
+  const value = useMemo(
+    () => ({ user, status, logoutError, refresh, acceptSession, updateCurrentUser, logout }),
+    [user, status, logoutError, refresh, acceptSession, updateCurrentUser, logout]
+  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() { return useContext(AuthContext); }

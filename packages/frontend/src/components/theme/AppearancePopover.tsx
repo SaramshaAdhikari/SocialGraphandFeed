@@ -152,7 +152,7 @@ export function AppearancePopover({ isOpen, onClose }: AppearancePopoverProps) {
                     className={`relative w-full aspect-4/3 rounded-xl shadow-xs transition-all flex items-center justify-center border-2 ${
                       isSelected
                         ? 'ring-2 ring-offset-2 ring-primary ring-offset-surface-card border-surface-card'
-                        : 'border-transparent group-hover:ring-1 group-hover:ring-slate-300 dark:group-hover:ring-slate-600'
+                        : 'border-transparent group-hover:ring-1 group-hover:ring-neutral-300 dark:group-hover:ring-neutral-700'
                     }`}
                     style={{ backgroundColor: p.swatchColor }}
                   >

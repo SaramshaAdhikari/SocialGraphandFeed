@@ -1,6 +1,8 @@
-import { Home, Compass, Users, Search, Bookmark, User, Palette, PlusCircle, Activity, ArrowRight, Network } from 'lucide-react';
+import { Home, Compass, Users, Search, Bookmark, User, Palette, PlusCircle, Activity, ArrowRight, Network, MessageSquare, Bell } from 'lucide-react';
 import { Link, useRouter } from '../../router/Router';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthContext';
+import { api } from '../../api';
 import { BrandLogo } from '../brand/BrandLogo';
 
 interface NavItem {
@@ -25,22 +27,48 @@ const navItems: NavItem[] = [
 export function SidebarNav() {
   const { currentPath } = useRouter();
   const { user, status } = useAuth();
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  useEffect(() => {
+    if (status !== 'authenticated' || !user) {
+      setUnreadMessages(0);
+      return;
+    }
+    const updateCount = () => {
+      api.getUnreadMessagesCount().then(setUnreadMessages).catch(() => {});
+    };
+    updateCount();
+    const handleRealtime = (e: any) => {
+      const type = e?.detail?.type;
+      if (type === 'message.created' || type === 'message.read') {
+        updateCount();
+      }
+    };
+    window.addEventListener('socialgraph:realtime' as any, handleRealtime);
+    return () => window.removeEventListener('socialgraph:realtime' as any, handleRealtime);
+  }, [status, user]);
   const items = user && status === 'authenticated'
-    ? [...navItems, { label: 'My Profile', to: `/u/${user.username}`, icon: User }]
+    ? [
+        ...navItems.slice(0, 3),
+        { label: 'Messages', to: '/messages', icon: MessageSquare },
+        { label: 'Notifications', to: '/notifications', icon: Bell },
+        ...navItems.slice(3),
+        { label: 'My Profile', to: `/u/${user.username}`, icon: User },
+      ]
     : navItems;
 
   return (
     <aside
-      className="hidden md:flex flex-col justify-between shrink-0 border-r border-border bg-canvas transition-colors select-none md:w-18 lg:w-64 fixed top-0 bottom-0 left-0 z-30 h-screen overflow-y-auto no-scrollbar"
+      className="hidden md:flex flex-col justify-between shrink-0 border-r border-border/40 bg-canvas transition-colors select-none md:w-18 lg:w-64 fixed top-0 bottom-0 left-0 z-30 h-screen overflow-y-auto no-scrollbar"
       aria-label="Main Navigation"
     >
       {/* Top Section: Brand + Navigation Items */}
       <div className="flex flex-col">
         {/* Brand Header */}
-        <div className="h-16 flex items-center px-3.5 lg:px-6 border-b border-border/60">
+        <div className="h-18 flex items-center px-4 lg:px-6 pt-2">
           <Link
             to="/"
-            className="flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl p-1 -m-1 group"
+            className="flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary rounded-xl p-1 -m-1 group"
           >
             {/* Desktop Full Logo */}
             <div className="hidden lg:block">
@@ -54,7 +82,7 @@ export function SidebarNav() {
         </div>
 
         {/* Navigation Links */}
-        <nav className="py-4 px-2 lg:px-3 space-y-1.5">
+        <nav className="py-3 px-2 lg:px-3 space-y-1">
           {items.map((item) => {
             const Icon = item.icon;
             const isActive = item.exact
@@ -70,56 +98,64 @@ export function SidebarNav() {
                 key={item.to}
                 to={item.to}
                 exact={item.exact}
-                className={`relative flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                aria-current={isActive ? 'page' : undefined}
+                className={`relative flex items-center gap-4 px-3.5 py-3 rounded-xl text-[14px] transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary ${
                   isActive
-                    ? 'bg-primary-soft text-primary font-bold shadow-xs'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-subtle font-medium'
+                    ? 'text-text-primary font-bold bg-black/[0.04] dark:bg-white/[0.08]'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-black/[0.03] dark:hover:bg-white/[0.05] font-normal'
                 }`}
               >
-                {/* Active Indicator Bar */}
-                {isActive && (
-                  <span
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full"
-                    aria-hidden="true"
+                <div className="relative shrink-0 flex items-center justify-center">
+                  <Icon
+                    size={22}
+                    className={`transition-all duration-150 ${
+                      isActive
+                        ? 'text-text-primary stroke-[2.5px]'
+                        : 'text-text-secondary group-hover:text-text-primary stroke-[1.8px] group-hover:scale-105'
+                    }`}
                   />
+                  {item.to === '/messages' && unreadMessages > 0 && (
+                    <span className="lg:hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-canvas" />
+                  )}
+                </div>
+
+                <span className="hidden lg:inline truncate flex-1 tracking-tight">{item.label}</span>
+                {item.to === '/messages' && unreadMessages > 0 && (
+                  <span className="hidden lg:inline-flex items-center justify-center px-2 py-0.5 text-[11px] font-bold rounded-full bg-rose-500 text-white leading-none shadow-xs">
+                    {unreadMessages}
+                  </span>
                 )}
-                <Icon
-                  size={19}
-                  className={`shrink-0 transition-transform group-hover:scale-105 ${
-                    isActive ? 'text-primary' : 'text-text-muted group-hover:text-text-primary'
-                  }`}
-                  aria-hidden="true"
-                />
-                <span className="hidden lg:inline-block truncate">{item.label}</span>
               </Link>
             );
           })}
         </nav>
       </div>
 
-      {/* Bottom Promo & Platform Badge */}
-      <div className="p-3 lg:p-4 border-t border-border/60 hidden lg:block space-y-3">
-        {/* Network Invitation Card */}
-        <div className="relative overflow-hidden rounded-2xl p-3.5 bg-gradient-to-br from-surface-subtle to-surface-card border border-border">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/15 via-secondary/10 to-transparent rounded-full blur-xl pointer-events-none" />
-          <p className="text-xs font-semibold text-text-primary leading-snug">
-            A more connected world for deeper ideas.
-          </p>
+      {/* Bottom User Quick Glance (Desktop only) */}
+      {user && status === 'authenticated' && (
+        <div className="p-3 mb-2 hidden lg:block">
           <Link
-            to="/explore"
-            className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary-hover transition-colors group/cta"
+            to={`/u/${user.username}`}
+            className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-colors group"
           >
-            <span>Explore Network</span>
-            <ArrowRight size={13} className="transition-transform group-hover/cta:translate-x-0.5" />
+            <div className="relative">
+              <img
+                src={user.avatar_url}
+                alt={user.display_name}
+                className="w-9 h-9 rounded-full object-cover ring-1 ring-border"
+              />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-canvas" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-text-primary truncate transition-colors">
+                {user.display_name}
+              </p>
+              <p className="text-[11px] text-text-muted truncate font-mono">@{user.username}</p>
+            </div>
+            <ArrowRight size={14} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
           </Link>
         </div>
-
-        {/* Footer Brand Pillars & High-Scale Badge */}
-        <div className="text-center pt-1 text-[11px] text-text-muted">
-          <p className="font-medium tracking-tight">SocialGraph &bull; Build &bull; Explore &bull; Belong</p>
-          <p className="text-[10px] mt-0.5 text-text-muted/80">High-Scale Feed Architecture</p>
-        </div>
-      </div>
+      )}
     </aside>
   );
 }
