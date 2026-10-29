@@ -10,12 +10,22 @@ import type {
   CommentNode,
   CreateCommentInput,
   UserProfile,
+  UpdateUserProfileInput,
   FollowToggleResponse,
   FollowListResponse,
   Community,
   CreatePostInput,
+  MediaAttachment,
+  ConversationSummary,
+  DirectMessage,
+  NotificationItem,
+  NotificationsQuery,
+  NotificationsResponse,
+  MarkReadResponse,
+  MarkAllReadResponse,
 } from '@socialgraph/shared';
 
+export type { NotificationItem, NotificationsQuery, NotificationsResponse, MarkReadResponse, MarkAllReadResponse };
 export type DataSourceType = 'mock' | 'live';
 
 export interface VoteResult {
@@ -70,6 +80,7 @@ export interface GraphNode {
   bio?: string;
   followers_count?: number;
   following_count?: number;
+  is_verified?: boolean;
 }
 
 export interface GraphEdge {
@@ -88,7 +99,7 @@ export interface ISocialGraphApi {
 
   // Health and system metrics
   getHealth(): Promise<HealthStatus>;
-  getMetrics(): Promise<{ uptime_seconds: number; node_version: string }>;
+  getMetrics(): Promise<{ uptime_seconds: number; node_version: string; memory?: { rss_mb: number; heap_used_mb: number; heap_total_mb: number } }>;
 
   // Feeds
   getFeed(query?: FeedQuery): Promise<FeedResponse>;
@@ -96,6 +107,7 @@ export interface ISocialGraphApi {
   getSavedPosts(query?: SavedPostsQuery): Promise<FeedResponse>;
 
   // Posts & Interactions
+  uploadMedia(files: File[]): Promise<MediaAttachment[]>;
   getPost(postId: string): Promise<PostCard>;
   getComments(postId: string): Promise<CommentNode[]>;
   createPost(input: CreatePostInput, idempotencyKey?: string): Promise<PostCard>;
@@ -105,6 +117,7 @@ export interface ISocialGraphApi {
 
   // Social Graph (Users & Communities)
   getUserProfile(username: string): Promise<UserProfile>;
+  updateProfile(input: UpdateUserProfileInput): Promise<UserProfile>;
   getUserPosts(username: string, query?: FeedQuery): Promise<FeedResponse>;
   toggleFollow(targetUserId: string, isFollowing?: boolean): Promise<FollowToggleResponse>;
   getFollowers(username: string, cursor?: string | null, limit?: number): Promise<FollowListResponse>;
@@ -115,6 +128,27 @@ export interface ISocialGraphApi {
   getCommunityFeed(communitySlug: string, query?: FeedQuery): Promise<FeedResponse>;
   getGraphNeighborhood(limit?: number): Promise<GraphNeighborhoodData>;
 
+  // Posts & Interactions - Edit & Delete
+  editPost(postId: string, input: { title?: string; body?: string; media_urls?: string[]; community_id?: string }): Promise<PostCard>;
+  deletePost(postId: string): Promise<{ success: boolean; post_id: string }>;
+
   // Search
   search(query: SearchQuery): Promise<UniversalSearchResults>;
+
+  // Notifications
+  getNotifications(query?: NotificationsQuery): Promise<NotificationsResponse>;
+  getUnreadNotificationCount(): Promise<number>;
+  markNotificationAsRead(notificationId: string): Promise<MarkReadResponse>;
+  markAllNotificationsAsRead(): Promise<MarkAllReadResponse>;
+
+  // Direct Messaging
+  getConversations(cursor?: string | null, limit?: number): Promise<{ data: ConversationSummary[]; next_cursor: string | null; has_more: boolean }>;
+  getOrCreateConversation(recipientId: string, initialMessage?: string): Promise<ConversationSummary>;
+  getConversation(conversationId: string): Promise<ConversationSummary>;
+  getMessages(conversationId: string, cursor?: string | null, limit?: number): Promise<{ data: DirectMessage[]; next_cursor: string | null; has_more: boolean }>;
+  sendMessage(conversationId: string, content: string): Promise<DirectMessage>;
+  deleteMessage(conversationId: string, messageId: string): Promise<DirectMessage>;
+  deleteConversation(conversationId: string): Promise<{ success: boolean; message: string }>;
+  markConversationAsRead(conversationId: string): Promise<void>;
+  getUnreadMessagesCount(): Promise<number>;
 }

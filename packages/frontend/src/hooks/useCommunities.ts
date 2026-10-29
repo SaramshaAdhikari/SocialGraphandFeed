@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Community } from '@socialgraph/shared';
 import type { ISocialGraphApi } from '../api/types';
 import { api as defaultApi } from '../api';
@@ -45,30 +45,44 @@ export function useCommunities(options: UseCommunitiesOptions = {}): UseCommunit
   const [filter, setFilter] = useState<CommunityDirectoryFilter>(initialFilter);
   const [pendingSlug, setPendingSlug] = useState<string | null>(null);
 
-  const fetchTokenRef = useRef(0);
-
   const loadCommunities = useCallback(async () => {
-    const token = ++fetchTokenRef.current;
     setLoading(true);
     setError(null);
 
     try {
       const items = await apiInstance.getCommunities();
-      if (token !== fetchTokenRef.current) return;
       setCommunities(items);
     } catch (err: unknown) {
-      if (token !== fetchTokenRef.current) return;
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
-      if (token === fetchTokenRef.current) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   }, [apiInstance]);
 
   useEffect(() => {
-    void loadCommunities();
-  }, [loadCommunities]);
+    let active = true;
+    setLoading(true);
+    setError(null);
+
+    apiInstance
+      .getCommunities()
+      .then((items) => {
+        if (active) {
+          setCommunities(items || []);
+          setLoading(false);
+        }
+      })
+      .catch((err: unknown) => {
+        if (active) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [apiInstance]);
 
   const toggleMembership = useCallback(
     async (community: Community) => {

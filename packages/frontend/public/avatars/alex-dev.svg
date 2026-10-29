@@ -1,49 +1,34 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="100%" height="100%">
   <defs>
-    <clipPath id="circleClipAlex">
-      <circle cx="80" cy="80" r="76" />
-    </clipPath>
     <linearGradient id="alexBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#E0F2FE" />
-      <stop offset="100%" stop-color="#BAE6FD" />
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="alexGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
     </linearGradient>
   </defs>
-  <!-- Background -->
-  <circle cx="80" cy="80" r="76" fill="url(#alexBg)" />
-  <g clip-path="url(#circleClipAlex)">
-    <!-- Shoulders / Cozy Knit Sweater -->
-    <path d="M22 160 C26 128, 48 116, 80 116 C112 116, 134 128, 138 160 Z" fill="#0284C7" />
-    <!-- Collar -->
-    <path d="M66 116 C66 126, 94 126, 94 116 Z" fill="#0369A1" />
-    <!-- Neck -->
-    <rect x="71" y="94" width="18" height="26" fill="#FBD5B5" />
-    <!-- Neck shadow -->
-    <ellipse cx="80" cy="98" rx="9" ry="4" fill="#F2B785" opacity="0.6" />
-    <!-- Head / Chin -->
-    <path d="M54 62 C54 90, 65 106, 80 106 C95 106, 106 90, 106 62 C106 44, 94 38, 80 38 C66 38, 54 44, 54 62 Z" fill="#FDE2C8" />
-    <!-- Ears -->
-    <ellipse cx="52" cy="70" rx="5" ry="8" fill="#FBD5B5" />
-    <ellipse cx="108" cy="70" rx="5" ry="8" fill="#FBD5B5" />
-    <!-- Eyes -->
-    <ellipse cx="68" cy="68" rx="3" ry="3.5" fill="#1E293B" />
-    <ellipse cx="92" cy="68" rx="3" ry="3.5" fill="#1E293B" />
-    <circle cx="67" cy="66.5" r="1" fill="#FFFFFF" />
-    <circle cx="91" cy="66.5" r="1" fill="#FFFFFF" />
-    <!-- Eyebrows -->
-    <path d="M63 60 C66 59, 72 60, 74 62" stroke="#475569" stroke-width="2" stroke-linecap="round" fill="none" />
-    <path d="M86 62 C88 60, 94 59, 97 60" stroke="#475569" stroke-width="2" stroke-linecap="round" fill="none" />
-    <!-- Tortoiseshell Glasses -->
-    <rect x="58" y="60" width="20" height="16" rx="5" fill="none" stroke="#0F172A" stroke-width="2.5" />
-    <rect x="82" y="60" width="20" height="16" rx="5" fill="none" stroke="#0F172A" stroke-width="2.5" />
-    <line x1="78" y1="68" x2="82" y2="68" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round" />
-    <path d="M58 66 L52 64" stroke="#0F172A" stroke-width="2" stroke-linecap="round" />
-    <path d="M102 66 L108 64" stroke="#0F172A" stroke-width="2" stroke-linecap="round" />
-    <!-- Nose -->
-    <path d="M80 69 L80 78 L84 80" stroke="#DCA272" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-    <!-- Gentle Smile -->
-    <path d="M72 88 C76 93, 84 93, 88 88" stroke="#B45309" stroke-width="2.5" stroke-linecap="round" fill="none" />
-    <!-- Modern Messy Dark Hair -->
-    <path d="M50 56 C46 36, 56 24, 76 22 C94 20, 108 28, 110 44 C112 56, 110 60, 107 64 C104 50, 102 38, 92 34 C82 30, 72 32, 64 36 C56 40, 52 48, 50 56 Z" fill="#1E293B" />
-    <path d="M58 36 C64 28, 76 26, 88 30 C78 32, 70 38, 64 44 Z" fill="#334155" />
-  </g>
+  <!-- Background circle -->
+  <circle cx="80" cy="80" r="76" fill="url(#alexBg)" stroke="#38bdf8" stroke-width="3" stroke-opacity="0.4" />
+  <!-- Terminal window container -->
+  <rect x="36" y="42" width="88" height="68" rx="8" fill="#18181b" stroke="#334155" stroke-width="2" />
+  <!-- Terminal window top header bar -->
+  <path d="M36 50 C36 45.6 39.6 42 44 42 L116 42 C120.4 42 124 45.6 124 50 L124 56 L36 56 Z" fill="#27272a" />
+  <!-- Window buttons -->
+  <circle cx="46" cy="49" r="3" fill="#ef4444" />
+  <circle cx="54" cy="49" r="3" fill="#eab308" />
+  <circle cx="62" cy="49" r="3" fill="#22c55e" />
+  <!-- Code prompt: >_ -->
+  <path d="M48 68 L58 76 L48 84" fill="none" stroke="url(#alexGlow)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Blinking cursor -->
+  <rect x="64" y="80" width="14" height="4" rx="2" fill="#38bdf8">
+    <animate attributeName="opacity" values="1;0;1" dur="1.2s" repeatCount="indefinite" />
+  </rect>
+  <!-- Terminal content lines -->
+  <line x1="64" y1="68" x2="106" y2="68" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" />
+  <line x1="48" y1="96" x2="92" y2="96" stroke="#475569" stroke-width="2" stroke-linecap="round" />
+  <!-- Coffee cup silhouette icon next to terminal -->
+  <path d="M106 120 C106 126 112 128 118 128 C124 128 130 126 130 120 L132 108 L104 108 Z" fill="#38bdf8" opacity="0.85" />
+  <path d="M130 112 C134 112 136 115 134 118 C132 121 130 121 129 121" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" opacity="0.85" />
 </svg>

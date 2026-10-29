@@ -13,7 +13,7 @@ async function main() {
   });
 
   const allPosts = await db.collection('posts').find({}).toArray();
-  const nonFixturePosts = allPosts.filter(p => !/^post_[0-9]+$/.test(p._id));
+  const nonFixturePosts = allPosts.filter(p => !/^post_[0-9]+$/.test(p._id) && p._id !== 'post_tie_301' && p._id !== 'post_tie_302');
   console.log(`\nTotal posts: ${allPosts.length}, Non-fixture posts (${nonFixturePosts.length}):`);
   nonFixturePosts.forEach(p => {
     console.log(` - ID: ${p._id}, author: ${p.author_id}, title: "${p.title}", created: ${p.created_at}`);

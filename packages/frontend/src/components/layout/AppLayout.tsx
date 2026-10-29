@@ -6,6 +6,8 @@ import { RightRail } from './RightRail';
 import { PostModal } from '../post/PostModal';
 import { useRouter } from '../../router/Router';
 import { BrandLogo } from '../brand/BrandLogo';
+import { useRealtimeEvents } from '../../hooks/useRealtimeEvents';
+import { useAuth } from '../../auth/AuthContext';
 import { ArrowLeft } from 'lucide-react';
 
 export interface AppLayoutProps {
@@ -15,9 +17,12 @@ export interface AppLayoutProps {
 
 export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
   const { currentPath, navigate } = useRouter();
+  const { user, status } = useAuth();
+  useRealtimeEvents(undefined, { enabled: status === 'authenticated' && !!user });
 
   const isAuth = currentPath === '/login' || currentPath === '/register';
   const isDiscover = currentPath === '/explore';
+  const isMessages = currentPath.startsWith('/messages');
   const isSettings = currentPath.startsWith('/settings');
   const isCommunity = currentPath.startsWith('/c/');
   const isPostDetail = currentPath.startsWith('/post/');
@@ -27,8 +32,9 @@ export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
   const isCommunities = currentPath === '/communities';
   const isSaved = currentPath === '/saved';
   const isGraph = currentPath === '/graph';
+  const isNotifications = currentPath.startsWith('/notifications');
   const isDedicatedCanvas =
-    isCommunity || isPostDetail || isProfile || isSearch || isCommunities || isSaved || isGraph;
+    isCommunity || isPostDetail || isProfile || isSearch || isCommunities || isSaved || isGraph || isNotifications;
 
   // Focused Authentication Layout: clean distraction-free card with clear return navigation
   if (isAuth) {
@@ -61,7 +67,7 @@ export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
         <SidebarNav />
 
         {/* Central Work Canvas - Padded on left to offset fixed navigation */}
-        <div className="flex-1 flex flex-col min-w-0 max-w-full md:pl-18 lg:pl-64 pb-16 md:pb-0 transition-all bg-canvas">
+        <div className={`flex-1 flex flex-col min-w-0 max-w-full md:pl-18 lg:pl-64 transition-all bg-canvas ${isMessages ? 'pb-16 md:pb-0 h-screen overflow-hidden' : 'pb-20 md:pb-6'}`}>
           {/* Top Header - Anchored Sticky at Top */}
           <TopHeader />
 
@@ -70,13 +76,18 @@ export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
             className={`relative flex-1 flex justify-center w-full max-w-full bg-canvas ${
               isDiscover
                 ? 'px-3 sm:px-6 lg:px-8 py-6'
+                : isMessages
+                ? 'p-0 overflow-hidden h-[calc(100dvh-4rem-4rem)] md:h-[calc(100vh-4rem)]'
                 : isSettings || isCreate
                 ? 'px-4 sm:px-6 lg:px-8 py-8'
                 : 'px-4 sm:px-6 lg:px-8 py-6'
             }`}
           >
-            <div className="relative z-10 w-full flex justify-center">
-              {isDiscover ? (
+            <div className={`relative z-10 w-full flex justify-center ${isMessages ? 'h-full' : ''}`}>
+              {isMessages ? (
+                // Full-Page Integrated Messaging Workspace (Two-Pane Desktop, Responsive Mobile)
+                <div className="w-full h-full flex flex-col min-w-0">{children}</div>
+              ) : isDiscover ? (
                 // Discover Layout: Expands to full desktop width without artificial max-w-2xl bottleneck
                 <div className="w-full max-w-[1750px] flex justify-center gap-6 2xl:gap-8">
                   <div className="flex-1 min-w-0 w-full">{children}</div>
@@ -91,7 +102,7 @@ export function AppLayout({ children, showRightRail = true }: AppLayoutProps) {
                 // Settings & Create Post Layout: Focused comfortable form layout
                 <div className="w-full max-w-4xl mx-auto">{children}</div>
               ) : isDedicatedCanvas ? (
-                // Dedicated Surface Canvas (Community Hub, Post Detail, Profile, Universal Search):
+                // Dedicated Surface Canvas (Community Hub, Post Detail, Profile, Universal Search, Social Graph):
                 // Full-width max-w-5xl xl:max-w-6xl without global RightRail bottleneck
                 <div className="w-full max-w-5xl xl:max-w-6xl mx-auto">{children}</div>
               ) : (

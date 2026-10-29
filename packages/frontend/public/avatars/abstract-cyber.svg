@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="100%" height="100%">
+  <circle cx="80" cy="80" r="76" fill="#030712" stroke="#06b6d4" stroke-width="3" stroke-opacity="0.4"/>
+  <!-- Concentric cyber hex polygons -->
+  <polygon points="80,32 118,54 118,106 80,128 42,106 42,54" fill="none" stroke="#06b6d4" stroke-width="2.5"/>
+  <polygon points="80,48 106,63 106,97 80,112 54,97 54,63" fill="#0f172a" stroke="#3b82f6" stroke-width="2"/>
+  <circle cx="80" cy="80" r="10" fill="#06b6d4"/>
+  <!-- Reticle Crosshairs -->
+  <line x1="80" y1="24" x2="80" y2="40" stroke="#06b6d4" stroke-width="2"/>
+  <line x1="80" y1="120" x2="80" y2="136" stroke="#06b6d4" stroke-width="2"/>
+  <line x1="32" y1="80" x2="48" y2="80" stroke="#06b6d4" stroke-width="2"/>
+  <line x1="112" y1="80" x2="128" y2="80" stroke="#06b6d4" stroke-width="2"/>
+</svg>

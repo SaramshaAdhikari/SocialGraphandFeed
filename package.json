@@ -20,7 +20,11 @@
     "docker:down": "docker compose -f docker-compose.yml down",
     "docker:status": "docker compose -f docker-compose.yml ps",
     "dev:backend": "npm run dev --workspace=packages/backend",
-    "dev:frontend": "npm run dev --workspace=packages/frontend"
+    "dev:frontend": "npm run dev --workspace=packages/frontend",
+    "check:env": "node scripts/validate_setup.mjs",
+    "backup:db": "node scripts/backup_local_db.mjs",
+    "migrate:atlas": "node scripts/migrate_to_atlas.mjs",
+    "migrate:media": "node scripts/migrate_media.mjs"
   },
   "devDependencies": {
     "typescript": "^5.8.2"

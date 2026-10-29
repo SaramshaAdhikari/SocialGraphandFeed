@@ -7,6 +7,7 @@ import { Button } from '../ui/Button';
 import { Link } from '../../router/Router';
 import { formatRelativeTime } from '../../utils/date';
 import { usePostModal } from '../../context/PostModalContext';
+import { PostActionMenu } from './PostActionMenu';
 
 export interface DiscussionPostCardProps {
   post: IDiscussionPostCard;
@@ -58,7 +59,7 @@ export function DiscussionPostCard({
   return (
     <article
       data-testid={`post-discussion-${post.id}`}
-      className={`bg-surface-card rounded-2xl border border-border p-4 sm:p-5 shadow-xs hover:border-border-strong transition-all duration-150 ${className}`}
+      className={`bg-surface-card rounded-2xl border border-border/50 p-4 sm:p-5 shadow-xs hover:border-border transition-all duration-150 ${className}`}
     >
       <div className="flex items-start gap-3.5">
         {/* Desktop Vertical Vote Rail (Reddit-inspired pattern) */}
@@ -74,7 +75,8 @@ export function DiscussionPostCard({
         {/* Main Content Area */}
         <div className="flex-1 min-w-0">
           {/* Metadata Header */}
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2 text-xs text-text-muted">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-text-muted">
             {post.community_slug ? (
               <>
                 <Link
@@ -120,6 +122,8 @@ export function DiscussionPostCard({
                 {post.flair}
               </span>
             )}
+            </div>
+            <PostActionMenu post={post} />
           </div>
 
           {/* Post Title */}
@@ -170,7 +174,7 @@ export function DiscussionPostCard({
                       e.stopPropagation();
                       setMediaIndex((i) => Math.max(0, i - 1));
                     }}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/60 hover:bg-black/80 text-white disabled:opacity-20 disabled:cursor-not-allowed opacity-0 group-hover/carousel:opacity-100 transition-opacity cursor-pointer"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/60 hover:bg-black/80 text-white disabled:opacity-20 disabled:cursor-not-allowed opacity-100 sm:opacity-0 sm:group-hover/carousel:opacity-100 transition-opacity cursor-pointer"
                   >
                     <ChevronLeft size={16} />
                   </button>
@@ -183,7 +187,7 @@ export function DiscussionPostCard({
                       const maxIdx = (post.media?.length ?? 1) - 1;
                       setMediaIndex((i) => Math.min(maxIdx, i + 1));
                     }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/60 hover:bg-black/80 text-white disabled:opacity-20 disabled:cursor-not-allowed opacity-0 group-hover/carousel:opacity-100 transition-opacity cursor-pointer"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/60 hover:bg-black/80 text-white disabled:opacity-20 disabled:cursor-not-allowed opacity-100 sm:opacity-0 sm:group-hover/carousel:opacity-100 transition-opacity cursor-pointer"
                   >
                     <ChevronRight size={16} />
                   </button>
@@ -252,7 +256,7 @@ export function DiscussionPostCard({
               onClick={handleSave}
               className={`h-8 px-2 sm:px-2.5 text-xs transition-all duration-150 active:scale-95 shrink-0 ${
                 post.is_saved
-                  ? 'text-primary bg-primary-soft font-bold'
+                  ? 'text-text-primary bg-black/[0.05] dark:bg-white/[0.1] font-bold'
                   : 'text-text-muted hover:text-text-primary'
               }`}
               aria-label={post.is_saved ? 'Remove saved post' : 'Save post'}

@@ -1,7 +1,8 @@
 import subprocess, time, json, urllib.request, base64
 import websocket
 
-EDGE_EXE = r'C:\Program Files (x86)\Microsoft\EdgeCore\155.0.4283.62\msedge.exe'
+from browser_finder import get_browser_exe
+EDGE_EXE = get_browser_exe()
 USER_DATA = r'C:\Users\Dell\AppData\Local\Temp\edge_cdp_profile'
 
 def check_discover(w=1440, h=900, name='discover_desktop'):

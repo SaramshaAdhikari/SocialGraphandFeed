@@ -47,12 +47,12 @@ export function BrandLogo({
   );
 
   // High-contrast Noir Wordmark:
-  // "Social" in text-primary + "Graph" in vivid magenta (#FF3CAC)
+  // "Social" in text-primary + "Graph" in dynamic theme primary accent
   const Wordmark = (
     <div className="flex flex-col leading-none select-none">
       <div className="flex items-baseline tracking-tight">
         <span className={`font-black tracking-tight font-display text-text-primary ${sizeConfig.textClass}`}>
-          Social<span className="text-[#FF3CAC]">Graph</span>
+          Social<span className="text-primary">Graph</span>
         </span>
       </div>
       {showSubtitle && (

@@ -11,6 +11,7 @@ import { getDb } from '../db/mongo.js';
 import { COLLECTIONS } from '../db/collections.js';
 import type { NotificationDoc, UserDoc } from '../db/types.js';
 import { toNotificationItem, toUserSummary } from '../db/serialization.js';
+import { realtimeEventBus } from '../realtime/EventBus.js';
 
 export interface CreateNotificationOptions {
   recipient_id: string;
@@ -18,6 +19,7 @@ export interface CreateNotificationOptions {
   type: NotificationType;
   post_id?: string;
   comment_id?: string;
+  conversation_id?: string;
   session?: ClientSession;
 }
 
@@ -34,7 +36,7 @@ export class NotificationService {
    *  - Comment/reply notifications use a deterministic ID tied to comment (`notif_cmt_${commentId}`).
    */
   public async createNotification(opts: CreateNotificationOptions): Promise<NotificationDoc | null> {
-    const { recipient_id, actor_id, type, post_id, comment_id, session } = opts;
+    const { recipient_id, actor_id, type, post_id, comment_id, conversation_id, session } = opts;
 
     // Core rule: Never notify users of their own actions
     if (recipient_id === actor_id) {
@@ -43,6 +45,7 @@ export class NotificationService {
 
     const notifsCol = this.db.collection<NotificationDoc>(COLLECTIONS.NOTIFICATIONS);
     const now = new Date();
+    let savedDoc: NotificationDoc | null = null;
 
     if (type === 'follow') {
       const docId = `notif_flw_${actor_id}_${recipient_id}`;
@@ -65,32 +68,56 @@ export class NotificationService {
         },
         { upsert: true, session }
       );
-      return (await notifsCol.findOne({ _id: docId }, { session })) || null;
-    }
+      savedDoc = (await notifsCol.findOne({ _id: docId }, { session })) || null;
+    } else {
+      // Comment, reply, or direct message notification
+      const docId = comment_id
+        ? `notif_cmt_${comment_id}`
+        : type === 'message' && conversation_id
+        ? `notif_msg_${conversation_id}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`
+        : `notif_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
-    // Comment or Reply notification tied to comment ID
-    const docId = comment_id ? `notif_cmt_${comment_id}` : `notif_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-    const doc: NotificationDoc = {
-      _id: docId,
-      recipient_id,
-      actor_id,
-      type,
-      post_id,
-      comment_id,
-      read: false,
-      created_at: now,
-    };
+      const doc: NotificationDoc = {
+        _id: docId,
+        recipient_id,
+        actor_id,
+        type,
+        post_id,
+        comment_id,
+        conversation_id,
+        read: false,
+        created_at: now,
+      };
 
-    try {
-      await notifsCol.insertOne(doc, { session });
-      return doc;
-    } catch (err: any) {
-      if (err?.code === 11000) {
-        // Idempotent retry: return existing document
-        return (await notifsCol.findOne({ _id: docId }, { session })) || null;
+      try {
+        await notifsCol.insertOne(doc, { session });
+        savedDoc = doc;
+      } catch (err: any) {
+        if (err?.code === 11000) {
+          // Idempotent retry: return existing document
+          savedDoc = (await notifsCol.findOne({ _id: docId }, { session })) || null;
+        } else {
+          throw err;
+        }
       }
-      throw err;
     }
+
+    // Emit real-time notification to the recipient via SSE
+    if (savedDoc) {
+      try {
+        const actorDoc = await this.db.collection<UserDoc>(COLLECTIONS.USERS).findOne({ _id: actor_id }, { session });
+        const item = toNotificationItem(savedDoc, actorDoc ? toUserSummary(actorDoc) : undefined);
+        realtimeEventBus.publish({
+          type: 'notification.created',
+          recipient_id,
+          notification: item,
+        });
+      } catch {
+        // SSE delivery failure should not break notification persistence
+      }
+    }
+
+    return savedDoc;
   }
 
   /**

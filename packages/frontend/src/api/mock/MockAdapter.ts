@@ -10,10 +10,19 @@ import type {
   CommentNode,
   CreateCommentInput,
   UserProfile,
+  UpdateUserProfileInput,
   FollowToggleResponse,
   Community,
   ApiErrorResponse,
   CreatePostInput,
+  MediaAttachment,
+  ConversationSummary,
+  DirectMessage,
+  NotificationItem,
+  NotificationsQuery,
+  NotificationsResponse,
+  MarkReadResponse,
+  MarkAllReadResponse,
 } from '@socialgraph/shared';
 import type {
   ISocialGraphApi,
@@ -38,6 +47,9 @@ export interface MockAdapterOptions {
   simulatedLatencyMs?: number;
 }
 
+
+
+
 export class MockAdapter implements ISocialGraphApi {
   public readonly dataSource: DataSourceType = 'mock';
 
@@ -45,6 +57,42 @@ export class MockAdapter implements ISocialGraphApi {
   private communities: Record<string, Community>;
   private posts: (DiscussionPostCard | VisualPinCard)[];
   private comments: Record<string, CommentNode[]>;
+  private mockConversations: ConversationSummary[] = [];
+  private hiddenConversations: Set<string> = new Set();
+  private mockMessages: Record<string, DirectMessage[]> = {};
+  private mockNotifications: NotificationItem[] = [
+    {
+      id: 'notif_1',
+      recipient_id: 'usr_dev_elena',
+      actor_id: 'usr_0',
+      actor: {
+        id: 'usr_0',
+        username: 'alex_dev',
+        display_name: 'Alex Rivera',
+        avatar_url: '/avatars/alex-dev.svg',
+        is_verified: false,
+      },
+      type: 'follow',
+      read: false,
+      created_at: new Date(Date.now() - 3600000).toISOString(),
+    },
+    {
+      id: 'notif_2',
+      recipient_id: 'usr_dev_elena',
+      actor_id: 'usr_0',
+      actor: {
+        id: 'usr_0',
+        username: 'alex_dev',
+        display_name: 'Alex Rivera',
+        avatar_url: '/avatars/alex-dev.svg',
+        is_verified: false,
+      },
+      type: 'message',
+      conversation_id: 'conv_1',
+      read: false,
+      created_at: new Date(Date.now() - 1800000).toISOString(),
+    },
+  ];
   private latencyMs: number;
   private failureMap: Map<string, ApiErrorResponse> = new Map();
 
@@ -56,6 +104,7 @@ export class MockAdapter implements ISocialGraphApi {
       JSON.stringify([...mockDiscussionPosts, ...mockVisualPins])
     );
     this.comments = JSON.parse(JSON.stringify(mockCommentsByPostId));
+    this.initMockMessaging();
   }
 
   public resetFixtures(): void {
@@ -65,6 +114,7 @@ export class MockAdapter implements ISocialGraphApi {
       JSON.stringify([...mockDiscussionPosts, ...mockVisualPins])
     );
     this.comments = JSON.parse(JSON.stringify(mockCommentsByPostId));
+    this.initMockMessaging();
     this.failureMap.clear();
   }
 
@@ -100,11 +150,12 @@ export class MockAdapter implements ISocialGraphApi {
     };
   }
 
-  public async getMetrics(): Promise<{ uptime_seconds: number; node_version: string }> {
+  public async getMetrics(): Promise<{ uptime_seconds: number; node_version: string; memory?: { rss_mb: number; heap_used_mb: number; heap_total_mb: number } }> {
     await this.delay('/api/v1/metrics');
     return {
       uptime_seconds: 120,
       node_version: 'v24.13.0-mock',
+      memory: { rss_mb: 45.2, heap_used_mb: 28.4, heap_total_mb: 34.0 },
     };
   }
 
@@ -311,22 +362,75 @@ export class MockAdapter implements ISocialGraphApi {
     return this.comments[postId] || [];
   }
 
-  public async createPost(input: CreatePostInput, _idempotencyKey?: string): Promise<PostCard> {
-    await this.delay('/api/v1/posts');
-
-    if (!input.title || input.title.trim().length === 0) {
+  public async uploadMedia(files: File[]): Promise<MediaAttachment[]> {
+    await this.delay('/api/v1/media/upload');
+    if (!files || files.length === 0) return [];
+    if (files.length > 10) {
       throw new ApiClientError({
         type: 'https://socialgraph.dev/errors/validation',
         title: 'Validation Error',
         status: 400,
-        detail: 'Post title is required and cannot be empty.',
+        detail: 'Cannot upload more than 10 images per post.',
+        code: 'VALIDATION_ERROR',
+        timestamp: new Date().toISOString(),
+      });
+    }
+    return files.map((file, idx) => ({
+      id: `mock_med_${Date.now()}_${idx}`,
+      url: `/uploads/med_${Date.now()}_${idx}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`,
+      aspect_ratio: 1.33,
+      alt_text: file.name.replace(/\.[^/.]+$/, ''),
+    }));
+  }
+
+  public async createPost(input: CreatePostInput, _idempotencyKey?: string): Promise<PostCard> {
+    await this.delay('/api/v1/posts');
+
+    const hasMedia = Boolean(input.media && input.media.length > 0 && input.media.some((m) => m.url?.trim()));
+    const hasText = Boolean(input.title?.trim() || input.content?.trim() || input.caption?.trim());
+    if (!hasText && !hasMedia) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/validation',
+        title: 'Validation Error',
+        status: 400,
+        detail: 'Post must contain either text content or media attachments.',
         code: 'VALIDATION_ERROR',
         timestamp: new Date().toISOString(),
       });
     }
 
-    if (input.post_type === 'discussion') {
-      if (input.title.trim().length < 3) {
+    if (input.media && input.media.length > 10) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/validation',
+        title: 'Validation Error',
+        status: 400,
+        detail: 'A post cannot contain more than 10 images.',
+        code: 'VALIDATION_ERROR',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    let postType: 'visual' | 'discussion';
+    if (input.post_type) {
+      postType = input.post_type;
+    } else if (hasMedia) {
+      postType = 'visual';
+    } else {
+      postType = 'discussion';
+    }
+
+    if (postType === 'discussion') {
+      if (input.post_type === 'discussion' && (!input.title || input.title.trim().length === 0)) {
+        throw new ApiClientError({
+          type: 'https://socialgraph.dev/errors/validation',
+          title: 'Validation Error',
+          status: 400,
+          detail: 'Post title is required and cannot be empty.',
+          code: 'VALIDATION_ERROR',
+          timestamp: new Date().toISOString(),
+        });
+      }
+      if (input.title && input.title.trim().length < 3) {
         throw new ApiClientError({
           type: 'https://socialgraph.dev/errors/validation',
           title: 'Validation Error',
@@ -336,7 +440,7 @@ export class MockAdapter implements ISocialGraphApi {
           timestamp: new Date().toISOString(),
         });
       }
-      if (!input.content || input.content.trim().length === 0) {
+      if (!hasMedia && (!input.content || input.content.trim().length === 0)) {
         throw new ApiClientError({
           type: 'https://socialgraph.dev/errors/validation',
           title: 'Validation Error',
@@ -348,7 +452,7 @@ export class MockAdapter implements ISocialGraphApi {
       }
     }
 
-    if (input.post_type === 'visual') {
+    if (postType === 'visual') {
       const mediaItem = input.media?.[0];
       if (!mediaItem || !mediaItem.url || mediaItem.url.trim().length === 0) {
         throw new ApiClientError({
@@ -377,7 +481,7 @@ export class MockAdapter implements ISocialGraphApi {
     const now = new Date().toISOString();
     let createdPost: DiscussionPostCard | VisualPinCard;
 
-    if (input.post_type === 'discussion') {
+    if (postType === 'discussion') {
       const postId = `post_disc_${Date.now()}`;
       createdPost = {
         id: postId,
@@ -391,7 +495,7 @@ export class MockAdapter implements ISocialGraphApi {
         user_vote: 1,
         comments_count: 0,
         is_saved: false,
-        title: input.title.trim(),
+        title: input.title?.trim() || (input.content?.slice(0, 60) || 'Untitled Post'),
         content: input.content?.trim() || '',
         flair: input.flair?.trim().replace(/^#+/, '') || (input.tags && input.tags.length > 0 ? input.tags[0].trim().replace(/^#+/, '').toLowerCase() : undefined),
         tags: input.tags && input.tags.length > 0
@@ -401,7 +505,9 @@ export class MockAdapter implements ISocialGraphApi {
       };
     } else {
       const pinId = `pin_vis_${Date.now()}`;
-      const mediaItem = input.media![0];
+      const mediaList = input.media || [];
+      const mediaItem = mediaList[0];
+      const visualTitle = input.title?.trim() || (input.caption?.slice(0, 50) || input.content?.slice(0, 50) || 'Photo');
       createdPost = {
         id: pinId,
         post_type: 'visual',
@@ -414,7 +520,7 @@ export class MockAdapter implements ISocialGraphApi {
         user_vote: 1,
         comments_count: 0,
         is_saved: false,
-        title: input.title.trim(),
+        title: visualTitle,
         caption: input.caption?.trim() || input.content?.trim() || '',
         destination_url: input.destination_url?.trim() || undefined,
         tags: input.tags && input.tags.length > 0 ? input.tags : undefined,
@@ -422,10 +528,11 @@ export class MockAdapter implements ISocialGraphApi {
           id: mediaItem.id || `m_${Date.now()}`,
           url: mediaItem.url.trim(),
           aspect_ratio: mediaItem.aspect_ratio || 1.0,
-          alt_text: mediaItem.alt_text || input.title.trim(),
+          alt_text: mediaItem.alt_text || visualTitle,
           width: mediaItem.width,
           height: mediaItem.height,
         },
+        media_list: mediaList.length > 1 ? mediaList : undefined,
         dominant_color: '#3B82F6',
       };
     }
@@ -550,6 +657,65 @@ export class MockAdapter implements ISocialGraphApi {
 
     post.comments_count += 1;
     return newComment;
+  }
+
+  public async updateProfile(input: UpdateUserProfileInput): Promise<UserProfile> {
+    await this.delay('/api/v1/users/me');
+    const user = this.users['usr_0'];
+    if (!user) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/not-found',
+        title: 'User Not Found',
+        status: 404,
+        detail: 'User not found in mock store',
+        code: 'USER_NOT_FOUND',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (input.display_name !== undefined) {
+      const trimmed = input.display_name.trim();
+      if (!trimmed) {
+        throw new ApiClientError({
+          type: 'https://socialgraph.dev/errors/bad-request',
+          title: 'Bad Request',
+          status: 400,
+          detail: 'display_name must not be empty',
+          code: 'VALIDATION_ERROR',
+          timestamp: new Date().toISOString(),
+        });
+      }
+      user.display_name = trimmed;
+    }
+
+    if (input.bio !== undefined) {
+      user.bio = input.bio.trim();
+    }
+
+    if (input.avatar_url !== undefined) {
+      const trimmed = input.avatar_url.trim();
+      if (!trimmed) {
+        throw new ApiClientError({
+          type: 'https://socialgraph.dev/errors/bad-request',
+          title: 'Bad Request',
+          status: 400,
+          detail: 'avatar_url must not be empty',
+          code: 'VALIDATION_ERROR',
+          timestamp: new Date().toISOString(),
+        });
+      }
+      user.avatar_url = trimmed;
+    }
+
+    if (input.banner_url !== undefined) {
+      user.banner_url = input.banner_url ? input.banner_url.trim() : undefined;
+    }
+
+    if (input.website !== undefined) {
+      user.website = input.website ? input.website.trim() : undefined;
+    }
+
+    return user;
   }
 
   public async getUserProfile(username: string): Promise<UserProfile> {
@@ -951,6 +1117,7 @@ export class MockAdapter implements ISocialGraphApi {
       username: 'alex_dev',
       display_name: 'Alex Rivera',
       avatar_url: '/avatars/alex-dev.svg',
+        is_verified: false,
       bio: 'feed engineering & distributed graph nerd',
       followers_count: 418,
       following_count: 285,
@@ -990,5 +1157,364 @@ export class MockAdapter implements ISocialGraphApi {
       nodes: targetNodes,
       edges,
     };
+  }
+
+  private initMockMessaging(): void {
+    const usr0 = this.users['usr_0'] || Object.values(this.users)[0];
+    const usr1 = this.users['usr_1'] || Object.values(this.users)[1];
+    const usr2 = this.users['usr_2'] || Object.values(this.users)[2];
+
+    this.mockConversations = [
+      {
+        id: 'conv_1',
+        participant_ids: [usr0.id, usr1.id],
+        participants: [usr0, usr1],
+        other_participant: usr1,
+        last_message: {
+          id: 'msg_1',
+          conversation_id: 'conv_1',
+          sender_id: usr1.id,
+          content: 'Hey Alex! Did you check out the new distributed graph architecture?',
+          is_read: false,
+          created_at: new Date(Date.now() - 3600000).toISOString(),
+        },
+        unread_count: 1,
+        created_at: new Date(Date.now() - 86400000).toISOString(),
+        updated_at: new Date(Date.now() - 3600000).toISOString(),
+      },
+      {
+        id: 'conv_2',
+        participant_ids: [usr0.id, usr2.id],
+        participants: [usr0, usr2],
+        other_participant: usr2,
+        last_message: {
+          id: 'msg_2',
+          conversation_id: 'conv_2',
+          sender_id: usr0.id,
+          content: 'The Bauhaus design tokens look incredible on OLED dark mode!',
+          is_read: true,
+          created_at: new Date(Date.now() - 7200000).toISOString(),
+        },
+        unread_count: 0,
+        created_at: new Date(Date.now() - 172800000).toISOString(),
+        updated_at: new Date(Date.now() - 7200000).toISOString(),
+      },
+    ];
+
+    this.mockMessages = {
+      conv_1: [
+        {
+          id: 'msg_1_prev',
+          conversation_id: 'conv_1',
+          sender_id: usr0.id,
+          content: 'Hey Lucas, working on the cursor-based feed benchmarks right now.',
+          is_read: true,
+          created_at: new Date(Date.now() - 7200000).toISOString(),
+        },
+        {
+          id: 'msg_1',
+          conversation_id: 'conv_1',
+          sender_id: usr1.id,
+          content: 'Hey Alex! Did you check out the new distributed graph architecture?',
+          is_read: false,
+          created_at: new Date(Date.now() - 3600000).toISOString(),
+        },
+      ],
+      conv_2: [
+        {
+          id: 'msg_2',
+          conversation_id: 'conv_2',
+          sender_id: usr0.id,
+          content: 'The Bauhaus design tokens look incredible on OLED dark mode!',
+          is_read: true,
+          created_at: new Date(Date.now() - 7200000).toISOString(),
+        },
+      ],
+    };
+  }
+
+  public async getConversations(
+    _cursor?: string | null,
+    _limit = 20
+  ): Promise<{ data: ConversationSummary[]; next_cursor: string | null; has_more: boolean }> {
+    await this.delay('/api/v1/conversations');
+    return {
+      data: this.mockConversations.filter((c) => !this.hiddenConversations.has(c.id)),
+      next_cursor: null,
+      has_more: false,
+    };
+  }
+
+  public async getOrCreateConversation(
+    recipientId: string,
+    initialMessage?: string
+  ): Promise<ConversationSummary> {
+    await this.delay('/api/v1/conversations');
+    const current = this.users['usr_0'] || Object.values(this.users)[0];
+    if (recipientId === current.id) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/bad-request',
+        title: 'Bad Request',
+        status: 400,
+        detail: 'Cannot create a conversation with yourself.',
+        code: 'BAD_REQUEST',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const existing = this.mockConversations.find((c) => c.participant_ids.includes(recipientId));
+    if (existing) {
+      this.hiddenConversations.delete(existing.id);
+      if (initialMessage && initialMessage.trim()) {
+        await this.sendMessage(existing.id, initialMessage.trim());
+      }
+      return existing;
+    }
+
+    const other = Object.values(this.users).find((u) => u.id === recipientId) || {
+      id: recipientId,
+      username: 'creator',
+      display_name: 'Creator',
+      avatar_url: '/avatars/code-terminal.svg',
+      is_verified: false,
+      followers_count: 10,
+      following_count: 5,
+      posts_count: 2,
+    };
+
+    const newConv: ConversationSummary = {
+      id: 'conv_' + Date.now(),
+      participant_ids: [current.id, recipientId],
+      participants: [current, other as any],
+      other_participant: other as any,
+      unread_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    this.mockConversations.unshift(newConv);
+    this.mockMessages[newConv.id] = [];
+
+    if (initialMessage && initialMessage.trim()) {
+      await this.sendMessage(newConv.id, initialMessage.trim());
+    }
+
+    return newConv;
+  }
+
+  public async getConversation(conversationId: string): Promise<ConversationSummary> {
+    await this.delay('/api/v1/conversations/' + conversationId);
+    this.hiddenConversations.delete(conversationId);
+    const conv = this.mockConversations.find((c) => c.id === conversationId);
+    if (!conv) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/not-found',
+        title: 'Not Found',
+        status: 404,
+        detail: 'Conversation not found',
+        code: 'NOT_FOUND',
+        timestamp: new Date().toISOString(),
+      });
+    }
+    return conv;
+  }
+
+  public async getMessages(
+    conversationId: string,
+    _cursor?: string | null,
+    _limit = 50
+  ): Promise<{ data: DirectMessage[]; next_cursor: string | null; has_more: boolean }> {
+    await this.delay('/api/v1/conversations/' + conversationId + '/messages');
+    const msgs = this.mockMessages[conversationId] || [];
+    return {
+      data: [...msgs],
+      next_cursor: null,
+      has_more: false,
+    };
+  }
+
+  public async sendMessage(conversationId: string, content: string): Promise<DirectMessage> {
+    await this.delay('/api/v1/conversations/' + conversationId + '/messages');
+    const conv = this.mockConversations.find((c) => c.id === conversationId);
+    const trimmed = content.trim();
+    if (!trimmed) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/bad-request',
+        title: 'Bad Request',
+        status: 400,
+        detail: 'Message content cannot be blank.',
+        code: 'BAD_REQUEST',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const current = this.users['usr_0'] || Object.values(this.users)[0];
+    const newMsg: DirectMessage = {
+      id: 'msg_' + Date.now(),
+      conversation_id: conversationId,
+      sender_id: current.id,
+      sender: current,
+      content: trimmed,
+      is_read: true,
+      created_at: new Date().toISOString(),
+    };
+
+    if (!this.mockMessages[conversationId]) {
+      this.mockMessages[conversationId] = [];
+    }
+    this.mockMessages[conversationId].push(newMsg);
+
+    if (conv) {
+      conv.last_message = newMsg;
+      conv.updated_at = newMsg.created_at;
+    }
+
+    return newMsg;
+  }
+
+  public async deleteMessage(conversationId: string, messageId: string): Promise<DirectMessage> {
+    await this.delay('/api/v1/conversations/' + conversationId + '/messages/' + messageId);
+    const msgs = this.mockMessages[conversationId] || [];
+    const msg = msgs.find((m) => m.id === messageId);
+    if (!msg) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/not-found',
+        title: 'Not Found',
+        status: 404,
+        detail: 'Message ' + messageId + ' not found',
+        code: 'NOT_FOUND',
+        timestamp: new Date().toISOString(),
+      });
+    }
+    const current = this.users['usr_0'] || Object.values(this.users)[0];
+    if (msg.sender_id !== current.id) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/forbidden',
+        title: 'Forbidden',
+        status: 403,
+        detail: 'You can only delete your own messages.',
+        code: 'FORBIDDEN',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    msg.is_deleted = true;
+    msg.deleted_at = new Date().toISOString();
+    msg.content = 'This message was deleted';
+
+    const conv = this.mockConversations.find((c) => c.id === conversationId);
+    if (conv && conv.last_message?.id === messageId) {
+      conv.last_message = { ...msg };
+    }
+
+    return msg;
+  }
+
+  public async deleteConversation(conversationId: string): Promise<{ success: boolean; message: string }> {
+    await this.delay('/api/v1/conversations/' + conversationId);
+        const conv = this.mockConversations.find((c) => c.id === conversationId);
+    if (!conv || this.hiddenConversations.has(conversationId)) {
+      throw new ApiClientError({
+        type: 'https://socialgraph.dev/errors/not-found',
+        title: 'Not Found',
+        status: 404,
+        detail: 'Conversation ' + conversationId + ' not found',
+        code: 'NOT_FOUND',
+        timestamp: new Date().toISOString(),
+      });
+    }
+    this.hiddenConversations.add(conversationId);
+    return { success: true, message: 'Conversation removed from inbox.' };
+  }
+
+  public async markConversationAsRead(conversationId: string): Promise<void> {
+    await this.delay('/api/v1/conversations/' + conversationId + '/read');
+    const conv = this.mockConversations.find((c) => c.id === conversationId);
+    if (conv) {
+      conv.unread_count = 0;
+    }
+    const msgs = this.mockMessages[conversationId];
+    if (msgs) {
+      for (const m of msgs) {
+        m.is_read = true;
+      }
+    }
+  }
+
+  public async getUnreadMessagesCount(): Promise<number> {
+    await this.delay('/api/v1/conversations/unread-count');
+    return this.mockConversations.reduce((acc, c) => acc + (c.unread_count || 0), 0);
+  }
+
+  public async editPost(
+    postId: string,
+    input: { title?: string; body?: string; media_urls?: string[]; community_id?: string }
+  ): Promise<PostCard> {
+    await this.delay(`/api/v1/posts/${postId}`);
+    const post = this.posts.find((p) => p.id === postId);
+    if (!post) throw new Error(`Post with id ${postId} not found`);
+    if (input.title !== undefined && 'title' in post) (post as any).title = input.title;
+    if (input.body !== undefined && 'body' in post) (post as any).body = input.body;
+    return post;
+  }
+
+  public async deletePost(postId: string): Promise<{ success: boolean; post_id: string }> {
+    await this.delay(`/api/v1/posts/${postId}`);
+    const index = this.posts.findIndex((p) => p.id === postId);
+    if (index !== -1) this.posts.splice(index, 1);
+    return { success: true, post_id: postId };
+  }
+
+  public async getNotifications(query?: NotificationsQuery): Promise<NotificationsResponse> {
+    await this.delay('/api/v1/notifications');
+    let list = [...this.mockNotifications];
+    if (query?.unread_only) {
+      list = list.filter((n) => !n.read);
+    }
+    return {
+      success: true,
+      data: list,
+      next_cursor: null,
+      has_more: false,
+      meta: { count: list.length, server_execution_time_ms: 5 },
+    };
+  }
+
+  public async getUnreadNotificationCount(): Promise<number> {
+    await this.delay('/api/v1/notifications/unread-count');
+    return this.mockNotifications.filter((n) => !n.read).length;
+  }
+
+  public async markNotificationAsRead(notificationId: string): Promise<MarkReadResponse> {
+    await this.delay(`/api/v1/notifications/${notificationId}/read`);
+    const item = this.mockNotifications.find((n) => n.id === notificationId);
+    if (item) {
+      item.read = true;
+      item.read_at = new Date().toISOString();
+    }
+    return {
+      success: true,
+      notification: item || {
+        id: notificationId,
+        recipient_id: 'usr_dev_elena',
+        actor_id: 'usr_0',
+        type: 'follow',
+        read: true,
+        created_at: new Date().toISOString(),
+      },
+    };
+  }
+
+  public async markAllNotificationsAsRead(): Promise<MarkAllReadResponse> {
+    await this.delay('/api/v1/notifications/read-all');
+    let count = 0;
+    for (const n of this.mockNotifications) {
+      if (!n.read) {
+        n.read = true;
+        n.read_at = new Date().toISOString();
+        count++;
+      }
+    }
+    return { success: true, updated_count: count };
   }
 }

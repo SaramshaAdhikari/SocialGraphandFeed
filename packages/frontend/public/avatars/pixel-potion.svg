@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="100%" height="100%">
+  <circle cx="80" cy="80" r="76" fill="#18181b" stroke="#ec4899" stroke-width="3" stroke-opacity="0.4"/>
+  <!-- Cork -->
+  <rect x="72" y="36" width="16" height="10" fill="#b45309"/>
+  <rect x="74" y="38" width="12" height="4" fill="#d97706"/>
+  <!-- Bottle Neck -->
+  <rect x="70" y="46" width="20" height="12" fill="#64748b"/>
+  <!-- Bottle Body -->
+  <path d="M64 58 L50 82 L50 112 C50 120 56 126 64 126 L96 126 C104 126 110 120 110 112 L110 82 L96 58 Z" fill="#334155" stroke="#64748b" stroke-width="3"/>
+  <!-- Magic Liquid -->
+  <path d="M54 90 L54 112 C54 118 58 122 64 122 L96 122 C102 122 106 118 106 112 L106 90 Z" fill="#ec4899"/>
+  <!-- Bubbles & Sparkles -->
+  <circle cx="70" cy="104" r="4" fill="#fbcfe8"/>
+  <circle cx="88" cy="98" r="3" fill="#fbcfe8"/>
+  <circle cx="78" cy="112" r="2.5" fill="#fbcfe8"/>
+  <circle cx="62" cy="74" r="2" fill="#ffffff" opacity="0.8"/>
+  <circle cx="68" cy="66" r="3" fill="#ffffff" opacity="0.8"/>
+</svg>

@@ -41,7 +41,7 @@ export function CommunitySearchResultCard({
       className={`group bg-surface-card border border-border rounded-2xl overflow-hidden hover:border-border-strong transition-all shadow-xs hover:shadow-sm flex flex-col justify-between ${className}`}
     >
       {/* Banner Strip */}
-      <div className="h-16 w-full relative bg-linear-to-r from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
+      <div className="h-16 w-full relative bg-linear-to-r from-neutral-200 to-neutral-300 dark:from-neutral-800 dark:to-neutral-900 overflow-hidden">
         {community.banner_url && (
           <img
             src={community.banner_url}
@@ -118,7 +118,7 @@ export function CommunitySearchResultCard({
         {/* Footer info */}
         <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-text-muted">
           <div className="flex items-center gap-1.5">
-            <Users size={13} className="text-slate-400" />
+            <Users size={13} className="text-text-muted" />
             <span>
               <strong className="text-text-primary">{formattedMembers}</strong>{' '}
               members

@@ -1,25 +1,20 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from '../router/Router';
 import { useCreatePost } from '../hooks/useCreatePost';
 import {
-  PostTypeSelector,
   MarkdownEditor,
-  VisualPinUploader,
+  MediaAttachmentManager,
   CommunitySelect,
   TagInput,
-  PinPreview,
-  DiscussionPreview,
 } from '../components/composer';
 import { Input, Button } from '../components/ui';
-import { ArrowLeft, Send, AlertCircle, Info, Sparkles, Clock } from 'lucide-react';
+import { ArrowLeft, Send, AlertCircle, Info, Sparkles, Clock, Globe } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 
 export function CreatePostPage() {
   const { navigate } = useRouter();
   const { user, status } = useAuth();
   const {
-    postType,
-    setPostType,
     title,
     setTitle,
     content,
@@ -29,26 +24,14 @@ export function CreatePostPage() {
     tags,
     addTag,
     removeTag,
-    imageUrl,
-    setImageUrl,
     mediaList,
     addMediaItem,
+    addMultipleMedia,
     removeMediaItem,
     reorderMediaItem,
     setCoverMedia,
-    imageAspectRatio,
-    setImageAspectRatio,
-    imageAlt,
-    setImageAlt,
     destinationUrl,
     setDestinationUrl,
-    isLocalFile,
-    handleLocalFileSelect,
-    clearImage,
-    imageError,
-    setImageError,
-    imageLoaded,
-    setImageLoaded,
     communities,
     loadingCommunities,
     errors,
@@ -62,61 +45,6 @@ export function CreatePostPage() {
   } = useCreatePost('discussion');
 
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
-  const [draftStatus, setDraftStatus] = useState<'saved' | 'restored' | null>(null);
-
-  const selectedCommunityName = useMemo(
-    () => communities.find((community) => community.id === communityId)?.name,
-    [communities, communityId],
-  );
-
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem('socialgraph:create-post-draft');
-      if (!saved || isDirty) return;
-      const draft = JSON.parse(saved) as {
-        postType?: 'discussion' | 'visual';
-        title?: string;
-        content?: string;
-        communityId?: string;
-        tags?: string[];
-        imageUrl?: string;
-        imageAlt?: string;
-        destinationUrl?: string;
-      };
-      if (draft.postType) setPostType(draft.postType);
-      if (draft.title) setTitle(draft.title);
-      if (draft.content) setContent(draft.content);
-      if (draft.communityId) setCommunityId(draft.communityId);
-      if (draft.tags) draft.tags.forEach(addTag);
-      if (draft.imageUrl) setImageUrl(draft.imageUrl);
-      if (draft.imageAlt) setImageAlt(draft.imageAlt);
-      if (draft.destinationUrl) setDestinationUrl(draft.destinationUrl);
-      if (Object.keys(draft).length > 0) setDraftStatus('restored');
-    } catch {
-      window.localStorage.removeItem('socialgraph:create-post-draft');
-    }
-  }, []);
-
-  const saveDraft = () => {
-    try {
-      window.localStorage.setItem(
-        'socialgraph:create-post-draft',
-        JSON.stringify({
-          postType,
-          title,
-          content,
-          communityId,
-          tags,
-          imageUrl,
-          imageAlt,
-          destinationUrl,
-        }),
-      );
-      setDraftStatus('saved');
-    } catch {
-      setDraftStatus(null);
-    }
-  };
 
   const handleBack = () => {
     if (isDirty) {
@@ -135,10 +63,11 @@ export function CreatePostPage() {
     e.preventDefault();
     const created = await submitPost();
     if (created && created.id) {
-      window.localStorage.removeItem('socialgraph:create-post-draft');
       navigate(`/post/${created.id}`);
     }
   };
+
+  const hasContent = Boolean(title.trim() || content.trim() || mediaList.length > 0);
 
   return (
     <div
@@ -163,22 +92,13 @@ export function CreatePostPage() {
               Create Post
             </h1>
             <p className="text-xs text-text-muted">
-              Publish engineering RFCs, distributed systems analyses, or architectural photography.
+              Publish discussions, engineering findings, or photo albums to your profile and communities.
             </p>
           </div>
         </div>
 
         {/* Action button in header (desktop) */}
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={saveDraft}
-            disabled={submitting || !isDirty}
-          >
-            Save Draft
-          </Button>
+        <div className="hidden sm:flex items-center gap-2">
           <Button
             type="button"
             variant="ghost"
@@ -193,7 +113,7 @@ export function CreatePostPage() {
             variant="primary"
             size="sm"
             onClick={handleSubmit}
-            disabled={submitting || Boolean(rateLimitSeconds && rateLimitSeconds > 0) || (isLiveMode && status === 'unauthenticated')}
+            disabled={submitting || !hasContent || Boolean(rateLimitSeconds && rateLimitSeconds > 0) || (isLiveMode && status === 'unauthenticated')}
             leftIcon={<Send size={14} />}
             className="font-semibold shadow-xs"
           >
@@ -203,18 +123,10 @@ export function CreatePostPage() {
               ? 'Publishing...'
               : (isLiveMode && status === 'unauthenticated')
               ? 'Sign In to Publish'
-              : postType === 'discussion'
-              ? 'Publish Discussion'
-              : 'Publish Pin'}
+              : 'Publish Post'}
           </Button>
         </div>
       </div>
-
-      {draftStatus && (
-        <p role="status" className="text-xs text-text-muted">
-          {draftStatus === 'restored' ? 'Draft restored from this browser.' : 'Draft saved locally.'}
-        </p>
-      )}
 
       {/* Discard Draft Modal / Confirmation */}
       {confirmDiscardOpen && (
@@ -256,22 +168,7 @@ export function CreatePostPage() {
         </div>
       )}
 
-      {/* 2. Format Mode Selector */}
-      <section aria-label="Post Type Selection">
-        <PostTypeSelector
-          activeType={postType}
-          onChange={(type) => {
-            setPostType(type);
-            setFieldError('title', null);
-            setFieldError('content', null);
-            setFieldError('imageUrl', null);
-          }}
-          disabled={submitting}
-        />
-      </section>
-
-      {/* 3. Main Composer Form */}
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)] xl:items-start">
+      {/* 2. Unified Composer Form */}
       <form
         onSubmit={handleSubmit}
         data-testid="create-post-form"
@@ -315,17 +212,12 @@ export function CreatePostPage() {
           error={errors.communityId}
         />
 
-        {/* Post Title */}
+        {/* Title Input (Optional for photos) */}
         <div>
           <Input
             id="post-title"
-            label={postType === 'discussion' ? 'Discussion Title' : 'Pin Title'}
-            required
-            placeholder={
-              postType === 'discussion'
-                ? 'An intuitive title explaining the engineering problem, telemetry insight, or RFC...'
-                : 'Title describing this visual pin (e.g. Immersion Cooling Chamber for NVLink GPU Compute)'
-            }
+            label="Title (optional for photos)"
+            placeholder="Give your post an engaging title..."
             value={title}
             onChange={(e) => {
               setTitle(e.target.value);
@@ -333,66 +225,64 @@ export function CreatePostPage() {
             }}
             error={errors.title}
             disabled={submitting || (isLiveMode && status === 'unauthenticated')}
-            maxLength={postType === 'discussion' ? 300 : 150}
-            helperText={`${title.length} / ${postType === 'discussion' ? 300 : 150} characters`}
+            maxLength={300}
+            helperText={`${title.length} / 300 characters`}
           />
         </div>
 
-        {/* Conditional Content: Discussion Markdown vs Visual Pin Uploader */}
-        {postType === 'discussion' ? (
-          <section id="panel-discussion" aria-labelledby="tab-discussion">
-            <MarkdownEditor
-              value={content}
-              onChange={(val) => {
-                setContent(val);
-                if (errors.content) setFieldError('content', null);
-              }}
-              error={errors.content}
-            />
-          </section>
-        ) : (
-          <section id="panel-visual" aria-labelledby="tab-visual">
-            <VisualPinUploader
-              imageUrl={imageUrl}
-              onImageUrlChange={(url) => {
-                setImageUrl(url);
-                if (errors.imageUrl) setFieldError('imageUrl', null);
-              }}
-              mediaList={mediaList}
-              onAddMediaItem={addMediaItem}
-              onRemoveMediaItem={removeMediaItem}
-              onReorderMediaItem={reorderMediaItem}
-              onSetCover={setCoverMedia}
-              aspectRatio={imageAspectRatio}
-              onAspectRatioChange={setImageAspectRatio}
-              imageAlt={imageAlt}
-              onImageAltChange={setImageAlt}
-              destinationUrl={destinationUrl}
-              onDestinationUrlChange={(url) => {
-                setDestinationUrl(url);
-                if (errors.destinationUrl) setFieldError('destinationUrl', null);
-              }}
-              caption={content}
-              onCaptionChange={setContent}
-              isLocalFile={isLocalFile}
-              onLocalFileSelect={handleLocalFileSelect}
-              onClearImage={clearImage}
-              imageError={imageError}
-              onImageErrorChange={setImageError}
-              imageLoaded={imageLoaded}
-              onImageLoadedChange={setImageLoaded}
-              error={errors.imageUrl}
-              destinationUrlError={errors.destinationUrl}
-              isLiveMode={isLiveMode}
-            />
-          </section>
-        )}
+        {/* Content / Markdown Body Editor */}
+        <section aria-label="Post Body Content">
+          <label className="block text-xs font-semibold text-text-primary uppercase tracking-wider mb-2">
+            Post Body / Markdown Content
+          </label>
+          <MarkdownEditor
+            value={content}
+            onChange={(val) => {
+              setContent(val);
+              if (errors.content) setFieldError('content', null);
+            }}
+            error={errors.content}
+          />
+        </section>
+
+        {/* Media Attachment Manager (Images & Albums) */}
+        <section aria-label="Media Attachments">
+          <MediaAttachmentManager
+            mediaList={mediaList}
+            onAddMediaItem={addMediaItem}
+            onAddMultipleMedia={addMultipleMedia}
+            onRemoveMediaItem={removeMediaItem}
+            onReorderMediaItem={reorderMediaItem}
+            onSetCover={setCoverMedia}
+            error={errors.imageUrl}
+            disabled={submitting || (isLiveMode && status === 'unauthenticated')}
+          />
+        </section>
+
+        {/* Destination URL (optional link) */}
+        <div>
+          <Input
+            id="destination-url"
+            label="Destination Link (optional)"
+            type="url"
+            placeholder="https://example.com/project-or-article"
+            value={destinationUrl}
+            onChange={(e) => {
+              setDestinationUrl(e.target.value);
+              if (errors.destinationUrl) setFieldError('destinationUrl', null);
+            }}
+            error={errors.destinationUrl}
+            disabled={submitting || (isLiveMode && status === 'unauthenticated')}
+            leftIcon={<Globe size={15} />}
+          />
+        </div>
 
         {/* Tags / Flair input */}
         <TagInput
           tags={tags}
           onAddTag={addTag}
           onRemoveTag={removeTag}
+          error={errors.tags}
         />
 
         {/* Informational Persistence Notice */}
@@ -469,7 +359,7 @@ export function CreatePostPage() {
           <Button
             type="submit"
             variant="primary"
-            disabled={submitting || Boolean(rateLimitSeconds && rateLimitSeconds > 0) || (isLiveMode && status === 'unauthenticated')}
+            disabled={submitting || !hasContent || Boolean(rateLimitSeconds && rateLimitSeconds > 0) || (isLiveMode && status === 'unauthenticated')}
             leftIcon={submitting || (rateLimitSeconds && rateLimitSeconds > 0) ? undefined : <Sparkles size={15} />}
             className="w-full sm:w-auto min-w-[160px] font-semibold"
           >
@@ -479,32 +369,11 @@ export function CreatePostPage() {
               ? 'Publishing...'
               : (isLiveMode && status === 'unauthenticated')
               ? 'Sign In to Publish'
-              : postType === 'discussion'
-              ? 'Publish Discussion'
-              : 'Publish Visual Pin'}
+              : 'Publish Post'}
           </Button>
         </div>
       </form>
-      <aside className="xl:sticky xl:top-6" aria-label="Live post preview">
-        {postType === 'visual' ? (
-          <PinPreview
-            imageUrl={imageLoaded && !imageError ? imageUrl : ''}
-            title={title}
-            caption={content}
-            communityName={selectedCommunityName}
-            tags={tags}
-            imageAlt={imageAlt}
-          />
-        ) : (
-          <DiscussionPreview
-            title={title}
-            content={content}
-            communityName={selectedCommunityName}
-            tags={tags}
-          />
-        )}
-      </aside>
-      </div>
     </div>
   );
 }
+export default CreatePostPage;

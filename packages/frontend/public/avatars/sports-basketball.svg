@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="100%" height="100%">
+  <circle cx="80" cy="80" r="76" fill="#18181b" stroke="#f97316" stroke-width="3" stroke-opacity="0.4"/>
+  <!-- Basketball -->
+  <circle cx="80" cy="80" r="48" fill="#ea580c" stroke="#18181b" stroke-width="3"/>
+  <!-- Seams -->
+  <line x1="32" y1="80" x2="128" y2="80" stroke="#18181b" stroke-width="3"/>
+  <line x1="80" y1="32" x2="80" y2="128" stroke="#18181b" stroke-width="3"/>
+  <path d="M46 46 C66 66 66 94 46 114" fill="none" stroke="#18181b" stroke-width="3"/>
+  <path d="M114 46 C94 66 94 94 114 114" fill="none" stroke="#18181b" stroke-width="3"/>
+</svg>

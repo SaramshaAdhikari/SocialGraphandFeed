@@ -2,6 +2,7 @@ import type { Db, Filter, Sort, ClientSession } from 'mongodb';
 import {
   AppError,
   type CreatePostInput,
+  type UpdatePostInput,
   type PostCard,
   type CommentNode,
   type CreateCommentInput,
@@ -142,13 +143,44 @@ export class PostService {
         ? finalTags[0]
         : undefined;
 
+      if (input.media && input.media.length > 10) {
+        throw AppError.badRequest('A post cannot contain more than 10 images.');
+      }
+
+      const hasText = Boolean(input.title?.trim() || input.content?.trim() || input.caption?.trim());
+      const hasMedia = Boolean(input.media && input.media.length > 0);
+      if (!hasText && !hasMedia) {
+        throw AppError.badRequest('Post must contain either text content or media attachments.');
+      }
+
+      let postType: 'visual' | 'discussion';
+      if (input.post_type) {
+        postType = input.post_type;
+      } else if (hasMedia) {
+        postType = 'visual';
+      } else {
+        postType = 'discussion';
+      }
+
+      let finalTitle = input.title?.trim();
+      if (!finalTitle) {
+        const text = input.content?.trim() || input.caption?.trim();
+        if (text) {
+          finalTitle = text.slice(0, 80).split('\n')[0].trim();
+        } else if (hasMedia) {
+          finalTitle = 'Photo';
+        } else {
+          finalTitle = 'Untitled Post';
+        }
+      }
+
       const postDoc: PostDoc = {
         _id: `post_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        post_type: input.post_type,
+        post_type: postType,
         author_id: authorId,
-        title: input.title,
+        title: finalTitle || (hasMedia ? 'Photo' : 'Untitled Post'),
         content: input.content,
-        caption: input.caption || (input.post_type === 'visual' ? input.content : undefined),
+        caption: input.caption || input.content || undefined,
         community_id: input.community_id,
         community_slug: communitySlug,
         collection_id: input.collection_id,
@@ -782,4 +814,94 @@ export class PostService {
 
     return { success: true, comment_id: commentId };
   }
+
+  public async updatePost(
+    postId: string,
+    requestingUserId: string,
+    input: UpdatePostInput,
+    isAdmin = false
+  ): Promise<PostCard> {
+    const postsCol = this.db.collection<PostDoc>(COLLECTIONS.POSTS);
+    const post = await postsCol.findOne({ _id: postId });
+    if (!post) {
+      throw AppError.notFound(`Post with ID ${postId} was not found`);
+    }
+
+    if (post.author_id !== requestingUserId && !isAdmin) {
+      throw AppError.forbidden('You do not have permission to edit this post');
+    }
+
+    const updateFields: any = {
+      updated_at: new Date(),
+    };
+
+    if (input.title !== undefined) {
+      const trimmedTitle = input.title.trim();
+      if (post.post_type === 'discussion') {
+        if (trimmedTitle.length < 3) {
+          throw AppError.badRequest('Discussion post title must be at least 3 characters.');
+        }
+        if (trimmedTitle.length > 300) {
+          throw AppError.badRequest('Discussion post title cannot exceed 300 characters.');
+        }
+      } else if (post.post_type === 'visual') {
+        if (trimmedTitle.length > 150) {
+          throw AppError.badRequest('Visual post title cannot exceed 150 characters.');
+        }
+      }
+      updateFields.title = trimmedTitle;
+    }
+
+    if (input.content !== undefined && post.post_type === 'discussion') {
+      if (input.content.length > 40000) {
+        throw AppError.badRequest('Discussion content cannot exceed 40000 characters.');
+      }
+      updateFields.content = input.content;
+    }
+
+    if (input.caption !== undefined) {
+      if (input.caption.length > 1000) {
+        throw AppError.badRequest('Caption cannot exceed 1000 characters.');
+      }
+      updateFields.caption = input.caption;
+      if (post.post_type === 'visual') {
+        updateFields.content = input.caption;
+      }
+    }
+
+    if (input.media !== undefined) {
+      for (const m of input.media) {
+        if (!m.id || !m.url) {
+          throw AppError.badRequest('Each media attachment must have an id and valid url.');
+        }
+      }
+      updateFields.media = input.media;
+    }
+
+    if (input.destination_url !== undefined) {
+      if (input.destination_url.trim()) {
+        try {
+          const u = new URL(input.destination_url.trim());
+          if (!['http:', 'https:'].includes(u.protocol) || u.username || u.password) {
+            throw new Error();
+          }
+          updateFields.destination_url = input.destination_url.trim();
+        } catch {
+          throw AppError.badRequest('destination_url must be a valid http or https URL without credentials.');
+        }
+      } else {
+        updateFields.destination_url = undefined;
+      }
+    }
+
+    if (input.tags !== undefined) {
+      updateFields.tags = input.tags;
+    }
+
+    await postsCol.updateOne({ _id: postId }, { $set: updateFields });
+    await this.invalidatePostCache(postId);
+
+    return this.getPost(postId, requestingUserId);
+  }
+
 }

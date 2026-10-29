@@ -369,7 +369,7 @@ describe('Screen 7 — Create Post: UI Components & Authoring Workflow', () => {
 });
 
 describe('Screen 7 — Create Post: Page & Navigation Integration', () => {
-  it('13. CreatePostPage renders full composer experience with all sections', () => {
+    it('13. CreatePostPage renders unified composer experience with all sections', () => {
     const html = renderToString(
       <ThemeProvider>
         <RouterProvider initialPath="/create">
@@ -380,12 +380,11 @@ describe('Screen 7 — Create Post: Page & Navigation Integration', () => {
 
     expect(html).toContain('create-post-page');
     expect(html).toContain('Create Post');
-    expect(html).toContain('Discussion Post');
-    expect(html).toContain('Visual Pin');
-    expect(html).toContain('Discussion Title');
-    expect(html).toContain('Discussion Body');
+    expect(html).toContain('Title (optional for photos)');
+    expect(html).toContain('Post Body / Markdown Content');
+    expect(html).toContain('Media Attachments');
     expect(html).toContain('Select Destination Community');
-    expect(html).toContain('Publish Discussion');
+    expect(html).toContain('Publish Post');
     expect(html).toMatch(/Live Database Persistence|In-Memory Demonstration Persistence/);
   });
 
@@ -621,9 +620,9 @@ describe('Screen 7 — Create Post: Live Mode Restrictions & Field Preservation'
     );
 
     // Initial state has no error banner
-    expect(html).not.toContain('rate-limit-banner');
+        expect(html).not.toContain('rate-limit-banner');
     expect(html).toContain('Create Post');
-    expect(html).toContain('Publish Discussion');
+    expect(html).toContain('Publish Post');
   });
 
   it('26. LiveClient sets Idempotency-Key request header when provided', async () => {

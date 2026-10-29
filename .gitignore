@@ -49,3 +49,68 @@ packages/frontend/vite.config.d.ts
 # Local Database and Cache dumps
 dump.rdb
 *.rdb
+
+# Uploaded media in local dev
+packages/backend/public/uploads/*
+!packages/backend/public/uploads/.gitkeep
+
+# Database backups
+backups/
+scripts/.session_token.json
+
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary migration & test run artifacts
+scripts/.media_backup_*.json
+scripts/.posts_needing_replacement.json
+artifacts/
+
+# Historical milestone sprint reports (excluded from handover)
+phase_d_acceptance_audit_report.md
+phase_e_completion_report.md
+phase_f_completion_report.md
+phase_fgh_combined_audit_report.md
+phase_g_completion_report.md
+phase_h_completion_report.md
+phase_i1_visual_transformation_report.md
+phase_i_ui_ux_completion_report.md
+
+# Transitional scratch & diagnostic scripts (excluded from handover)
+scripts/add_*.mjs
+scripts/analyze_duplicates.mjs
+scripts/audit_media_detailed.mjs
+scripts/build_curated_media_plan.mjs
+scripts/capture_final_verification_suite.py
+scripts/capture_graph_screens.py
+scripts/capture_modal_*.py
+scripts/capture_phase_*.py
+scripts/check_follows.mjs
+scripts/check_media_shapes.mjs
+scripts/create_dev_session.mjs
+scripts/curate_media_replacements.mjs
+scripts/debug_page.py
+scripts/fix_*.mjs
+scripts/insert_patch_post_route.mjs
+scripts/inspect_current_messaging.py
+scripts/inspect_modal.py
+scripts/patch_*.mjs
+scripts/regex_mock_metrics.mjs
+scripts/resolve_remaining_duplicates.mjs
+scripts/test_graph_api.mjs
+scripts/test_read.mjs
+scripts/update_*.mjs
+scripts/verify_and_capture_graph_polish.py
+scripts/verify_e2e_workflows.py
+scripts/verify_phase_2b2_live.mjs
+scripts/verify_phase_2b3_live.mjs
+scripts/verify_phase_e1_live.mjs
+scripts/verify_phase_e3_live.mjs
+scripts/verify_phase_e4_live.mjs
+scripts/verify_phase_f1_integrity.mjs
+scripts/verify_phase_f2_integrity.mjs
+scripts/verify_phase_f7_media_ui.py
+scripts/verify_responsive_viewports.py

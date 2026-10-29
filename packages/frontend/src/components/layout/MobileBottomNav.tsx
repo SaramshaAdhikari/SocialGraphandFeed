@@ -18,7 +18,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-14 bg-surface-card/95 backdrop-blur-md border-t border-border px-2 flex items-center justify-around select-none transition-colors"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-canvas/90 backdrop-blur-lg border-t border-border/40 px-2 pb-[env(safe-area-inset-bottom)] flex items-center justify-around select-none transition-colors"
       aria-label="Mobile Navigation"
     >
       {items.map((item) => {
@@ -35,11 +35,14 @@ export function MobileBottomNav() {
             to={item.to}
             exact={item.exact}
             aria-label={item.label}
-            className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-              isActive ? 'text-primary font-bold' : 'text-text-muted hover:text-text-primary'
+            aria-current={isActive ? 'page' : undefined}
+            className={`flex flex-col items-center justify-center min-w-[48px] min-h-[44px] px-2 py-1 rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary ${
+              isActive
+                ? 'text-text-primary font-bold'
+                : 'text-text-muted hover:text-text-primary active:scale-95'
             }`}
           >
-            <Icon size={22} className={isActive ? 'stroke-[2.5px]' : 'stroke-2'} />
+            <Icon size={21} className={isActive ? 'stroke-[2.5px] text-text-primary' : 'stroke-[1.8px] text-text-muted'} />
             <span className="text-[10px] font-medium mt-0.5">{item.label}</span>
           </Link>
         );

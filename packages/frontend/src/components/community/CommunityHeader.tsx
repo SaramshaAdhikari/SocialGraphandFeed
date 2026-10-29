@@ -29,7 +29,7 @@ export function CommunityHeader({
       className={`rounded-3xl border border-border bg-surface-card overflow-hidden shadow-xs mb-6 transition-colors ${className}`}
     >
       {/* Community Banner Image with Deep Radial Backing */}
-      <div className="relative h-32 sm:h-44 md:h-52 w-full bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 overflow-hidden">
+      <div className="relative h-32 sm:h-44 md:h-52 w-full bg-gradient-to-r from-neutral-900 via-neutral-950 to-neutral-900 overflow-hidden">
         {community.banner_url && !bannerError ? (
           <img
             src={community.banner_url}
@@ -38,7 +38,7 @@ export function CommunityHeader({
             className="w-full h-full object-cover object-center"
           />
         ) : (
-          <div className="w-full h-full opacity-30 bg-[radial-gradient(#818cf8_1px,transparent_1px)] [background-size:16px_16px]" />
+          <div className="w-full h-full opacity-30 bg-[radial-gradient(rgba(255,255,255,0.2)_1px,transparent_1px)] [background-size:16px_16px]" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
       </div>

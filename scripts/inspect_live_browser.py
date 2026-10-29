@@ -1,8 +1,9 @@
+from browser_finder import get_browser_exe
 import subprocess, time, json, urllib.request, base64
 import websocket
 
 def inspect():
-    edge_exe = r'C:\Program Files (x86)\Microsoft\EdgeCore\155.0.4283.62\msedge.exe'
+    edge_exe = get_browser_exe()
     user_data = r'C:\Users\Dell\AppData\Local\Temp\edge_cdp_profile'
     proc = subprocess.Popen([
         edge_exe,

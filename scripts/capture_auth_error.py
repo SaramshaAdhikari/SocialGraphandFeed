@@ -1,7 +1,8 @@
 import subprocess, time, json, urllib.request, base64, os
 import websocket
 
-EDGE_EXE = r'C:\Program Files (x86)\Microsoft\EdgeCore\155.0.4283.62\msedge.exe'
+from browser_finder import get_browser_exe
+EDGE_EXE = get_browser_exe()
 USER_DATA = r'C:\Users\Dell\AppData\Local\Temp\edge_clean_auth'
 ARTIFACT_DIR = r'C:\Users\Dell\.gemini\antigravity\brain\851dd127-77a7-4703-88a9-94e5fc499c2f'
 

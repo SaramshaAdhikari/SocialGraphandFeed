@@ -1,7 +1,8 @@
+from browser_finder import get_browser_exe
 import urllib.request, json, websocket, time, subprocess
 
 proc = subprocess.Popen([
-    r'C:\Program Files (x86)\Microsoft\EdgeCore\155.0.4283.62\msedge.exe',
+    get_browser_exe(),
     '--headless', '--disable-gpu', '--remote-debugging-port=9222',
     '--remote-allow-origins=*', '--user-data-dir=C:\\Users\\Dell\\AppData\\Local\\Temp\\edge_rail_diag2',
     '--window-size=1440,900', 'http://localhost:3000/'

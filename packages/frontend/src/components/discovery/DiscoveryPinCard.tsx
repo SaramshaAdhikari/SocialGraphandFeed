@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { VisualPinCard } from '@socialgraph/shared';
-import { Heart, Bookmark, Share2, Check, ImageOff } from 'lucide-react';
+import { Heart, Bookmark, Share2, Check, ImageOff, Layers } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { Link } from '../../router/Router';
 import { usePostModal } from '../../context/PostModalContext';
@@ -100,6 +100,17 @@ export function DiscoveryPinCard({
             </div>
           )}
         </Link>
+
+        {/* Album Indicator Badge */}
+        {pin.media_list && pin.media_list.length > 1 && (
+          <div
+            data-testid="album-indicator"
+            className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-xs text-[10px] font-semibold text-white flex items-center gap-1 shadow-xs pointer-events-none"
+          >
+            <Layers size={12} />
+            <span>1/{pin.media_list.length}</span>
+          </div>
+        )}
 
         {/* Floating Quick Save Button */}
         <button

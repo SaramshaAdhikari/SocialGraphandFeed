@@ -14,16 +14,41 @@ import { calculateHotScore } from '../utils/pagination.js';
 import { connectMongo, disconnectMongo, getDb } from './mongo.js';
 import { ensureIndexes } from './indexes.js';
 import { runInTransaction } from './transaction.js';
+import { config } from '../config/env.js';
+import {
+  expandedPersonas,
+  expandedCommunities,
+  expandedPosts,
+  expandedComments,
+  expandedFollows,
+  expandedMemberships,
+  expandedVotes,
+  expandedSaves,
+} from './fixtures/expandedDataset.js';
+
 
 export const CORE_SEED_USER_IDS = ['usr_0', 'usr_1', 'usr_2', 'usr_3', 'usr_4'];
 
-export async function seedDatabase(db: Db): Promise<{
+export async function seedDatabase(
+  db: Db,
+  options: { mode?: 'baseline' | 'expanded' } = {}
+): Promise<{
   usersCount: number;
   postsCount: number;
   commentsCount: number;
   followsCount: number;
   communitiesCount: number;
 }> {
+  // Programmatic Atlas seed safeguard
+  if (config.MONGODB_URI && (config.MONGODB_URI.includes('.mongodb.net') || config.MONGODB_URI.startsWith('mongodb+srv:'))) {
+    const allowAtlas = process.argv.includes('--allow-atlas-seed') || process.env.ALLOW_ATLAS_SEED === 'true';
+    if (!allowAtlas) {
+      throw new Error(
+        'CRITICAL SEED SAFEGUARD: Programmatic database seeding attempted against remote MongoDB Atlas cluster. ' +
+        'Refusing to seed shared database without explicit --allow-atlas-seed or ALLOW_ATLAS_SEED=true.'
+      );
+    }
+  }
   await ensureIndexes(db);
 
   const usersCol = db.collection<UserDoc>(COLLECTIONS.USERS);
@@ -48,7 +73,7 @@ export async function seedDatabase(db: Db): Promise<{
       display_name: 'Alex Rivera',
       avatar_url: '/avatars/alex-dev.svg',
       is_verified: true,
-      bio: 'feed engineering & distributed graph nerd • tinkering with fastify and redis • fueled by pour-over coffee and good typography',
+      bio: 'distributed systems & web perf • tinkering with redis & fastify • fueled by pour-overs and good typography',
       banner_url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200',
       website: '/sites/alex-dev/',
       followers_count: 418,
@@ -63,7 +88,7 @@ export async function seedDatabase(db: Db): Promise<{
       display_name: 'Lucas Thorne',
       avatar_url: '/avatars/lucas-t.svg',
       is_verified: true,
-      bio: 'Distributed systems researcher & systems engineer • trying to build consensus protocols so my pager doesn’t wake me at 3am • occasionally building acoustic guitars',
+      bio: 'consensus protocols & distributed tracing • building acoustic guitars in my spare time',
       banner_url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1200',
       followers_count: 862,
       following_count: 314,
@@ -77,7 +102,7 @@ export async function seedDatabase(db: Db): Promise<{
       display_name: 'Elena Rostova',
       avatar_url: '/avatars/elena-arch.svg',
       is_verified: true,
-      bio: 'architectural & industrial photographer roaming around brutalist structures, concrete halls, and compute clusters • hasselblad 500c/m • berlin',
+      bio: 'architectural & brutalist photography • hasselblad 500c/m • berlin',
       banner_url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200',
       website: '/sites/elena-photo/',
       followers_count: 1245,
@@ -92,7 +117,7 @@ export async function seedDatabase(db: Db): Promise<{
       display_name: 'Alec Mercer',
       avatar_url: '/avatars/alec-m.svg',
       is_verified: true,
-      bio: 'Staff SRE & Linux kernel aficionado • writing postmortems so you don’t have to • ebpf, cache invalidation, and mechanical keyboards',
+      bio: 'linux kernel debugging & sre • mechanical keyboards & ebpf',
       banner_url: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1200',
       followers_count: 673,
       following_count: 198,
@@ -106,7 +131,7 @@ export async function seedDatabase(db: Db): Promise<{
       display_name: 'Sara Chen',
       avatar_url: '/avatars/sara-code.svg',
       is_verified: true,
-      bio: 'Design systems architect & UI engineering lead • obsessing over CSS tokens, subgrid alignments, and web accessibility • tea enthusiast',
+      bio: 'design systems & web accessibility • obsessing over css tokens and tea',
       banner_url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=1200',
       website: '/sites/sara-design/',
       followers_count: 1530,
@@ -117,16 +142,16 @@ export async function seedDatabase(db: Db): Promise<{
     },
   ];
 
-  // 15 Distinct Fictional Personas replacing synthetic placeholder profiles
+  // 15 Distinct Fictional Personas with non-face vector avatars
   const extendedPersonas: UserDoc[] = [
     {
       _id: 'usr_5',
       username: 'kenji_sys',
       display_name: 'Kenji Sato',
-      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
+      avatar_url: '/avatars/code-terminal.svg',
       banner_url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200',
       is_verified: true,
-      bio: 'Robotics engineer & embedded Linux hacker • RTOS, CAN bus telemetry, and precision motor control • building rover prototypes',
+      bio: 'embedded linux & robotics • building rover prototypes in tokyo',
       followers_count: 0,
       following_count: 0,
       posts_count: 0,
@@ -137,10 +162,10 @@ export async function seedDatabase(db: Db): Promise<{
       _id: 'usr_6',
       username: 'maya_pixel',
       display_name: 'Maya Lin',
-      avatar_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200',
+      avatar_url: '/avatars/abstract-bauhaus.svg',
       banner_url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200',
       is_verified: true,
-      bio: 'Frontend performance engineer & visual artist • profiling WebGL shaders and canvas pipelines • exploring color theory in interactive fiction',
+      bio: 'webgl shaders & interactive graphics • generative color studies',
       followers_count: 0,
       following_count: 0,
       posts_count: 0,
@@ -151,10 +176,10 @@ export async function seedDatabase(db: Db): Promise<{
       _id: 'usr_7',
       username: 'david_retro',
       display_name: 'David Okafor',
-      avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
+      avatar_url: '/avatars/pixel-gameboy.svg',
       banner_url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1200',
       is_verified: false,
-      bio: 'Retro-computing preservationist • restoring Motorola 68000 workstations, writing Forth interpreters, and cataloging 90s computing ephemera',
+      bio: 'restoring 90s workstations & writing forth interpreters • lagos',
       followers_count: 0,
       following_count: 0,
       posts_count: 0,
@@ -165,10 +190,10 @@ export async function seedDatabase(db: Db): Promise<{
       _id: 'usr_8',
       username: 'chloe_lens',
       display_name: 'Chloe Desjardins',
-      avatar_url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200',
+      avatar_url: '/avatars/gear-camera.svg',
       banner_url: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=1200',
       is_verified: true,
-      bio: 'Landscape & urban night photographer based in Montreal • chasing architectural symmetry, neon reflections, and low-light exposure',
+      bio: 'night photography & neon reflections • montreal',
       website: 'https://chloe-photos.example.com',
       followers_count: 0,
       following_count: 0,
@@ -180,10 +205,10 @@ export async function seedDatabase(db: Db): Promise<{
       _id: 'usr_9',
       username: 'tariq_arch',
       display_name: 'Tariq Mansoor',
-      avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
+      avatar_url: '/avatars/nature-mountain.svg',
       banner_url: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1200',
       is_verified: true,
-      bio: 'Principal backend architect working on event-sourced financial ledgers • CQRS patterns, idempotent consumers, and immutable audit logs',
+      bio: 'event sourcing & immutable ledgers • weekend trail hiking in dubai',
       followers_count: 0,
       following_count: 0,
       posts_count: 0,
@@ -194,10 +219,10 @@ export async function seedDatabase(db: Db): Promise<{
       _id: 'usr_10',
       username: 'priya_ui',
       display_name: 'Priya Sharma',
-      avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200',
+      avatar_url: '/avatars/art-palette.svg',
       banner_url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=1200',
       is_verified: true,
-      bio: 'Accessibility specialist & component architect • screen readers, ARIA authoring practices, and high-contrast design token pipelines',
+      bio: 'design tokens & screen reader accessibility • watercolor sketching • delhi',
       followers_count: 0,
       following_count: 0,
       posts_count: 0,
@@ -206,12 +231,12 @@ export async function seedDatabase(db: Db): Promise<{
     },
     {
       _id: 'usr_11',
-      username: 'jonas_kernel',
-      display_name: 'Jonas Lindqvist',
-      avatar_url: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200',
+      username: 'nullcat_404',
+      display_name: 'Devin Bell',
+      avatar_url: '/avatars/mascot-cat.svg',
       banner_url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200',
       is_verified: false,
-      bio: 'Kernel performance & storage engineer • NVMe-oF, io_uring optimizations, and low-latency filesystem benchmarking in Nordic datacenters',
+      bio: 'self-hosting on old thinkpads, cat dad, coffee addict. seattle',
       followers_count: 0,
       following_count: 0,
       posts_count: 0,
@@ -222,10 +247,10 @@ export async function seedDatabase(db: Db): Promise<{
       _id: 'usr_12',
       username: 'aoi_manga',
       display_name: 'Aoi Tanaka',
-      avatar_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200',
+      avatar_url: '/avatars/art-manga-pen.svg',
       banner_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200',
       is_verified: false,
-      bio: 'Storyboarding artist & visual storyteller • deconstructing panel composition in seinen manga, perspective grids, and mechanical design aesthetics',
+      bio: 'manga paneling & visual storytelling • osaka',
       followers_count: 0,
       following_count: 0,
       posts_count: 0,
@@ -236,10 +261,10 @@ export async function seedDatabase(db: Db): Promise<{
       _id: 'usr_13',
       username: 'marcus_v',
       display_name: 'Marcus Vance',
-      avatar_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200',
+      avatar_url: '/avatars/gear-synth.svg',
       banner_url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1200',
       is_verified: false,
-      bio: 'Cloud infrastructure architect & compiler enthusiast • LLVM IR, deterministic build systems, and zero-trust service mesh networking',
+      bio: 'modular synth patches & analog sound design • atlanta',
       followers_count: 0,
       following_count: 0,
       posts_count: 0,
@@ -248,12 +273,12 @@ export async function seedDatabase(db: Db): Promise<{
     },
     {
       _id: 'usr_14',
-      username: 'sofia_proto',
-      display_name: 'Sofia Gomez',
-      avatar_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200',
+      username: 'chai_exe',
+      display_name: 'Chirag Mehta',
+      avatar_url: '/avatars/food-chai.svg',
       banner_url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=1200',
       is_verified: false,
-      bio: 'Interaction designer & creative technologist • micro-interactions, haptic feedback models, and fluid canvas animations in React',
+      bio: 'undergrad cs @ bits pilani. tinkering with side projects & drinking ginger chai',
       followers_count: 0,
       following_count: 0,
       posts_count: 0,
@@ -262,12 +287,12 @@ export async function seedDatabase(db: Db): Promise<{
     },
     {
       _id: 'usr_15',
-      username: 'liam_ops',
-      display_name: 'Liam Gallagher',
-      avatar_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200',
+      username: 'civicafterdark',
+      display_name: 'Leo Santos',
+      avatar_url: '/avatars/gear-car.svg',
       banner_url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200',
       is_verified: false,
-      bio: 'Observability lead & telemetry architect • OpenTelemetry collector topologies, Prometheus cardinality reduction, and distributed tracing',
+      bio: 'ek9 civic hatch build, late night touge runs, track day telemetry. toronto',
       followers_count: 0,
       following_count: 0,
       posts_count: 0,
@@ -278,10 +303,10 @@ export async function seedDatabase(db: Db): Promise<{
       _id: 'usr_16',
       username: 'nina_cam',
       display_name: 'Nina Kowalski',
-      avatar_url: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200',
+      avatar_url: '/avatars/gear-camera.svg',
       banner_url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
       is_verified: false,
-      bio: 'Documentary photographer & industrial historian • photographing decommissioned hydroelectric dams, railway bridges, and steel foundries',
+      bio: 'documentary film photography & industrial architecture • krakow',
       followers_count: 0,
       following_count: 0,
       posts_count: 0,
@@ -290,12 +315,12 @@ export async function seedDatabase(db: Db): Promise<{
     },
     {
       _id: 'usr_17',
-      username: 'arthur_p',
-      display_name: 'Arthur Pendelton',
-      avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
+      username: 'pixelmoth',
+      display_name: 'Faye Zhao',
+      avatar_url: '/avatars/pixel-moth.svg',
       banner_url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200',
       is_verified: false,
-      bio: 'Robotics software engineer working on SLAM algorithms, LiDAR point cloud processing, and ROS 2 navigation packages',
+      bio: 'pixel art & cozy games. drawing little critters and making tiny pico-8 carts. vancouver',
       followers_count: 0,
       following_count: 0,
       posts_count: 0,
@@ -306,10 +331,10 @@ export async function seedDatabase(db: Db): Promise<{
       _id: 'usr_18',
       username: 'hana_dev',
       display_name: 'Hana Park',
-      avatar_url: 'https://images.unsplash.com/photo-1548142813-c348350df52b?w=200',
+      avatar_url: '/avatars/mascot-frog.svg',
       banner_url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=1200',
       is_verified: true,
-      bio: 'TypeScript compiler plugin author & frontend systems engineer • monorepo tooling, AST transforms, and strict type generation at scale',
+      bio: 'frontend tooling & monorepos • seoul',
       followers_count: 0,
       following_count: 0,
       posts_count: 0,
@@ -318,12 +343,12 @@ export async function seedDatabase(db: Db): Promise<{
     },
     {
       _id: 'usr_19',
-      username: 'felix_b',
-      display_name: 'Felix Baumgartner',
-      avatar_url: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200',
+      username: 'fourthquarter',
+      display_name: 'Darius Hall',
+      avatar_url: '/avatars/sports-basketball.svg',
       banner_url: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1200',
       is_verified: false,
-      bio: 'Database internals engineer • B-tree concurrency, WAL write amplification, and LSM-tree compaction heuristics in persistent key-value stores',
+      bio: 'rec league point guard, 90s basketball jerseys, sneaker rotation. chicago',
       followers_count: 0,
       following_count: 0,
       posts_count: 0,
@@ -333,10 +358,13 @@ export async function seedDatabase(db: Db): Promise<{
   ];
 
   const allUsers = [...coreUsers, ...extendedPersonas];
+  const isExpanded = (options.mode ?? process.env.SEED_MODE ?? 'expanded') === 'expanded';
+  const finalUsers = isExpanded ? [...allUsers, ...expandedPersonas] : allUsers;
+
   // Fixture users are deterministically inserted or updated.
   // In particular, usr_0 (alex_dev) preserves custom authentication hashes,
   // admin roles, and developer profile edits across reseeds.
-  for (const user of allUsers) {
+  for (const user of finalUsers) {
     const byId = await usersCol.findOne({ _id: user._id }, { session });
     if (!byId) {
       const usernameOwner = await usersCol.findOne({ username: user.username }, { session });
@@ -433,8 +461,10 @@ export async function seedDatabase(db: Db): Promise<{
       updated_at: new Date('2026-01-09T00:00:00.000Z'),
     },
   ];
-  await commsCol.deleteMany({ _id: { $in: communities.map((c) => c._id) } }, { session });
-  await commsCol.insertMany(communities, { session });
+  const finalComms = isExpanded ? [...communities, ...expandedCommunities] : communities;
+  const allKnownCommIds = [...communities, ...expandedCommunities].map((c) => c._id);
+  await commsCol.deleteMany({ _id: { $in: allKnownCommIds } }, { session });
+  await commsCol.insertMany(finalComms, { session });
 
   // 3. Posts (Discussions and Visual Pins)
   const posts: PostDoc[] = [
@@ -736,9 +766,11 @@ export async function seedDatabase(db: Db): Promise<{
       updated_at: new Date('2026-10-14T12:00:00.000Z'),
     },
   ];
+  const finalPosts = isExpanded ? [...posts, ...expandedPosts] : posts;
 
-  await postsCol.deleteMany({ _id: { $in: posts.map((p) => p._id) } }, { session });
-  await postsCol.insertMany(posts, { session });
+  const allKnownPostIds = [...posts, ...expandedPosts].map((p) => p._id);
+  await postsCol.deleteMany({ _id: { $in: allKnownPostIds } }, { session });
+  await postsCol.insertMany(finalPosts, { session });
 
   // 4. Comments (Hierarchical)
   const comments: CommentDoc[] = [
@@ -853,17 +885,16 @@ export async function seedDatabase(db: Db): Promise<{
       updated_at: new Date('2026-10-14T14:40:00.000Z'),
     },
   ];
-  await commentsCol.deleteMany({ _id: { $in: comments.map((c) => c._id) } }, { session });
-  await commentsCol.insertMany(comments, { session });
+  const finalComments = isExpanded ? [...comments, ...expandedComments] : comments;
+  const allKnownCommentIds = [...comments, ...expandedComments].map((c) => c._id);
+  await commentsCol.deleteMany({ _id: { $in: allKnownCommentIds } }, { session });
+  await commentsCol.insertMany(finalComments, { session });
 
   // 5. Follow Edges
   const follows: FollowDoc[] = [
     { _id: 'flw_0_1', follower_id: 'usr_0', target_user_id: 'usr_1', created_at: new Date() },
     { _id: 'flw_0_2', follower_id: 'usr_0', target_user_id: 'usr_2', created_at: new Date() },
     { _id: 'flw_0_3', follower_id: 'usr_0', target_user_id: 'usr_3', created_at: new Date() },
-    { _id: 'flw_0_4', follower_id: 'usr_0', target_user_id: 'usr_4', created_at: new Date() },
-    { _id: 'flw_0_9', follower_id: 'usr_0', target_user_id: 'usr_9', created_at: new Date() },
-    { _id: 'flw_0_10', follower_id: 'usr_0', target_user_id: 'usr_10', created_at: new Date() },
     { _id: 'flw_1_0', follower_id: 'usr_1', target_user_id: 'usr_0', created_at: new Date() },
     { _id: 'flw_1_2', follower_id: 'usr_1', target_user_id: 'usr_2', created_at: new Date() },
     { _id: 'flw_1_5', follower_id: 'usr_1', target_user_id: 'usr_5', created_at: new Date() },
@@ -875,23 +906,29 @@ export async function seedDatabase(db: Db): Promise<{
     { _id: 'flw_3_11', follower_id: 'usr_3', target_user_id: 'usr_11', created_at: new Date() },
     { _id: 'flw_4_6', follower_id: 'usr_4', target_user_id: 'usr_6', created_at: new Date() },
     { _id: 'flw_4_10', follower_id: 'usr_4', target_user_id: 'usr_10', created_at: new Date() },
+    { _id: 'flw_5_1', follower_id: 'usr_5', target_user_id: 'usr_1', created_at: new Date() },
     { _id: 'flw_5_7', follower_id: 'usr_5', target_user_id: 'usr_7', created_at: new Date() },
     { _id: 'flw_5_17', follower_id: 'usr_5', target_user_id: 'usr_17', created_at: new Date() },
     { _id: 'flw_6_12', follower_id: 'usr_6', target_user_id: 'usr_12', created_at: new Date() },
+    { _id: 'flw_7_9', follower_id: 'usr_7', target_user_id: 'usr_9', created_at: new Date() },
+    { _id: 'flw_7_10', follower_id: 'usr_7', target_user_id: 'usr_10', created_at: new Date() },
     { _id: 'flw_8_2', follower_id: 'usr_8', target_user_id: 'usr_2', created_at: new Date() },
     { _id: 'flw_9_13', follower_id: 'usr_9', target_user_id: 'usr_13', created_at: new Date() },
     { _id: 'flw_10_18', follower_id: 'usr_10', target_user_id: 'usr_18', created_at: new Date() },
+    { _id: 'flw_12_14', follower_id: 'usr_12', target_user_id: 'usr_14', created_at: new Date() },
     { _id: 'flw_18_14', follower_id: 'usr_18', target_user_id: 'usr_14', created_at: new Date() },
   ];
-  await followsCol.deleteMany({ _id: { $in: follows.map((f) => f._id) } }, { session });
-  await followsCol.insertMany(follows, { session });
+  const finalFollows = isExpanded ? [...follows, ...expandedFollows] : follows;
+  const allKnownFollowIds = [...follows, ...expandedFollows].map((f) => f._id);
+  await followsCol.deleteMany({ _id: { $in: allKnownFollowIds } }, { session });
+  await followsCol.insertMany(finalFollows, { session });
 
   // 6. Community Memberships
   const memberships: CommunityMembershipDoc[] = [
     // comm_systems (8 members)
     { _id: 'mbr_0_sys', user_id: 'usr_0', community_id: 'comm_systems', created_at: new Date() },
     { _id: 'mbr_1_sys', user_id: 'usr_1', community_id: 'comm_systems', created_at: new Date() },
-    { _id: 'mbr_2_sys', user_id: 'usr_2', community_id: 'comm_systems', created_at: new Date() },
+    { _id: 'mbr_6_sys', user_id: 'usr_6', community_id: 'comm_systems', created_at: new Date() },
     { _id: 'mbr_5_sys', user_id: 'usr_5', community_id: 'comm_systems', created_at: new Date() },
     { _id: 'mbr_7_sys', user_id: 'usr_7', community_id: 'comm_systems', created_at: new Date() },
     { _id: 'mbr_11_sys', user_id: 'usr_11', community_id: 'comm_systems', created_at: new Date() },
@@ -931,8 +968,10 @@ export async function seedDatabase(db: Db): Promise<{
     { _id: 'mbr_12_des', user_id: 'usr_12', community_id: 'comm_design', created_at: new Date() },
     { _id: 'mbr_14_des', user_id: 'usr_14', community_id: 'comm_design', created_at: new Date() },
   ];
-  await mbrsCol.deleteMany({ _id: { $in: memberships.map((m) => m._id) } }, { session });
-  await mbrsCol.insertMany(memberships, { session });
+  const finalMemberships = isExpanded ? [...memberships, ...expandedMemberships] : memberships;
+  const allKnownMbrIds = [...memberships, ...expandedMemberships].map((m) => m._id);
+  await mbrsCol.deleteMany({ _id: { $in: allKnownMbrIds } }, { session });
+  await mbrsCol.insertMany(finalMemberships, { session });
 
   // 7. Votes and Saves
   const votes: PostVoteDoc[] = [
@@ -955,8 +994,10 @@ export async function seedDatabase(db: Db): Promise<{
     { _id: 'vote_113_0', post_id: 'post_113', user_id: 'usr_0', direction: 1, created_at: new Date(), updated_at: new Date() },
     { _id: 'vote_114_0', post_id: 'post_114', user_id: 'usr_0', direction: 1, created_at: new Date(), updated_at: new Date() },
   ];
-  await votesCol.deleteMany({ _id: { $in: votes.map((v) => v._id) } }, { session });
-  await votesCol.insertMany(votes, { session });
+  const finalVotes = isExpanded ? [...votes, ...expandedVotes] : votes;
+  const allKnownVoteIds = [...votes, ...expandedVotes].map((v) => v._id);
+  await votesCol.deleteMany({ _id: { $in: allKnownVoteIds } }, { session });
+  await votesCol.insertMany(finalVotes, { session });
 
   const saves: PostSaveDoc[] = [
     { _id: 'save_102_0', post_id: 'post_102', user_id: 'usr_0', created_at: new Date() },
@@ -964,8 +1005,10 @@ export async function seedDatabase(db: Db): Promise<{
     { _id: 'save_107_0', post_id: 'post_107', user_id: 'usr_0', created_at: new Date() },
     { _id: 'save_109_0', post_id: 'post_109', user_id: 'usr_0', created_at: new Date() },
   ];
-  await savesCol.deleteMany({ _id: { $in: saves.map((s) => s._id) } }, { session });
-  await savesCol.insertMany(saves, { session });
+  const finalSaves = isExpanded ? [...saves, ...expandedSaves] : saves;
+  const allKnownSaveIds = [...saves, ...expandedSaves].map((s) => s._id);
+  await savesCol.deleteMany({ _id: { $in: allKnownSaveIds } }, { session });
+  await savesCol.insertMany(finalSaves, { session });
 
   // Fixture aggregates are derived from durable edges and records so displayed
   // counters and ranking scores never claim data that is absent from MongoDB.
@@ -981,19 +1024,19 @@ export async function seedDatabase(db: Db): Promise<{
   const memberCounts = await mbrsCol.aggregate<{ _id: string; count: number }>([
     { $group: { _id: '$community_id', count: { $sum: 1 } } },
   ], { session }).toArray();
-  for (const user of allUsers) {
+  for (const user of finalUsers) {
     await usersCol.updateOne({ _id: user._id }, { $set: {
       followers_count: followerCounts.find((item) => item._id === user._id)?.count ?? 0,
       following_count: followingCounts.find((item) => item._id === user._id)?.count ?? 0,
       posts_count: postCounts.find((item) => item._id === user._id)?.count ?? 0,
     } }, { session });
   }
-  for (const community of communities) {
+  for (const community of finalComms) {
     await commsCol.updateOne({ _id: community._id }, { $set: {
       members_count: memberCounts.find((item) => item._id === community._id)?.count ?? 0,
     } }, { session });
   }
-  for (const post of posts) {
+  for (const post of finalPosts) {
     const postVotes = await votesCol.find({ post_id: post._id }, { session }).toArray();
     const score = postVotes.reduce((total, vote) => total + vote.direction, 0);
     const commentsCount = await commentsCol.countDocuments({ post_id: post._id }, { session });
@@ -1005,11 +1048,11 @@ export async function seedDatabase(db: Db): Promise<{
   }
 
   return {
-    usersCount: allUsers.length,
-    postsCount: posts.length,
-    commentsCount: comments.length,
-    followsCount: follows.length,
-    communitiesCount: communities.length,
+    usersCount: finalUsers.length,
+    postsCount: finalPosts.length,
+    commentsCount: finalComments.length,
+    followsCount: finalFollows.length,
+    communitiesCount: finalComms.length,
   };
   });
 }
@@ -1018,6 +1061,25 @@ export async function seedDatabase(db: Db): Promise<{
 if (process.argv[1]?.endsWith('seed.ts') || process.argv[1]?.endsWith('seed.js')) {
   (async () => {
     try {
+      const isAtlas = config.MONGODB_URI.includes('.mongodb.net') || config.MONGODB_URI.startsWith('mongodb+srv:');
+      const allowAtlas = process.argv.includes('--allow-atlas-seed') || process.env.ALLOW_ATLAS_SEED === 'true';
+
+      if (isAtlas && !allowAtlas) {
+        const redactedTarget = config.MONGODB_URI.replace(/:([^:@]+)@/, ':***@');
+        console.error('\n============================================================');
+        console.error('CRITICAL SEED SAFEGUARD BLOCKED EXECUTION');
+        console.error('============================================================');
+        console.error('You are targeting a remote MongoDB Atlas database:');
+        console.error(`Target: ${redactedTarget}`);
+        console.error('Broad or unverified seeding against the shared team Atlas database');
+        console.error('is blocked by default to prevent accidental data loss or clobbering.');
+        console.error('If you genuinely intend to seed the shared Atlas database, re-run with:');
+        console.error('  npm run seed -- --allow-atlas-seed');
+        console.error('or set environment variable: ALLOW_ATLAS_SEED=true');
+        console.error('============================================================\n');
+        process.exit(1);
+      }
+
       console.log('Connecting to MongoDB for database seeding...');
       const { db } = await connectMongo();
       const stats = await seedDatabase(db);

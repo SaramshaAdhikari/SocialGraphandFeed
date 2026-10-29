@@ -83,7 +83,7 @@ export function DiscoverPage() {
           <button
             type="button"
             onClick={() => setToastMessage(null)}
-            className="ml-2 text-slate-400 hover:text-white"
+            className="ml-2 text-text-muted hover:text-text-primary transition-colors cursor-pointer"
           >
             <X size={14} />
           </button>

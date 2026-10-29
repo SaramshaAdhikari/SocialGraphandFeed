@@ -37,7 +37,7 @@ export function CommentTree({
             <span>Comments</span>
             <span className="text-sm font-normal text-text-muted">({count})</span>
             <span
-              className="text-[10px] font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-full"
+              className="text-[10px] font-medium text-text-muted bg-surface-subtle px-2 py-0.5 rounded-full"
               title="Comment votes are tracked in local session state pending backend persistence contract"
             >
               Votes: Session-Only
@@ -49,7 +49,7 @@ export function CommentTree({
         <div
           role="radiogroup"
           aria-label="Comment sorting"
-          className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-lg text-xs"
+          className="flex items-center gap-1 bg-surface-subtle p-1 rounded-lg text-xs"
         >
           <button
             type="button"
@@ -58,8 +58,8 @@ export function CommentTree({
             onClick={() => onSortChange('top')}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-semibold transition-colors ${
               sortOrder === 'top'
-                ? 'bg-white dark:bg-slate-700 text-primary shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-surface-card text-primary shadow-xs'
+                : 'text-text-muted hover:text-text-primary'
             }`}
           >
             <Flame size={12} />
@@ -73,8 +73,8 @@ export function CommentTree({
             onClick={() => onSortChange('new')}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-semibold transition-colors ${
               sortOrder === 'new'
-                ? 'bg-white dark:bg-slate-700 text-primary shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-surface-card text-primary shadow-xs'
+                : 'text-text-muted hover:text-text-primary'
             }`}
           >
             <Sparkles size={12} />
@@ -88,8 +88,8 @@ export function CommentTree({
             onClick={() => onSortChange('old')}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-semibold transition-colors ${
               sortOrder === 'old'
-                ? 'bg-white dark:bg-slate-700 text-primary shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-surface-card text-primary shadow-xs'
+                : 'text-text-muted hover:text-text-primary'
             }`}
           >
             <Clock size={12} />
@@ -113,13 +113,13 @@ export function CommentTree({
       {loading ? (
         <div className="space-y-4 pt-2" aria-label="Loading comments">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse space-y-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40">
+            <div key={i} className="animate-pulse space-y-2 p-3 rounded-xl bg-surface-subtle/50">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800" />
-                <div className="w-24 h-3 rounded bg-slate-200 dark:bg-slate-800" />
-                <div className="w-12 h-3 rounded bg-slate-200 dark:bg-slate-800" />
+                <div className="w-6 h-6 rounded-full bg-surface-elevated" />
+                <div className="w-24 h-3 rounded bg-surface-elevated" />
+                <div className="w-12 h-3 rounded bg-surface-elevated" />
               </div>
-              <div className="w-full h-12 rounded bg-slate-200 dark:bg-slate-800 pl-8" />
+              <div className="w-full h-12 rounded bg-surface-elevated pl-8" />
             </div>
           ))}
         </div>
@@ -128,16 +128,16 @@ export function CommentTree({
           data-testid="comments-empty-state"
           className="text-center py-10 px-4 rounded-xl border border-dashed border-border bg-surface-subtle/50"
         >
-          <MessageSquare size={32} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
-          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+          <MessageSquare size={32} className="mx-auto text-text-muted mb-2 opacity-50" />
+          <h4 className="text-sm font-semibold text-text-primary">
             No comments yet
           </h4>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+          <p className="text-xs text-text-muted mt-1 max-w-sm mx-auto">
             Be the first to share your thoughts, benchmarks, or war stories on this post.
           </p>
         </div>
       ) : (
-        <div className="space-y-4 pt-1 divide-y divide-slate-100 dark:divide-slate-800/60">
+        <div className="space-y-4 pt-1 divide-y divide-border/40">
           {comments.map((comment) => (
             <div key={comment.id} className="pt-3 first:pt-0">
               <CommentNodeItem

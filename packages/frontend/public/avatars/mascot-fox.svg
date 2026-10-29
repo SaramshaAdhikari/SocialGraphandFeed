@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="100%" height="100%">
+  <circle cx="80" cy="80" r="76" fill="#1c1917" stroke="#f97316" stroke-width="3" stroke-opacity="0.4"/>
+  <!-- Ears -->
+  <polygon points="34,75 42,26 76,64" fill="#ea580c"/>
+  <polygon points="40,68 46,35 68,60" fill="#292524"/>
+  <polygon points="126,75 118,26 84,64" fill="#ea580c"/>
+  <polygon points="120,68 114,35 92,60" fill="#292524"/>
+  <!-- Head polygon geometric -->
+  <polygon points="36,76 80,126 124,76 80,56" fill="#ea580c"/>
+  <!-- White cheeks -->
+  <polygon points="36,76 80,126 62,88" fill="#f5f5f4"/>
+  <polygon points="124,76 80,126 98,88" fill="#f5f5f4"/>
+  <!-- Eyes -->
+  <polygon points="56,76 70,82 58,84" fill="#1c1917"/>
+  <polygon points="104,76 90,82 102,84" fill="#1c1917"/>
+  <!-- Nose -->
+  <circle cx="80" cy="122" r="5" fill="#0c0a09"/>
+</svg>

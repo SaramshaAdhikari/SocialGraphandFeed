@@ -48,9 +48,9 @@ export function Avatar({ src, alt, size = 'md', className = '' }: AvatarProps) {
           loading="lazy"
         />
       ) : initials ? (
-        <span className={`font-semibold text-[#475569] dark:text-[#CBD5E1] ${text}`}>{initials}</span>
+        <span className={`font-semibold text-text-secondary ${text}`}>{initials}</span>
       ) : (
-        <User size={icon} className="text-[#94A3B8]" aria-hidden="true" />
+        <User size={icon} className="text-text-muted" aria-hidden="true" />
       )}
     </div>
   );

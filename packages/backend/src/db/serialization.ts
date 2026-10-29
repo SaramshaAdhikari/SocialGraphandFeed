@@ -60,7 +60,8 @@ export function toPostCard(
   };
 
   if (post.post_type === 'visual') {
-    const rawMedia = Array.isArray(post.media) ? post.media[0] : post.media;
+    const mediaList = Array.isArray(post.media) ? post.media : post.media ? [post.media] : [];
+    const rawMedia = mediaList[0];
     const media: MediaAttachment = rawMedia || {
       id: `media_${post._id}`,
       url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200',
@@ -73,6 +74,7 @@ export function toPostCard(
       title: post.title ?? undefined,
       caption: post.caption || post.content || undefined,
       media,
+      media_list: mediaList.length > 1 ? mediaList : undefined,
       collection_id: post.collection_id ?? undefined,
       dominant_color: post.dominant_color ?? undefined,
       destination_url: post.destination_url ?? undefined,
@@ -90,10 +92,11 @@ export function toPostCard(
   const discussion: DiscussionPostCard = {
     ...base,
     post_type: 'discussion',
-    title: post.title,
+    title: post.title || (post.caption ? post.caption.slice(0, 80) : 'Untitled Post'),
     content: post.content || '',
     media: mediaArray,
     flair: post.flair ?? undefined,
+    destination_url: post.destination_url ?? undefined,
     tags: post.tags && post.tags.length > 0 ? post.tags : undefined,
   };
   return discussion;
@@ -184,6 +187,7 @@ export function toNotificationItem(doc: NotificationDoc, actor?: UserSummary): N
     type: doc.type,
     post_id: doc.post_id ?? undefined,
     comment_id: doc.comment_id ?? undefined,
+    conversation_id: doc.conversation_id ?? undefined,
     read: doc.read,
     read_at: doc.read_at ? doc.read_at.toISOString() : undefined,
     created_at: doc.created_at.toISOString(),

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="100%" height="100%">
+  <circle cx="80" cy="80" r="76" fill="#18181b" stroke="#e11d48" stroke-width="3" stroke-opacity="0.4"/>
+  <!-- Vinyl Record -->
+  <circle cx="80" cy="80" r="54" fill="#09090b" stroke="#27272a" stroke-width="2"/>
+  <!-- Grooves -->
+  <circle cx="80" cy="80" r="46" fill="none" stroke="#27272a" stroke-width="1.5"/>
+  <circle cx="80" cy="80" r="38" fill="none" stroke="#27272a" stroke-width="1.5"/>
+  <circle cx="80" cy="80" r="30" fill="none" stroke="#27272a" stroke-width="1.5"/>
+  <!-- Vinyl Light Sheen reflections -->
+  <path d="M52 52 L62 62 M108 108 L98 98" stroke="#3f3f46" stroke-width="2" stroke-linecap="round"/>
+  <!-- Center Label -->
+  <circle cx="80" cy="80" r="20" fill="#e11d48"/>
+  <circle cx="80" cy="80" r="5" fill="#f43f5e"/>
+  <!-- Spindle Hole -->
+  <circle cx="80" cy="80" r="3" fill="#ffffff"/>
+</svg>

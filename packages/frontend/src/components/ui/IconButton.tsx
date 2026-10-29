@@ -15,7 +15,7 @@ const variantStyles = {
   filled:
     'bg-primary text-white hover:bg-primary-hover',
   danger:
-    'bg-transparent text-red-600 hover:bg-red-50 active:bg-red-100',
+    'bg-transparent text-rose-500 hover:bg-rose-500/10 active:bg-rose-500/20',
 };
 
 const sizeStyles = {
@@ -47,7 +47,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         aria-label={ariaLabel}
         aria-pressed={active}
         className={`inline-flex items-center justify-center rounded-full transition-all cursor-pointer select-none ` +
-          `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ` +
+          `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-canvas ` +
           `disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none active:scale-95 ` +
           `${variantStyles[variant]} ${sizeStyles[size]} ${active ? 'bg-primary-soft text-primary font-bold' : ''} hover:scale-105 active:scale-95 duration-150 ${className}`}
         {...rest}

@@ -4,6 +4,7 @@ import { FeedSortBar } from '../components/feed/FeedSortBar';
 import { FeedList } from '../components/feed/FeedList';
 import { AlertCircle, X } from 'lucide-react';
 import { useRealtimeEvents } from '../hooks/useRealtimeEvents';
+import { useAuth } from '../auth/AuthContext';
 
 export function HomePage() {
   const {
@@ -31,7 +32,8 @@ export function HomePage() {
   const handleRealtimeEvent = useCallback((event: { type: string }) => {
     if (event.type === 'post.created') setNewPosts((count) => count + 1);
   }, []);
-  const { connected } = useRealtimeEvents(handleRealtimeEvent);
+  const { status } = useAuth();
+  const { connected } = useRealtimeEvents(handleRealtimeEvent, { enabled: status === 'authenticated' });
 
   const handleVote = async (postId: string, direction: 1 | -1 | 0) => {
     try {
@@ -53,13 +55,13 @@ export function HomePage() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <div className="flex items-center justify-between rounded-xl border border-border bg-surface-card px-4 py-3 text-sm shadow-sm">
+      <div className="flex items-center justify-between px-1 py-1 text-xs text-text-muted">
         <span className="text-text-secondary">
           <span className={`mr-2 inline-block h-2 w-2 rounded-full ${connected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-          {connected ? 'Live social graph connected' : 'Live updates reconnecting; feed remains available'}
+          {connected ? 'Live social graph connected' : status === 'authenticated' ? 'Live updates reconnecting; feed remains available' : 'Live updates active for authenticated members'}
         </span>
         {newPosts > 0 && (
-          <button type="button" className="rounded-lg bg-primary px-3 py-1.5 font-semibold text-white" onClick={() => { setNewPosts(0); void refresh(); }}>
+          <button type="button" className="rounded-full bg-text-primary text-canvas px-3 py-1 font-semibold text-xs shadow-xs hover:opacity-90 transition-opacity cursor-pointer" onClick={() => { setNewPosts(0); void refresh(); }}>
             {newPosts} new {newPosts === 1 ? 'post' : 'posts'} available
           </button>
         )}
@@ -75,7 +77,7 @@ export function HomePage() {
           <button
             type="button"
             onClick={() => setToastMessage(null)}
-            className="ml-2 text-slate-400 hover:text-white"
+            className="ml-2 text-text-muted hover:text-text-primary transition-colors cursor-pointer"
           >
             <X size={14} />
           </button>

@@ -6,6 +6,7 @@ export const NotificationTypeSchema = Type.Union([
   Type.Literal('follow'),
   Type.Literal('comment'),
   Type.Literal('reply'),
+  Type.Literal('message'),
 ]);
 
 export type NotificationType = Static<typeof NotificationTypeSchema>;
@@ -18,6 +19,7 @@ export const NotificationItemSchema = Type.Object({
   type: NotificationTypeSchema,
   post_id: Type.Optional(Type.String({ description: 'Referenced post ID if applicable' })),
   comment_id: Type.Optional(Type.String({ description: 'Referenced comment ID if applicable' })),
+  conversation_id: Type.Optional(Type.String({ description: 'Referenced conversation ID if applicable' })),
   read: Type.Boolean({ description: 'Read state' }),
   read_at: Type.Optional(Type.String({ format: 'date-time', description: 'Timestamp when marked as read' })),
   created_at: Type.String({ format: 'date-time', description: 'Creation timestamp' }),

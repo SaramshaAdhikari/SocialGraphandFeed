@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="100%" height="100%">
+  <circle cx="80" cy="80" r="76" fill="#1c1917" stroke="#f59e0b" stroke-width="3" stroke-opacity="0.4"/>
+  <!-- Retro Motorcycle Helmet Visor & Stripes -->
+  <path d="M44 80 C44 54 58 40 80 40 C102 40 116 54 116 80 C116 106 106 122 80 122 C54 122 44 106 44 80 Z" fill="#292524" stroke="#44403c" stroke-width="2.5"/>
+  <!-- Racing Dual Stripes -->
+  <rect x="74" y="40" width="5" height="82" fill="#f59e0b"/>
+  <rect x="81" y="40" width="5" height="82" fill="#f59e0b"/>
+  <!-- Dark Visor Shield -->
+  <path d="M50 72 C50 64 62 60 80 60 C98 60 110 64 110 72 C110 86 102 92 80 92 C58 92 50 86 50 72 Z" fill="#0c0a09" stroke="#78716c" stroke-width="2"/>
+  <path d="M56 68 C62 64 72 63 80 63" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+</svg>
