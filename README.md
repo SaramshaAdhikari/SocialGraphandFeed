@@ -1,5 +1,7 @@
 # SocialGraph & Feed Engineering Platform
 
+> 📘 **Teammate Onboarding**: Joining the team on branch `life`? Read the full [Teammate Onboarding Guide (docs/TEAM_SETUP.md)](docs/TEAM_SETUP.md) for shared MongoDB Atlas setup, Cloudinary shared media storage, and one-command environment validation (`npm run check:env`).
+
 The relationship-aware live-update demo is documented in [docs/REALTIME_SOCIAL_GRAPH_DEMO.md](docs/REALTIME_SOCIAL_GRAPH_DEMO.md). It covers authenticated SSE delivery, follower-aware post events, reconnect behavior, and the bounded MongoDB-backed graph view at `/graph`.
 The Create Post workflow, including live previews, drafts, validation, and current media-storage limits, is documented in [docs/CREATE_POST_WORKFLOW.md](docs/CREATE_POST_WORKFLOW.md).
 
@@ -224,7 +226,7 @@ Verify that both frontend and backend are communicating properly:
 All testing and build commands run directly through root workspace scripts:
 
 #### Frontend Unit & Component Tests (Vitest)
-Executes all 15 frontend test suites (233 tests) covering interactive Social Graph, Masonry columns, responsive navigation, theme switching, profile feeds, and API state:
+Executes all 24 frontend test files (292 tests) covering interactive Social Graph, Masonry columns, responsive navigation, theme switching, profile feeds, and API state:
 ```powershell
 npm run test:frontend
 ```
@@ -261,6 +263,83 @@ npm run test:backend
 | `Failed to connect to MongoDB on 127.0.0.1:27017` | The MongoDB Community Server Windows service is stopped. | Run `Get-Service MongoDB` to check status and `Start-Service MongoDB` to start it. |
 | `Vite proxy error: ECONNREFUSED 127.0.0.1:4000` | The Fastify backend server is not running on port 4000. | Run `npm run dev:backend` in Terminal 1 before using the frontend in live mode. |
 | `Redis connection warning on startup` | Redis service is stopped or not installed. | This is normal and non-blocking in development. Fastify operates in degraded fallback mode. |
+
+---
+
+### 10. Direct Messaging Architecture & Real-Time SSE Scoping
+
+- **Persistence**: Backed by MongoDB collections `conversations` (with participant array `{ participants: 1, updated_at: -1 }`) and `messages` (`{ conversation_id: 1, created_at: 1 }`).
+- **Authorization**: All conversation reads, message sends, and unread marks are strictly participant-scoped via Fastify middleware. Unauthorized access attempts yield RFC 7807 `HTTP 403 Forbidden`.
+- **Real-Time Delivery**: Authenticated Server-Sent Events (SSE) route at `/api/v1/realtime/events`. Private message events (`message.created`, `conversation.read`) are routed strictly to connected clients belonging to the conversation's participants, preventing cross-tenant leakage.
+- **Frontend Master-Detail Surface**: Located at `/messages` and `/messages/:conversationId` with auto-scrolling, unread counter badges, and optimistic send handling.
+
+---
+
+### 11. Media Storage Abstraction & Cloud Migration Plan
+
+- **Current Implementation**:
+  - Authenticated multi-image uploads via `POST /api/v1/media/upload` (multipart/form-data).
+  - Validation: Supported types `image/jpeg`, `image/png`, `image/webp`, `image/gif`, maximum 10MB per image, up to 10 images per post.
+  - Safe filename generation using UUID v4 preserving sanitized extensions.
+  - Development Storage Provider: Local filesystem under `packages/backend/uploads/` served statically via `@fastify/static` at `/uploads/*`.
+- **Important Developer Limitation**:
+  - Files uploaded in local development reside only on the local machine's disk. Uploaded media is **not** automatically shared across teammates' workstations.
+- **Planned Cloud Storage Architecture**:
+  - Production deployment abstracts storage through a cloud-compatible provider interface (`S3MediaStorageProvider` or Google Cloud Storage).
+  - MongoDB stores durable media metadata (`url`, `storage_key`, `content_type`, `byte_size`, `dimensions`) rather than assuming a local filesystem path.
+  - Transition requires configuring `AWS_S3_BUCKET` or `GCS_BUCKET` with pre-signed upload URLs or backend streaming.
+
+---
+
+### 12. Planned MongoDB Atlas Migration Guide
+
+When migrating from local Community Server to managed MongoDB Atlas:
+1. **Cluster Requirements**: Provision an Atlas M0 Free Tier or M10+ cluster. Replica set topology is enabled by default on Atlas.
+2. **Connection URI**:
+   Update `MONGODB_URI` in `.env`:
+   ```bash
+   MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-address>.mongodb.net/socialgraph?retryWrites=true&w=majority
+   ```
+3. **Index Synchronization**:
+   Run `npm run dev:backend` or the index initialization script; indexes are automatically applied on server boot via `ensureIndexes()`.
+4. **Data Preservation**:
+   Export deterministic fixtures or user accounts via `mongodump` and restore using `mongorestore` without running drop flags.
+
+---
+
+---
+
+## Team Environment: Shared Database, Media Storage & Utilities
+
+SocialGraph provides built-in tooling for seamless multi-developer collaboration on branch `life`.
+
+### 1. Environment & Connectivity Validator
+Before starting work or debugging connection issues, run the automated environment validator:
+```bash
+npm run check:env
+```
+Validates Node runtime, `.env` presence, MongoDB latency, Redis responsiveness, media storage directories/keys, and monorepo build artifacts. Secrets are automatically masked.
+
+### 2. Database Backup & Safeguards
+- **Backup Local State**: Archive all MongoDB collections to timestamped JSON files with validation:
+  ```bash
+  npm run backup:db
+  ```
+  Archives are saved to `backups/backup-<timestamp>/` (gitignored).
+- **Test Database Isolation**: Automated tests (`npm test`) strictly require local test instances (`port 27018`). Tests hard-fail immediately if configured against remote Atlas to guarantee shared team data is never cleared.
+- **Atlas Seed Safeguard**: Seeding against Atlas is blocked by default. Running `npm run seed` against Atlas requires `--allow-atlas-seed` or `ALLOW_ATLAS_SEED=true`.
+
+### 3. Migration Utilities
+- **Safe Atlas Sync**: Idempotently migrate local data to the shared Atlas database:
+  ```bash
+  npm run migrate:atlas -- --dry-run --target="mongodb+srv://..."
+  npm run migrate:atlas -- --target="mongodb+srv://..."
+  ```
+- **Media Migration**: Scan local `/uploads/` references and upload to Cloudinary CDN:
+  ```bash
+  npm run migrate:media -- --dry-run
+  npm run migrate:media
+  ```
 
 ---
 
