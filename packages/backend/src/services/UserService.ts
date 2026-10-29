@@ -6,6 +6,7 @@ import {
   type FeedResponse,
   type FollowToggleResponse,
   type FollowListResponse,
+  type UpdateUserProfileInput,
 } from '@socialgraph/shared';
 import { getDb } from '../db/mongo.js';
 import { runInTransaction } from '../db/transaction.js';
@@ -35,6 +36,72 @@ export class UserService {
       `cache:user:profile:${normalized}:_keys`,
       `cache:user:profile:${normalized}:*`
     );
+  }
+
+  public async updateProfile(
+    userId: string,
+    input: UpdateUserProfileInput
+  ): Promise<UserProfile> {
+    const usersCol = this.db.collection<UserDoc>(COLLECTIONS.USERS);
+    const user = await usersCol.findOne({ _id: userId });
+    if (!user) {
+      throw AppError.notFound(`User ${userId} not found`);
+    }
+
+    const setFields: Partial<UserDoc> & { updated_at: Date } = {
+      updated_at: new Date(),
+    };
+    const unsetFields: Record<string, ''> = {};
+
+    if (input.display_name !== undefined) {
+      const trimmed = input.display_name.trim();
+      if (!trimmed) {
+        throw AppError.badRequest('display_name must not be empty');
+      }
+      setFields.display_name = trimmed;
+    }
+
+    if (input.bio !== undefined) {
+      setFields.bio = input.bio.trim();
+    }
+
+    if (input.avatar_url !== undefined) {
+      const trimmed = input.avatar_url.trim();
+      if (!trimmed) {
+        throw AppError.badRequest('avatar_url must not be empty');
+      }
+      setFields.avatar_url = trimmed;
+    }
+
+    if (input.banner_url !== undefined) {
+      const trimmed = input.banner_url ? input.banner_url.trim() : '';
+      if (trimmed) {
+        setFields.banner_url = trimmed;
+      } else {
+        unsetFields.banner_url = '';
+      }
+    }
+
+    if (input.website !== undefined) {
+      const trimmed = input.website ? input.website.trim() : '';
+      if (trimmed) {
+        setFields.website = trimmed;
+      } else {
+        unsetFields.website = '';
+      }
+    }
+
+    const updateDoc: Record<string, any> = { $set: setFields };
+    if (Object.keys(unsetFields).length > 0) {
+      updateDoc.$unset = unsetFields;
+    }
+
+    await usersCol.updateOne({ _id: userId }, updateDoc);
+
+    // Invalidate profile cache so fresh state is returned across all queries
+    await this.invalidateUserProfileCache(user.username);
+
+    return this.getUserProfile(user.username, userId);
   }
 
   public async getUserProfile(username: string, currentUserId?: string): Promise<UserProfile> {
@@ -329,8 +396,8 @@ export class UserService {
   }
 
   public async getGraphNeighborhood(userId: string, requestedLimit = 20): Promise<{
-    center: ReturnType<typeof toUserSummary>;
-    nodes: ReturnType<typeof toUserSummary>[];
+    center: ReturnType<typeof toUserSummary> & { bio?: string; followers_count: number; following_count: number };
+    nodes: (ReturnType<typeof toUserSummary> & { bio?: string; followers_count: number; following_count: number })[];
     edges: Array<{ source: string; target: string }>;
   }> {
     const users = this.db.collection<UserDoc>(COLLECTIONS.USERS);
@@ -357,13 +424,48 @@ export class UserService {
       if (nodeIds.size >= limit + 1) break;
     }
     const boundedIds = new Set(Array.from(nodeIds).slice(0, limit + 1));
-    const nodeDocs = await users.find({ _id: { $in: Array.from(boundedIds) } }).toArray();
+    const boundedIdsList = Array.from(boundedIds);
+    const nodeDocs = await users.find({ _id: { $in: boundedIdsList } }).toArray();
+
+    // Authoritative follower and following counts aggregation across bounded network nodes
+    const [followerCounts, followingCounts] = await Promise.all([
+      follows
+        .aggregate<{ _id: string; count: number }>([
+          { $match: { target_user_id: { $in: boundedIdsList } } },
+          { $group: { _id: '$target_user_id', count: { $sum: 1 } } },
+        ])
+        .toArray(),
+      follows
+        .aggregate<{ _id: string; count: number }>([
+          { $match: { follower_id: { $in: boundedIdsList } } },
+          { $group: { _id: '$follower_id', count: { $sum: 1 } } },
+        ])
+        .toArray(),
+    ]);
+
+    const followerCountMap = new Map<string, number>(followerCounts.map((r) => [r._id, r.count]));
+    const followingCountMap = new Map<string, number>(followingCounts.map((r) => [r._id, r.count]));
+
+    const toGraphNode = (user: UserDoc) => {
+      const summary = toUserSummary(user);
+      return {
+        ...summary,
+        bio: user.bio || '',
+        followers_count: followerCountMap.get(user._id) ?? user.followers_count ?? 0,
+        following_count: followingCountMap.get(user._id) ?? user.following_count ?? 0,
+      };
+    };
+
     const uniqueEdges = new Map<string, { source: string; target: string }>();
     for (const edge of edges) {
       if (boundedIds.has(edge.follower_id) && boundedIds.has(edge.target_user_id)) {
         uniqueEdges.set(edge._id, { source: edge.follower_id, target: edge.target_user_id });
       }
     }
-    return { center: toUserSummary(center), nodes: nodeDocs.map(toUserSummary), edges: Array.from(uniqueEdges.values()) };
+    return {
+      center: toGraphNode(center),
+      nodes: nodeDocs.map(toGraphNode),
+      edges: Array.from(uniqueEdges.values()),
+    };
   }
 }

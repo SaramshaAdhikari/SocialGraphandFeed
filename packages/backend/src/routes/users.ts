@@ -6,7 +6,9 @@ import {
   FeedResponseSchema,
   FollowToggleResponseSchema,
   FollowListResponseSchema,
+  UpdateUserProfileInputSchema,
   type FeedQuery,
+  type UpdateUserProfileInput,
 } from '@socialgraph/shared';
 import { UserService } from '../services/UserService.js';
 import { getRequestUserId, requireIdentity } from './identity.js';
@@ -16,6 +18,23 @@ const userIdSchema = Type.String({ minLength: 1, maxLength: 128, pattern: '^[A-Z
 
 const usersRoutes: FastifyPluginAsync = async (fastify) => {
   const userService = new UserService();
+
+  fastify.patch<{ Body: UpdateUserProfileInput }>(
+    '/users/me',
+    {
+      preHandler: requireIdentity,
+      schema: {
+        body: UpdateUserProfileInputSchema,
+        response: {
+          200: UserProfileSchema,
+        },
+      },
+    },
+    async (request) => {
+      const currentUserId = getRequestUserId(request)!;
+      return userService.updateProfile(currentUserId, request.body);
+    }
+  );
 
   fastify.get<{ Params: { username: string } }>(
     '/users/:username',

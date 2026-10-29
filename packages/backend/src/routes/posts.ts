@@ -3,6 +3,8 @@ import { Type } from '@sinclair/typebox';
 import {
   PostCardSchema,
   CreatePostInputSchema,
+  UpdatePostInputSchema,
+  type UpdatePostInput,
   VoteInputSchema,
   SavedPostsQuerySchema,
   FeedResponseSchema,
@@ -283,6 +285,27 @@ const postsRoutes: FastifyPluginAsync = async (fastify) => {
       );
       reply.status(201);
       return comment;
+    }
+  );
+
+  fastify.patch<{ Params: { postId: string }; Body: UpdatePostInput }>(
+    '/posts/:postId',
+    {
+      preHandler: requireIdentity,
+      schema: {
+        params: Type.Object({
+          postId: postIdSchema,
+        }),
+        body: UpdatePostInputSchema,
+        response: {
+          200: PostCardSchema,
+        },
+      },
+    },
+    async (request) => {
+      const userId = getRequestUserId(request)!;
+      const isAdmin = request.userRole === 'admin';
+      return postService.updatePost(request.params.postId, userId, request.body, isAdmin);
     }
   );
 

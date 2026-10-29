@@ -23,6 +23,42 @@ export interface AppConfig {
   RATE_LIMIT_REGISTER_MAX: number;
   RATE_LIMIT_REGISTER_WINDOW_SEC: number;
   FOOW_MAX_FOLLOWERS_THRESHOLD: number;
+  STORAGE_PROVIDER: 'local' | 'cloudinary';
+  CLOUDINARY_URL?: string;
+  CLOUDINARY_CLOUD_NAME?: string;
+  CLOUDINARY_API_KEY?: string;
+  CLOUDINARY_API_SECRET?: string;
+}
+
+function isAtlasUri(uri: string): boolean {
+  if (!uri) return false;
+  return uri.includes('.mongodb.net') || uri.startsWith('mongodb+srv:');
+}
+
+export function validateTestDatabaseUri(testUri: string): void {
+  if (!testUri) {
+    throw new Error('CRITICAL TEST ISOLATION SAFEGUARD: Test database URI cannot be empty.');
+  }
+  if (isAtlasUri(testUri)) {
+    throw new Error(
+      'CRITICAL TEST ISOLATION SAFEGUARD: Automated test suite attempted to target remote MongoDB Atlas cluster. ' +
+      'Tests MUST execute against an isolated local database (default mongodb://localhost:27018) to prevent wiping or corrupting shared team data.'
+    );
+  }
+  try {
+    const parsed = new URL(testUri);
+    // Disallow targeting default local dev database on port 27017
+    const isLocalHost = ['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname);
+    if (isLocalHost && (parsed.port === '27017' || parsed.port === '')) {
+      throw new Error(
+        'CRITICAL TEST ISOLATION SAFEGUARD: Automated test suite attempted to target local development database on port 27017. ' +
+        'Tests MUST execute against an isolated test instance on dedicated test port 27018 (e.g. mongodb://localhost:27018) to prevent wiping development state.'
+      );
+    }
+  } catch (err: any) {
+    if (err.message.includes('CRITICAL TEST ISOLATION SAFEGUARD')) throw err;
+    throw new Error(`CRITICAL TEST ISOLATION SAFEGUARD: Malformed test database URI '${testUri}'.`);
+  }
 }
 
 export function parseEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -38,7 +74,9 @@ export function parseEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
   if (nodeEnv === 'production' && (env.DEV_ADMIN_BOOTSTRAP?.toLowerCase() === 'true' || env.DEV_ADMIN_PASSWORD === 'admin')) {
     throw new Error('Development administrator bootstrap/default credentials cannot be configured in production.');
   }
-  if (nodeEnv === 'production' && (!env.SESSION_SECRET || env.SESSION_SECRET.length < 32 || /^(change-me|admin|development)/i.test(env.SESSION_SECRET))) throw new Error('SESSION_SECRET must be a unique secret of at least 32 characters in production.');
+  if (nodeEnv === 'production' && (!env.SESSION_SECRET || env.SESSION_SECRET.length < 32 || /^(change-me|admin|development)/i.test(env.SESSION_SECRET))) {
+    throw new Error('SESSION_SECRET must be a unique secret of at least 32 characters in production.');
+  }
   if (nodeEnv === 'production') {
     for (const name of ['MONGODB_URI', 'MONGODB_DB_NAME', 'REDIS_URL'] as const) {
       if (!env[name]?.trim()) throw new Error(`${name} is required when NODE_ENV=production.`);
@@ -54,8 +92,28 @@ export function parseEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error('PORT must be an integer between 1 and 65535.');
   }
-  const mongoUri = env.MONGODB_URI || (nodeEnv === 'test' ? (env.MONGODB_TEST_URI || 'mongodb://localhost:27018') : (nodeEnv === 'production' ? '' : 'mongodb://localhost:27017'));
-  const redisUrl = env.REDIS_URL || (nodeEnv === 'test' ? (env.REDIS_TEST_URL || 'redis://localhost:6380') : (nodeEnv === 'production' ? '' : 'redis://localhost:6379'));
+
+  // Database isolation safeguard:
+  // When NODE_ENV === 'test', we strictly resolve to MONGODB_TEST_URI (or default local test port 27018).
+  // Under NO circumstances may automated tests target an Atlas remote cluster.
+  let mongoUri: string;
+  if (nodeEnv === 'test') {
+    const candidateTestUri = env.MONGODB_TEST_URI || 'mongodb://localhost:27018';
+    if (env.MONGODB_URI && isAtlasUri(env.MONGODB_URI) && !env.MONGODB_TEST_URI) {
+      throw new Error(
+        'CRITICAL TEST ISOLATION SAFEGUARD: Automated test suite attempted to target remote MongoDB Atlas cluster. Tests MUST execute against an isolated local database (default mongodb://localhost:27018) to prevent wiping or corrupting shared team data.'
+      );
+    }
+    validateTestDatabaseUri(candidateTestUri);
+    mongoUri = candidateTestUri;
+  } else {
+    mongoUri = env.MONGODB_URI || (nodeEnv === 'production' ? '' : 'mongodb://localhost:27017');
+  }
+
+  const redisUrl = nodeEnv === 'test'
+    ? (env.REDIS_TEST_URL || 'redis://localhost:6380')
+    : (env.REDIS_URL || (nodeEnv === 'production' ? '' : 'redis://localhost:6379'));
+
   if (nodeEnv === 'production') {
     try {
       if (!['mongodb:', 'mongodb+srv:'].includes(new URL(mongoUri).protocol)) throw new Error();
@@ -91,6 +149,10 @@ export function parseEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
   if (!Number.isInteger(registerWindowSec) || registerWindowSec < 1) throw new Error('RATE_LIMIT_REGISTER_WINDOW_SEC must be a positive integer.');
   if (!Number.isInteger(foowThreshold) || foowThreshold < 1) throw new Error('FOOW_MAX_FOLLOWERS_THRESHOLD must be a positive integer.');
 
+  const storageProvider = (env.STORAGE_PROVIDER?.toLowerCase() === 'cloudinary' || Boolean(env.CLOUDINARY_URL) || Boolean(env.CLOUDINARY_CLOUD_NAME))
+    ? 'cloudinary'
+    : 'local';
+
   return {
     NODE_ENV: nodeEnv,
     PORT: port,
@@ -109,6 +171,11 @@ export function parseEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
     RATE_LIMIT_REGISTER_MAX: registerMax,
     RATE_LIMIT_REGISTER_WINDOW_SEC: registerWindowSec,
     FOOW_MAX_FOLLOWERS_THRESHOLD: foowThreshold,
+    STORAGE_PROVIDER: storageProvider,
+    CLOUDINARY_URL: env.CLOUDINARY_URL,
+    CLOUDINARY_CLOUD_NAME: env.CLOUDINARY_CLOUD_NAME,
+    CLOUDINARY_API_KEY: env.CLOUDINARY_API_KEY,
+    CLOUDINARY_API_SECRET: env.CLOUDINARY_API_SECRET,
   };
 }
 

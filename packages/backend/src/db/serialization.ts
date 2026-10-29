@@ -187,6 +187,7 @@ export function toNotificationItem(doc: NotificationDoc, actor?: UserSummary): N
     type: doc.type,
     post_id: doc.post_id ?? undefined,
     comment_id: doc.comment_id ?? undefined,
+    conversation_id: doc.conversation_id ?? undefined,
     read: doc.read,
     read_at: doc.read_at ? doc.read_at.toISOString() : undefined,
     created_at: doc.created_at.toISOString(),

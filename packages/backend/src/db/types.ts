@@ -122,6 +122,7 @@ export interface NotificationDoc {
   type: NotificationType;
   post_id?: string;
   comment_id?: string;
+  conversation_id?: string;
   read: boolean;
   read_at?: Date;
   created_at: Date;
@@ -152,4 +153,33 @@ export interface FeedInboxDoc {
   created_at: Date;
   score: number;
   hot_score: number;
+}
+
+export interface DirectMessageDoc {
+  _id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  created_at: Date;
+  is_read: boolean;
+  read_at?: Date;
+  is_deleted?: boolean;
+  deleted_at?: Date;
+}
+
+export interface ConversationDoc {
+  _id: string;
+  participant_ids: string[];
+  created_at: Date;
+  updated_at: Date;
+  last_message?: {
+    id: string;
+    conversation_id: string;
+    sender_id: string;
+    content: string;
+    created_at: string;
+    is_deleted?: boolean;
+  };
+  unread_counts: Record<string, number>;
+  hidden_for?: string[];
 }

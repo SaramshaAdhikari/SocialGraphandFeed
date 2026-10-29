@@ -14,6 +14,8 @@ export async function ensureIndexes(db: Db): Promise<void> {
   const notifications = db.collection(COLLECTIONS.NOTIFICATIONS);
   const reports = db.collection(COLLECTIONS.REPORTS);
   const inboxes = db.collection(COLLECTIONS.FEED_INBOXES);
+  const conversations = db.collection(COLLECTIONS.CONVERSATIONS);
+  const messages = db.collection(COLLECTIONS.MESSAGES);
 
   await Promise.all([
     // Users: unique username
@@ -125,6 +127,18 @@ export async function ensureIndexes(db: Db): Promise<void> {
     inboxes.createIndex(
       { user_id: 1, author_id: 1 },
       { name: 'idx_feed_inboxes_user_author' }
+    ),
+
+    // Conversations: participant-based chronological lookup & deduplication
+    conversations.createIndex(
+      { participant_ids: 1, updated_at: -1 },
+      { name: 'idx_conversations_participants_updated' }
+    ),
+
+    // Messages: conversation history retrieval & ordering
+    messages.createIndex(
+      { conversation_id: 1, created_at: -1, _id: -1 },
+      { name: 'idx_messages_conversation_created' }
     ),
   ]);
 }

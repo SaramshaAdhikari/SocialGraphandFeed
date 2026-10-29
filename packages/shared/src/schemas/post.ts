@@ -90,11 +90,22 @@ export const CreatePostInputSchema = Type.Object({
   media: Type.Optional(Type.Array(MediaAttachmentSchema, { maxItems: 10 })),
   flair: Type.Optional(Type.String({ maxLength: 50 })),
   caption: Type.Optional(Type.String({ maxLength: 1000 })),
-  destination_url: Type.Optional(Type.String({ maxLength: 2048, pattern: '^https?://\\S+$' })),
+  destination_url: Type.Optional(Type.String({ maxLength: 2048, pattern: '^https?:\\/\\/\\S+$' })),
   tags: Type.Optional(Type.Array(TagSchema, { maxItems: 20 })),
 }, { additionalProperties: false });
 
 export type CreatePostInput = Static<typeof CreatePostInputSchema>;
+
+export const UpdatePostInputSchema = Type.Object({
+  title: Type.Optional(Type.String({ maxLength: 300 })),
+  content: Type.Optional(Type.String({ maxLength: 40000 })),
+  caption: Type.Optional(Type.String({ maxLength: 1000 })),
+  media: Type.Optional(Type.Array(MediaAttachmentSchema, { maxItems: 10 })),
+  destination_url: Type.Optional(Type.String({ maxLength: 2048, pattern: '^https?:\\/\\/\\S+$' })),
+  tags: Type.Optional(Type.Array(TagSchema, { maxItems: 20 })),
+}, { additionalProperties: false });
+
+export type UpdatePostInput = Static<typeof UpdatePostInputSchema>;
 
 export const MediaUploadResponseSchema = Type.Object({
   success: Type.Literal(true),
@@ -108,7 +119,6 @@ export const VoteInputSchema = Type.Object({
 }, { additionalProperties: false });
 
 export type VoteInput = Static<typeof VoteInputSchema>;
-
 
 export const SavedPostsQuerySchema = Type.Object({
   cursor: Type.Optional(Type.String({ maxLength: 2048 })),

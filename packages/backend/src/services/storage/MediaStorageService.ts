@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { v2 as cloudinary } from 'cloudinary';
 import { AppError, type MediaAttachment } from '@socialgraph/shared';
+import { config } from '../../config/env.js';
 
 export interface UploadedFilePayload {
   buffer: Buffer;
@@ -14,6 +16,7 @@ export interface IMediaStorageProvider {
   save(file: UploadedFilePayload): Promise<MediaAttachment>;
   delete(urlOrFilename: string): Promise<void>;
   getUrl(filename: string): string;
+  getUploadDir(): string;
 }
 
 const MIME_TO_EXT: Record<string, string> = {
@@ -193,5 +196,126 @@ export class LocalMediaStorageProvider implements IMediaStorageProvider {
   }
 }
 
+/**
+ * Cloudinary remote media storage provider.
+ * Uploads validated media to Cloudinary CDN and yields permanent HTTPS URLs
+ * accessible across all developer workstations and staging/production environments.
+ */
+export class CloudinaryMediaStorageProvider implements IMediaStorageProvider {
+  private uploadDir: string;
+
+  constructor(customUploadDir?: string) {
+    this.uploadDir = customUploadDir
+      ? path.resolve(customUploadDir)
+      : path.resolve(process.cwd(), 'public/uploads');
+    if (!fs.existsSync(this.uploadDir)) {
+      fs.mkdirSync(this.uploadDir, { recursive: true });
+    }
+
+    if (config.CLOUDINARY_URL) {
+      cloudinary.config({ cloudinary_url: config.CLOUDINARY_URL });
+    } else if (config.CLOUDINARY_CLOUD_NAME && config.CLOUDINARY_API_KEY && config.CLOUDINARY_API_SECRET) {
+      cloudinary.config({
+        cloud_name: config.CLOUDINARY_CLOUD_NAME,
+        api_key: config.CLOUDINARY_API_KEY,
+        api_secret: config.CLOUDINARY_API_SECRET,
+        secure: true,
+      });
+    }
+  }
+
+  public getUploadDir(): string {
+    return this.uploadDir;
+  }
+
+  public getUrl(filenameOrUrl: string): string {
+    if (filenameOrUrl.startsWith('http://') || filenameOrUrl.startsWith('https://')) {
+      return filenameOrUrl;
+    }
+    return cloudinary.url(filenameOrUrl, { secure: true });
+  }
+
+  public async save(file: UploadedFilePayload): Promise<MediaAttachment> {
+    const normalizedMime = file.mimeType.toLowerCase().trim();
+    if (!ALLOWED_MIME_TYPES.has(normalizedMime)) {
+      throw AppError.badRequest(
+        `Unsupported media type '${file.mimeType}'. Allowed types: JPEG, PNG, WebP, GIF, AVIF, SVG.`
+      );
+    }
+
+    if (file.sizeBytes > MAX_FILE_SIZE_BYTES || file.buffer.length > MAX_FILE_SIZE_BYTES) {
+      throw AppError.badRequest(
+        `File size exceeds the 10MB limit (received ${Math.round(file.sizeBytes / 1024 / 1024)}MB).`
+      );
+    }
+
+    if (file.buffer.length === 0) {
+      throw AppError.badRequest('Uploaded file is empty.');
+    }
+
+    return new Promise<MediaAttachment>((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'socialgraph',
+          resource_type: 'image',
+        },
+        (error, result) => {
+          if (error || !result) {
+            return reject(
+              AppError.serviceUnavailable(`Remote media upload failed: ${error?.message || 'Unknown error'}`)
+            );
+          }
+
+          const mediaId = `med_${Date.now()}_${result.public_id.replace(/^.*\//, '')}`;
+          const cleanAlt = file.originalFilename
+            ? path.basename(file.originalFilename).replace(/\.[^/.]+$/, '').slice(0, 100)
+            : 'Attached media';
+          const width = result.width;
+          const height = result.height;
+          const aspectRatio = width && height ? Number((width / height).toFixed(3)) : 1.33;
+
+          resolve({
+            id: mediaId,
+            url: result.secure_url,
+            aspect_ratio: aspectRatio,
+            width,
+            height,
+            alt_text: cleanAlt,
+          });
+        }
+      );
+
+      uploadStream.end(file.buffer);
+    });
+  }
+
+  public async delete(urlOrFilename: string): Promise<void> {
+    try {
+      const match = urlOrFilename.match(/upload\/(?:v\d+\/)?([^\.]+)/);
+      const publicId = match ? match[1] : path.basename(urlOrFilename).replace(/\.[^/.]+$/, '');
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId);
+      }
+    } catch {
+      // Suppress remote delete errors
+    }
+  }
+}
+
+/**
+ * Storage Provider Factory.
+ * Automatically provisions Cloudinary when remote credentials are supplied;
+ * falls back to local disk storage for local standalone development.
+ */
+export function createMediaStorage(): IMediaStorageProvider {
+  if (
+    config.STORAGE_PROVIDER === 'cloudinary' &&
+    (Boolean(config.CLOUDINARY_URL) || Boolean(config.CLOUDINARY_CLOUD_NAME))
+  ) {
+    return new CloudinaryMediaStorageProvider();
+  }
+  return new LocalMediaStorageProvider();
+}
+
 // Global default singleton provider
-export const mediaStorage = new LocalMediaStorageProvider();
+export const mediaStorage = createMediaStorage();

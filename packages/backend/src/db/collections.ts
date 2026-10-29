@@ -11,6 +11,8 @@ export const COLLECTIONS = {
   NOTIFICATIONS: 'notifications',
   REPORTS: 'reports',
   FEED_INBOXES: 'feed_inboxes',
+  CONVERSATIONS: 'conversations',
+  MESSAGES: 'messages',
 } as const;
 
 export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];

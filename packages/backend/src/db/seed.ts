@@ -14,6 +14,7 @@ import { calculateHotScore } from '../utils/pagination.js';
 import { connectMongo, disconnectMongo, getDb } from './mongo.js';
 import { ensureIndexes } from './indexes.js';
 import { runInTransaction } from './transaction.js';
+import { config } from '../config/env.js';
 import {
   expandedPersonas,
   expandedCommunities,
@@ -38,6 +39,16 @@ export async function seedDatabase(
   followsCount: number;
   communitiesCount: number;
 }> {
+  // Programmatic Atlas seed safeguard
+  if (config.MONGODB_URI && (config.MONGODB_URI.includes('.mongodb.net') || config.MONGODB_URI.startsWith('mongodb+srv:'))) {
+    const allowAtlas = process.argv.includes('--allow-atlas-seed') || process.env.ALLOW_ATLAS_SEED === 'true';
+    if (!allowAtlas) {
+      throw new Error(
+        'CRITICAL SEED SAFEGUARD: Programmatic database seeding attempted against remote MongoDB Atlas cluster. ' +
+        'Refusing to seed shared database without explicit --allow-atlas-seed or ALLOW_ATLAS_SEED=true.'
+      );
+    }
+  }
   await ensureIndexes(db);
 
   const usersCol = db.collection<UserDoc>(COLLECTIONS.USERS);
@@ -1050,6 +1061,25 @@ export async function seedDatabase(
 if (process.argv[1]?.endsWith('seed.ts') || process.argv[1]?.endsWith('seed.js')) {
   (async () => {
     try {
+      const isAtlas = config.MONGODB_URI.includes('.mongodb.net') || config.MONGODB_URI.startsWith('mongodb+srv:');
+      const allowAtlas = process.argv.includes('--allow-atlas-seed') || process.env.ALLOW_ATLAS_SEED === 'true';
+
+      if (isAtlas && !allowAtlas) {
+        const redactedTarget = config.MONGODB_URI.replace(/:([^:@]+)@/, ':***@');
+        console.error('\n============================================================');
+        console.error('CRITICAL SEED SAFEGUARD BLOCKED EXECUTION');
+        console.error('============================================================');
+        console.error('You are targeting a remote MongoDB Atlas database:');
+        console.error(`Target: ${redactedTarget}`);
+        console.error('Broad or unverified seeding against the shared team Atlas database');
+        console.error('is blocked by default to prevent accidental data loss or clobbering.');
+        console.error('If you genuinely intend to seed the shared Atlas database, re-run with:');
+        console.error('  npm run seed -- --allow-atlas-seed');
+        console.error('or set environment variable: ALLOW_ATLAS_SEED=true');
+        console.error('============================================================\n');
+        process.exit(1);
+      }
+
       console.log('Connecting to MongoDB for database seeding...');
       const { db } = await connectMongo();
       const stats = await seedDatabase(db);

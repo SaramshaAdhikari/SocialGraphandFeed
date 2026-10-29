@@ -29,6 +29,19 @@ export const UserProfileSchema = Type.Intersect([
 
 export type UserProfile = Static<typeof UserProfileSchema>;
 
+export const UpdateUserProfileInputSchema = Type.Object(
+  {
+    display_name: Type.Optional(Type.String({ minLength: 1, maxLength: 50 })),
+    bio: Type.Optional(Type.String({ maxLength: 250 })),
+    avatar_url: Type.Optional(AppUrlSchema),
+    banner_url: Type.Optional(Type.Union([AppUrlSchema, Type.Literal(''), Type.Null()])),
+    website: Type.Optional(Type.Union([AppUrlSchema, Type.Literal(''), Type.Null()])),
+  },
+  { additionalProperties: false }
+);
+
+export type UpdateUserProfileInput = Static<typeof UpdateUserProfileInputSchema>;
+
 export const FollowToggleResponseSchema = Type.Object({
   target_user_id: Type.String(),
   is_following: Type.Boolean(),
