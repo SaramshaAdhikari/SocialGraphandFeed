@@ -1,0 +1,15 @@
+SCENARIO TESTING EXECUTION LOG - 2026-11-23T14:38:11.225Z
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.1.1 [39m[90mC:/Users/saram/Projects/SocialGraphandFeed_Testing/packages/frontend[39m
+
+ [32m✓[39m src/test/profile_editor.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+ [32m✓[39m src/test/home_feed.test.tsx [2m([22m[2m21 tests[22m[2m)[22m[32m 42[2mms[22m[39m
+ [32m✓[39m src/test/post_detail.test.tsx [2m([22m[2m18 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+ [32m✓[39m src/test/phase_2b1_unified_composer.test.tsx [2m([22m[2m12 tests[22m[2m)[22m[32m 57[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m59 passed[39m[22m[90m (59)[39m
+[2m   Start at [22m 20:23:13
+[2m   Duration [22m 577ms[2m (import 50%, transform 33%, tests 15%, worker 2%)[22m
+

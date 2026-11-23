@@ -1,0 +1,6 @@
+PATH COVERAGE EXECUTION LOG - 2026-11-23T14:39:13.569Z
+
+Path 1 [UserExists=False]: -> Throws 401 Unauthorized
+Path 2 [UserExists=True, PassMatches=False]: -> Throws 401 Unauthorized
+Path 3 [UserExists=True, PassMatches=True, Locked=False]: -> Returns 200 Authenticated
+Path 4 [Locked=True]: -> Throws 429 Too Many Requests

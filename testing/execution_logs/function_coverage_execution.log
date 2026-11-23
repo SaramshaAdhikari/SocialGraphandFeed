@@ -1,0 +1,162 @@
+FUNCTION COVERAGE REPORT - 2026-11-23T14:42:45.631Z
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.1.1 [39m[90mC:/Users/saram/Projects/SocialGraphandFeed_Testing/packages/frontend[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32m✓[39m src/test/notifications.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m src/test/home_feed.test.tsx [2m([22m[2m21 tests[22m[2m)[22m[32m 151[2mms[22m[39m
+ [32m✓[39m src/test/social_graph_interactive.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 37[2mms[22m[39m
+ [32m✓[39m src/test/search_suggestions.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32m✓[39m src/test/profile_editor.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[32m 105[2mms[22m[39m
+ [32m✓[39m src/test/messages.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[32m 95[2mms[22m[39m
+ [32m✓[39m src/test/product_quality_and_graph.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[32m 179[2mms[22m[39m
+ [32m✓[39m src/test/communities_directory.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[32m 75[2mms[22m[39m
+ [32m✓[39m src/test/phase_g_messaging.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[32m 54[2mms[22m[39m
+ [32m✓[39m src/test/ux_reliability_regression.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[32m 183[2mms[22m[39m
+ [32m✓[39m src/test/post_detail.test.tsx [2m([22m[2m18 tests[22m[2m)[22m[32m 128[2mms[22m[39m
+ [32m✓[39m src/test/community.test.tsx [2m([22m[2m18 tests[22m[2m)[22m[32m 123[2mms[22m[39m
+ [32m✓[39m src/test/diagnostics.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+ [32m✓[39m src/test/shell_and_primitives.test.tsx [2m([22m[2m14 tests[22m[2m)[22m[32m 235[2mms[22m[39m
+ [32m✓[39m src/test/search.test.tsx [2m([22m[2m18 tests[22m[2m)[22m[32m 137[2mms[22m[39m
+ [32m✓[39m src/test/theme_and_discover.test.tsx [2m([22m[2m19 tests[22m[2m)[22m[32m 197[2mms[22m[39m
+ [32m✓[39m src/test/phase_2b1_unified_composer.test.tsx [2m([22m[2m12 tests[22m[2m)[22m[32m 135[2mms[22m[39m
+ [32m✓[39m src/test/create_post.test.tsx [2m([22m[2m27 tests[22m[2m)[22m[33m 327[2mms[22m[39m
+ [32m✓[39m src/test/final_ux_corrections.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[32m 115[2mms[22m[39m
+ [32m✓[39m src/test/profile.test.tsx [2m([22m[2m17 tests[22m[2m)[22m[32m 109[2mms[22m[39m
+ [32m✓[39m src/test/saved_collections.test.tsx [2m([22m[2m25 tests[22m[2m)[22m[32m 136[2mms[22m[39m
+ [32m✓[39m src/test/post_action_menu.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m src/test/masonry_columns.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m src/test/mock_adapter.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m24 passed[39m[22m[90m (24)[39m
+[2m      Tests [22m [1m[32m292 passed[39m[22m[90m (292)[39m
+[2m   Start at [22m 20:27:42
+[2m   Duration [22m 2.50s[2m (import 54%, transform 22%, tests 17%, worker 7%)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |      34 |    33.65 |   24.48 |   36.16 |                   
+ api               |   33.48 |    33.93 |   36.36 |   36.57 |                   
+  LiveClient.ts    |   28.17 |    33.33 |   27.27 |   30.06 | ...81,290,304-454 
+  client.ts        |   31.25 |     12.5 |      40 |   31.25 | 21-55             
+  index.ts         |   88.88 |       60 |     100 |     100 | 12-26             
+  types.ts         |       0 |        0 |       0 |       0 |                   
+ api/mock          |   84.35 |    74.63 |   80.15 |   86.43 |                   
+  MockAdapter.ts   |   84.16 |    74.63 |      80 |   86.27 | ...1445-1446,1472 
+  fixtures.ts      |     100 |      100 |     100 |     100 |                   
+ auth              |   18.91 |    15.38 |   18.75 |   28.57 |                   
+  AuthContext.tsx  |   18.91 |    15.38 |   18.75 |   28.57 | ...55,59,62,65-86 
+ components/brand  |   88.88 |       90 |     100 |   88.88 |                   
+  BrandLogo.tsx    |   88.88 |       90 |     100 |   88.88 | 75                
+ components/common |   32.65 |     14.6 |    8.33 |   35.55 |                   
+  ...sticsView.tsx |   32.65 |     14.6 |    8.33 |   35.55 | ...,91-96,125-417 
+ ...ents/community |   65.71 |    67.18 |   38.88 |   67.64 |                   
+  ...ityHeader.tsx |   71.42 |    77.27 |   33.33 |   71.42 | 37-56             
+  ...tySidebar.tsx |   73.33 |    63.63 |      50 |   78.57 | 17,27,96          
+  ...ySkeleton.tsx |     100 |      100 |     100 |     100 |                   
+  ...unityTabs.tsx |   14.28 |    61.29 |   14.28 |   14.28 | 40-155            
+  index.ts         |     100 |      100 |     100 |     100 |                   
+ ...nents/composer |   18.39 |    39.92 |   19.44 |   19.12 |                   
+  ...itySelect.tsx |   66.66 |       60 |   66.66 |   66.66 | 37                
+  ...onPreview.tsx |     100 |       75 |     100 |     100 | 26-29             
+  ...ownEditor.tsx |       8 |    21.42 |    6.25 |    8.16 | ...80-247,272-408 
+  ...ntManager.tsx |   15.15 |    32.85 |    7.14 |   16.12 | ...90-120,148-290 
+  PinPreview.tsx   |     100 |    61.53 |     100 |     100 | 26-50             
+  ...eSelector.tsx |   33.33 |      100 |   33.33 |   33.33 | 25-62             
+  TagInput.tsx     |   37.03 |    36.11 |      40 |   37.03 | ...-56,97-112,135 
+  ...nUploader.tsx |   22.41 |    45.67 |    4.54 |   24.07 | ...22-138,156-460 
+  index.ts         |       0 |        0 |       0 |       0 |                   
+ ...ents/discovery |    45.9 |    61.19 |   47.61 |   48.27 |                   
+  ...tegoryBar.tsx |      80 |      100 |   66.66 |      80 | 38                
+  ...ryPinCard.tsx |   21.95 |    54.38 |    9.09 |   23.68 | ...9,54-55,75-149 
+  MasonryGrid.tsx  |     100 |      100 |     100 |     100 |                   
+  index.ts         |     100 |      100 |     100 |     100 |                   
+ components/feed   |   33.33 |    53.44 |      16 |   34.65 |                   
+  ...nPostCard.tsx |   17.07 |     43.1 |    7.69 |   18.91 | ...2,47-48,70-222 
+  FeedList.tsx     |   56.52 |    66.03 |      40 |   56.52 | 42-63,194         
+  FeedSortBar.tsx  |   81.81 |      100 |      60 |   81.81 | 53,93             
+  ...ctionMenu.tsx |   26.76 |    31.25 |    5.88 |   26.47 | ...86-116,126-296 
+  ...alPinCard.tsx |   27.77 |    64.28 |      10 |    30.3 | ...,56-66,144-145 
+  index.ts         |     100 |      100 |     100 |     100 |                   
+ components/layout |   42.03 |    55.61 |   20.75 |    45.2 |                   
+  AppLayout.tsx    |   90.47 |    85.36 |      50 |   90.47 | 41-47             
+  ...BottomNav.tsx |     100 |    78.57 |     100 |     100 | 14,28             
+  ...endedHubs.tsx |   66.66 |    88.88 |   66.66 |   66.66 | 55                
+  RightRail.tsx    |   35.71 |       20 |   27.27 |   43.47 | 47-53,57-67,89    
+  SidebarNav.tsx   |   43.47 |    48.48 |   28.57 |   45.45 | 33-48             
+  TopHeader.tsx    |      24 |    38.02 |    3.57 |   25.71 | ...86-105,126-280 
+ .../notifications |   16.93 |      7.2 |    2.85 |      20 |                   
+  ...ationBell.tsx |   16.93 |      7.2 |    2.85 |      20 | ...42-156,172-335 
+ components/post   |   32.89 |    29.31 |   18.36 |   34.53 |                   
+  ...tComposer.tsx |   30.43 |    52.94 |      25 |   31.81 | 31-44,50-52,68    
+  ...tNodeItem.tsx |      60 |     67.3 |      30 |      60 | 38,42,46,77-223   
+  CommentTree.tsx  |   33.33 |    64.28 |      25 |   33.33 | 58-116,146        
+  ...lSkeleton.tsx |     100 |      100 |     100 |     100 |                   
+  PostModal.tsx    |   21.34 |     7.38 |    7.69 |   22.07 | ...55,161,173-554 
+  index.ts         |     100 |      100 |     100 |     100 |                   
+ ...onents/profile |   29.58 |    34.05 |   18.84 |   31.02 |                   
+  ...itorModal.tsx |   33.88 |    36.66 |   23.52 |   33.92 | ...12,535-643,688 
+  ...ileHeader.tsx |   20.74 |    23.76 |    6.45 |   22.95 | ...91,201,221-459 
+  ...eSkeleton.tsx |     100 |      100 |     100 |     100 |                   
+  ProfileTabs.tsx  |   83.33 |      100 |   66.66 |   83.33 | 51                
+  index.ts         |     100 |      100 |     100 |     100 |                   
+ components/search |   30.71 |    35.38 |   24.48 |   32.86 |                   
+  ...esultCard.tsx |   31.25 |    42.85 |   33.33 |   33.33 | 22-32,81          
+  ...mptyState.tsx |      75 |    66.66 |   66.66 |      75 | 67                
+  SearchHeader.tsx |      40 |       50 |      40 |   44.44 | 30-31,41,69-70    
+  ...hSkeleton.tsx |      50 |    57.14 |      50 |      50 | 30-61             
+  ...nsOverlay.tsx |   16.27 |    11.29 |    3.84 |   17.72 | ...17-146,175-305 
+  SearchTabs.tsx   |      75 |    88.88 |      50 |      75 | 56-93             
+  ...esultCard.tsx |   35.29 |    59.09 |      50 |    37.5 | 25-39             
+  index.ts         |     100 |      100 |     100 |     100 |                   
+ components/ui     |   78.48 |    86.29 |   68.42 |   82.19 |                   
+  Avatar.tsx       |      80 |    81.25 |   66.66 |   91.66 | 46                
+  Badge.tsx        |     100 |      100 |     100 |     100 |                   
+  Button.tsx       |     100 |    89.47 |     100 |     100 | 59,104            
+  IconButton.tsx   |     100 |    85.71 |     100 |     100 | 52                
+  Input.tsx        |   54.54 |     93.1 |      40 |   54.54 | 90-92,106-115     
+  Skeleton.tsx     |     100 |      100 |     100 |     100 |                   
+  VoteControl.tsx  |      55 |    73.52 |      50 |   61.11 | 24-26,30-32,37    
+  index.ts         |     100 |      100 |     100 |     100 |                   
+ context           |    8.88 |        5 |    7.69 |    9.75 |                   
+  ...alContext.tsx |    8.88 |        5 |    7.69 |    9.75 | 12-80,97          
+ hooks             |   22.35 |    10.98 |   10.14 |   24.91 |                   
+  ...ommunities.ts |   32.39 |       20 |   15.78 |   34.84 | ...45,153,159-163 
+  useCommunity.ts  |      20 |     6.55 |    8.33 |   24.17 | ...46-171,180-197 
+  useCreatePost.ts |   19.77 |      7.4 |    5.88 |   20.86 | ...02-479,501-519 
+  useDiscovery.ts  |   18.75 |     8.33 |    4.16 |   21.42 | ...21-156,164-187 
+  useFeed.ts       |   19.23 |    10.63 |    3.84 |   21.97 | ...46-182,190-218 
+  ...nryColumns.ts |   75.55 |       76 |   66.66 |   75.67 | 80,86-98          
+  usePostDetail.ts |   14.28 |     3.84 |     7.4 |   16.55 | ...18-297,305-328 
+  useProfile.ts    |   14.87 |     6.17 |    3.44 |      18 | ...67-200,210-254 
+  ...timeEvents.ts |   15.21 |    14.28 |      10 |   16.27 | 31,35-99          
+  useSavedPosts.ts |   26.06 |     9.57 |   16.21 |   31.61 | ...67-288,296-316 
+  ...rsalSearch.ts |   27.72 |    16.66 |      10 |   30.76 | ...16,223-228,243 
+ pages             |   21.56 |    17.29 |   12.07 |    23.6 |                   
+  ...itiesPage.tsx |      36 |       16 |   21.05 |   39.13 | ...03-208,309-383 
+  ...unityPage.tsx |      40 |     7.89 |   21.42 |   45.16 | 43-46,67-251      
+  ...ePostPage.tsx |      30 |     50.6 |      10 |   33.33 | ...,63-66,155-317 
+  DiscoverPage.tsx |      25 |    24.32 |      10 |   26.92 | ...0,65-69,85-162 
+  GraphPage.tsx    |   13.03 |     1.84 |    6.06 |   13.92 | ...5-599,623-1264 
+  HomePage.tsx     |      36 |    43.75 |   11.11 |      45 | ...43,48-52,64-79 
+  MessagesPage.tsx |   14.47 |     6.16 |    3.94 |   15.86 | ...5-436,464-1092 
+  ...tionsPage.tsx |   17.59 |     8.73 |    3.33 |   20.87 | ...49-151,185-322 
+  ...etailPage.tsx |   33.33 |     5.51 |    12.5 |   36.36 | ...97-140,198-539 
+  ...tionsPage.tsx |   40.62 |     75.6 |   26.66 |   41.93 | ...27-230,254,533 
+  SearchPage.tsx   |   27.77 |    20.75 |   14.28 |   27.77 | 56-57,100-359     
+  ...rancePage.tsx |      60 |    64.28 |   46.15 |   64.51 | ...68-272,368-369 
+  ...ofilePage.tsx |   27.27 |    33.82 |   18.18 |   27.63 | ...12-326,331-421 
+  ...ofilePage.tsx |   53.84 |     8.69 |   33.33 |   63.63 | 63-211            
+ router            |   73.25 |     52.7 |   68.75 |   75.94 |                   
+  Router.tsx       |   73.25 |     52.7 |   68.75 |   75.94 | ...06,128,163-166 
+ theme             |   30.97 |    22.95 |      50 |   31.13 |                   
+  ThemeContext.tsx |   27.77 |    22.95 |      50 |   27.72 | ...59-163,171-174 
+  index.ts         |     100 |      100 |     100 |     100 |                   
+  palettes.ts      |     100 |      100 |     100 |     100 |                   
+  types.ts         |       0 |        0 |       0 |       0 |                   
+ utils             |      90 |       90 |     100 |   86.66 |                   
+  date.ts          |      90 |       90 |     100 |   86.66 | 16-18             
+-------------------|---------|----------|---------|---------|-------------------

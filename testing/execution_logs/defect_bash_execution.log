@@ -1,0 +1,13 @@
+DEFECT BASH TESTING EXECUTION LOG - 2026-11-23T14:38:15.958Z
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.1.1 [39m[90mC:/Users/saram/Projects/SocialGraphandFeed_Testing/packages/frontend[39m
+
+ [32m✓[39m src/test/product_quality_and_graph.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[32m 57[2mms[22m[39m
+ [32m✓[39m src/test/ux_reliability_regression.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[32m 70[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m19 passed[39m[22m[90m (19)[39m
+[2m   Start at [22m 20:23:19
+[2m   Duration [22m 620ms[2m (import 41%, transform 39%, tests 18%, worker 2%)[22m
+

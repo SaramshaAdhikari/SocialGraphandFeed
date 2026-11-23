@@ -1,0 +1,13 @@
+SECURITY TESTING EXECUTION LOG - 2026-11-23T14:41:40.837Z
+
+Unauthorized Mutation Test:
+  Endpoint: POST /api/v1/posts
+  Status: 401
+
+Production Security Headers (/api/v1/health):
+  CSP: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://socialgraph-feed.onrender.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+
+Static Root (/) Headers Note:
+  Root CSP: None (Handled as static SPA HTML without Fastify helmet middleware)

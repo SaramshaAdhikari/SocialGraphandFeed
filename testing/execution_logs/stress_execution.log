@@ -1,0 +1,16 @@
+STRESS TESTING AUDIT LOG - 2026-11-23T14:39:02.756Z
+Target Suite: packages/backend/test/distributed-rate-limit.test.ts
+
+Execution Status: NOT PERFORMED / INFRASTRUCTURE & SAFETY BLOCKED
+Technical Limitation Analysis:
+  1. Live stress-hammering of the production Render deployment (50+ rapid concurrent logins)
+     would exhaust the free-tier memory limit (512MB) and trigger IP bans on shared networks.
+  2. Local execution of distributed-rate-limit.test.ts requires an isolated Redis container on port 6380,
+     which is unavailable because Docker is stopped on the host.
+
+Algorithm Verification:
+  - RateLimitService.ts implements a sliding-window counter using Redis multi-exec atomic pipelines.
+  - Configured thresholds: Login = 5/min, Register = 3/min.
+
+Remediation Required for Future Execution:
+  - Start Redis test container on port 6380 and execute: npx vitest run test/distributed-rate-limit.test.ts

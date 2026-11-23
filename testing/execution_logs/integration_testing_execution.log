@@ -1,0 +1,90 @@
+INTEGRATION TESTING EXECUTION LOG - 2026-11-23T14:37:34.363Z
+
+--- HEALTH ENDPOINT PROBE ---
+Status: 200
+RTT: 22408ms
+Body: {
+  "status": "ok",
+  "timestamp": "2026-11-23T14:37:56.767Z",
+  "uptime_seconds": 13,
+  "version": "0.1.0",
+  "services": {
+    "mongodb": {
+      "status": "connected",
+      "latency_ms": 1.63
+    },
+    "redis": {
+      "status": "connected",
+      "latency_ms": 0.93
+    }
+  }
+}
+
+--- COMMUNITIES ENDPOINT PROBE ---
+Status: 200
+Total Communities: 18
+Sample: [
+  {
+    "id": "comm_systems",
+    "name": "Distributed Systems",
+    "slug": "systems",
+    "description": "Consensus protocols, Raft, Paxos, and multi-region storage systems.",
+    "members_count": 33,
+    "rules": [
+      {
+        "id": "r1",
+        "title": "Be rigorous",
+        "description": "Cite formal papers and benchmarks."
+      },
+      {
+        "id": "r2",
+        "title": "No flame wars",
+        "description": "Keep debates focused on system trade-offs."
+      }
+    ],
+    "is_member": false,
+    "created_at": "2026-01-05T00:00:00.000Z",
+    "avatar_url": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=200"
+  },
+  {
+    "id": "comm_frontend",
+    "name": "Frontend Engineering",
+    "slug": "frontend",
+    "description": "React, TypeScript, CSS architecture, and high performance client rendering.",
+    "members_count": 32,
+    "rules": [
+      {
+        "id": "r1",
+        "title": "Accessibility first",
+        "description": "Semantic HTML and keyboard navigation are required."
+      }
+    ],
+    "is_member": false,
+    "created_at": "2026-01-07T00:00:00.000Z",
+    "avatar_url": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=200"
+  }
+]
+
+--- HTTP HEADERS ---
+{
+  "access-control-allow-credentials": "true",
+  "access-control-allow-origin": "https://socialgraph-feed.onrender.com",
+  "alt-svc": "h3=\":443\"; ma=86400",
+  "cf-cache-status": "DYNAMIC",
+  "cf-ray": "a5f0e9a2ccb57679-BLR",
+  "connection": "keep-alive",
+  "content-encoding": "br",
+  "content-length": "127",
+  "content-security-policy": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://socialgraph-feed.onrender.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+  "content-type": "application/json; charset=utf-8",
+  "date": "Mon, 23 Nov 2026 14:37:56 GMT",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "rndr-id": "ed9f926c-a695-423b",
+  "server": "cloudflare",
+  "vary": "Accept-Encoding",
+  "x-content-type-options": "nosniff",
+  "x-frame-options": "DENY",
+  "x-render-origin-server": "Render",
+  "x-request-id": "192635e3-0922-40fc-a799-e69e9ad1f6a2"
+}
+

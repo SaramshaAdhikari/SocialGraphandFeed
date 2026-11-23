@@ -1,0 +1,11 @@
+CONDITION COVERAGE EXECUTION LOG - 2026-11-23T14:39:11.381Z
+
+Predicate 1: (pathname.startsWith('/api/') || pathname.startsWith('/uploads/'))
+  Case 1 ('/api/v1/health'): C1=T, C2=F -> Compound=T
+  Case 2 ('/uploads/img.png'): C1=F, C2=T -> Compound=T
+  Case 3 ('/settings/profile'): C1=F, C2=F -> Compound=F
+
+Predicate 2: (idempotencyKey && existingPost)
+  Case 1 (key provided + existing): C1=T, C2=T -> Compound=T
+  Case 2 (key provided + none):     C1=T, C2=F -> Compound=F
+  Case 3 (no key + none):           C1=F, C2=F -> Compound=F

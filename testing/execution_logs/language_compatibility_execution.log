@@ -1,0 +1,6 @@
+LANGUAGE COMPATIBILITY EXECUTION LOG - 2026-11-23T14:38:31.736Z
+
+Header 'Accept-Language: fr-FR,de-DE;q=0.9,en;q=0.8' -> Response Status: 200
+Header 'Accept-Language: ja,zh-CN;q=0.9' -> Response Status: 200
+Header 'Accept-Language: *' -> Response Status: 200
+Header 'Accept-Language: invalid-lang-tag-12345678' -> Response Status: 200

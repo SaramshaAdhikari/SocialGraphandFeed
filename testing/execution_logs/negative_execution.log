@@ -1,0 +1,14 @@
+NEGATIVE TESTING EXECUTION LOG - 2026-11-23T14:37:30.278Z
+Total Assertions: 12
+[NEG-001] Username Format (Username with special chars ($pecial!chars)): Rejected cleanly? -> PASS
+[NEG-002] Username Format (Username with embedded spaces ("bad user")): Rejected cleanly? -> PASS
+[NEG-003] Media URL Format (Dangerous URI protocol (javascript:alert(1))): Rejected cleanly? -> PASS
+[NEG-004] Aspect Ratio (Negative aspect ratio (-1.5)): Rejected cleanly? -> PASS
+[NEG-005] Aspect Ratio (Zero aspect ratio (0.0)): Rejected cleanly? -> PASS
+[NEG-006] Aspect Ratio (Excessive aspect ratio (15.0)): Rejected cleanly? -> PASS
+[NEG-007] Post Type (Invalid post type literal ("unknown_format")): Rejected cleanly? -> PASS
+[NEG-008] Tag Characters (Tag with whitespace ("tag name")): Rejected cleanly? -> PASS
+[NEG-009] Tag Characters (Tag with punctuation slug ("tag#trending")): Rejected cleanly? -> PASS
+[NEG-010] Community Identifier (Community ID with illegal symbols ("comm;DROP TABLE")): Rejected cleanly? -> PASS
+[NEG-011] Destination URL (Malformed destination URL ("htp:/invalid")): Rejected cleanly? -> PASS
+[NEG-012] Additional Properties (Unauthorized extraneous payload injection ({ backdoor: true })): Rejected cleanly? -> PASS

@@ -1,0 +1,72 @@
+[
+  {
+    "id": "LOCAL_E2E_001",
+    "name": "Negative Authentication (Invalid Credentials)",
+    "status": "PASS",
+    "details": "Correctly rejected with error banner: \"Invalid username or password.\"",
+    "screenshot": "C:\\Users\\saram\\Projects\\SocialGraphandFeed_Testing\\SCREENSHOTS\\LOCAL_E2E\\LOCAL_E2E_001_AUTH_INVALID.png"
+  },
+  {
+    "id": "LOCAL_E2E_002",
+    "name": "User Registration (Positive Path)",
+    "status": "PASS",
+    "details": "Successfully registered new user \"qa_lead_39265\" and accepted authenticated session",
+    "screenshot": "C:\\Users\\saram\\Projects\\SocialGraphandFeed_Testing\\SCREENSHOTS\\LOCAL_E2E\\LOCAL_E2E_002_REGISTRATION_SUCCESS.png"
+  },
+  {
+    "id": "LOCAL_E2E_003",
+    "name": "Authenticated Session Verification",
+    "status": "PASS",
+    "details": "Session established. Current URL: http://127.0.0.1:3000/",
+    "screenshot": "C:\\Users\\saram\\Projects\\SocialGraphandFeed_Testing\\SCREENSHOTS\\LOCAL_E2E\\LOCAL_E2E_003_LOGIN_SESSION.png"
+  },
+  {
+    "id": "LOCAL_E2E_004",
+    "name": "Home Feed Delivery & Tab Navigation",
+    "status": "PASS",
+    "details": "Feed posts loaded and rendered from local MongoDB with real author metadata",
+    "screenshot": "C:\\Users\\saram\\Projects\\SocialGraphandFeed_Testing\\SCREENSHOTS\\LOCAL_E2E\\LOCAL_E2E_004_FEED_DELIVERY.png"
+  },
+  {
+    "id": "LOCAL_E2E_005",
+    "name": "Create Post Composer",
+    "status": "PASS",
+    "details": "Composer initialized, populated title and Markdown body",
+    "screenshot": "C:\\Users\\saram\\Projects\\SocialGraphandFeed_Testing\\SCREENSHOTS\\LOCAL_E2E\\LOCAL_E2E_005_POST_COMPOSER.png"
+  },
+  {
+    "id": "LOCAL_E2E_006",
+    "name": "Publish Post Mutation",
+    "status": "PASS",
+    "details": "Post submission dispatched to /api/v1/posts. Current page: http://127.0.0.1:3000/post/post_1795451649629_7qwms",
+    "screenshot": "C:\\Users\\saram\\Projects\\SocialGraphandFeed_Testing\\SCREENSHOTS\\LOCAL_E2E\\LOCAL_E2E_006_POST_PUBLISHED.png"
+  },
+  {
+    "id": "LOCAL_E2E_007",
+    "name": "Post Detail & Comment Engagement",
+    "status": "PASS",
+    "details": "Post detail view rendered with threaded discussion comments. URL: http://127.0.0.1:3000/post/post_1795451649629_7qwms",
+    "screenshot": "C:\\Users\\saram\\Projects\\SocialGraphandFeed_Testing\\SCREENSHOTS\\LOCAL_E2E\\LOCAL_E2E_007_COMMENT_ENGAGEMENT.png"
+  },
+  {
+    "id": "LOCAL_E2E_008",
+    "name": "Social Graph (User Profile & Follow/Unfollow)",
+    "status": "PASS",
+    "details": "Profile header, follower counts, and interactive follow toggle verified",
+    "screenshot": "C:\\Users\\saram\\Projects\\SocialGraphandFeed_Testing\\SCREENSHOTS\\LOCAL_E2E\\LOCAL_E2E_008_SOCIAL_GRAPH_FOLLOW.png"
+  },
+  {
+    "id": "LOCAL_E2E_009",
+    "name": "Universal Search & Filtering",
+    "status": "PASS",
+    "details": "Search query executed against multi-entity index (Discussions, Communities, People)",
+    "screenshot": "C:\\Users\\saram\\Projects\\SocialGraphandFeed_Testing\\SCREENSHOTS\\LOCAL_E2E\\LOCAL_E2E_009_UNIVERSAL_SEARCH.png"
+  },
+  {
+    "id": "LOCAL_E2E_010",
+    "name": "Appearance Settings & Live Theme Switching",
+    "status": "PASS",
+    "details": "Theme switching verified with real-time DOM attribute updates and visual styling",
+    "screenshot": "C:\\Users\\saram\\Projects\\SocialGraphandFeed_Testing\\SCREENSHOTS\\LOCAL_E2E\\LOCAL_E2E_010_THEME_CUSTOMIZATION.png"
+  }
+]

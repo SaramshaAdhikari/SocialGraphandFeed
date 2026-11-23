@@ -1,0 +1,14 @@
+MCCABE CYCLOMATIC COMPLEXITY AUDIT - 2026-11-23T14:42:03.783Z
+
+Formula: V(G) = 1 + Decision Constructs (if, else if, for, while, case, catch, &&, ||, ?)
+
+File                      | LOC    | Branches | Complexity | Rating
+-----------------------------------------------------------------
+PostService.ts            | 908    | 95       | 164        | High (Complex)
+FeedService.ts            | 488    | 53       | 92         | High (Complex)
+UserService.ts            | 472    | 47       | 82         | High (Complex)
+AuthService.ts            | 118    | 21       | 30         | Moderate
+CommunityService.ts       | 257    | 18       | 33         | Moderate
+production-server.mjs     | 69     | 3        | 10         | Low (Simple)
+GraphPage.tsx             | 1283   | 83       | 190        | High (Complex)
+CreatePostPage.tsx        | 380    | 8        | 54         | High (Complex)

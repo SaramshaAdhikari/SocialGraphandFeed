@@ -1,0 +1,15 @@
+FUNCTIONAL TESTING EXECUTION LOG - 2026-11-23T14:38:01.317Z
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.1.1 [39m[90mC:/Users/saram/Projects/SocialGraphandFeed_Testing/packages/frontend[39m
+
+ [32m✓[39m src/test/search_suggestions.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m src/test/search.test.tsx [2m([22m[2m18 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m src/test/create_post.test.tsx [2m([22m[2m27 tests[22m[2m)[22m[32m 108[2mms[22m[39m
+ [32m✓[39m src/test/saved_collections.test.tsx [2m([22m[2m25 tests[22m[2m)[22m[32m 83[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m74 passed[39m[22m[90m (74)[39m
+[2m   Start at [22m 20:23:03
+[2m   Duration [22m 684ms[2m (import 48%, transform 32%, tests 18%, worker 2%)[22m
+

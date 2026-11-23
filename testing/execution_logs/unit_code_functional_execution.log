@@ -1,0 +1,18 @@
+UNIT/CODE FUNCTIONAL EXECUTION LOG - 2026-11-23T14:42:20.043Z
+
+calculateHotScore Monotonic Decay:
+  Older post (T0, score 10) = 1986.28
+  Newer post (T0+12h, score 10) = 1987.24
+  Invariant Verified: Newer > Older
+
+toUserSummary Sanitization:
+  Input has password_hash: true
+  Output has password_hash: false
+  Output has email: false
+  Invariant Verified: Sensitive credentials stripped
+
+AppError Factory:
+  statusCode: 400
+  code: BAD_REQUEST
+  type: https://socialgraph.dev/errors/bad-request
+  Invariant Verified: Emits RFC 7807 contract
